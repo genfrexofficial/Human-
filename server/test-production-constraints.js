@@ -21,34 +21,88 @@ async function runConstraintsTest() {
   // 1. Log in users
   const adminLogin = await api('/auth/login', {
     method: 'POST',
-    body: JSON.stringify({ email: 'admin@clientportal.com', password: 'Admin@123' })
+    body: JSON.stringify({ email: 'admin@genfrex.com', password: 'Admin@123' })
   });
   const adminToken = adminLogin.data.token;
   console.log('✅ Admin authenticated:', adminLogin.data.user.name);
 
-  const workerLogin = await api('/auth/login', {
+  // Ensure test worker exists
+  const workerEmail = 'constraints.worker@genfrex.com';
+  const workerPass = 'Worker@123';
+  let workerLogin = await api('/auth/login', {
     method: 'POST',
-    body: JSON.stringify({ email: 'arun@clientportal.com', password: 'Worker@123' })
+    body: JSON.stringify({ email: workerEmail, password: workerPass })
   });
+  if (workerLogin.status !== 200) {
+    await api('/users', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${adminToken}` },
+      body: JSON.stringify({
+        name: 'Arun Kumar',
+        email: workerEmail,
+        role: 'WORKER',
+        title: 'Full Stack Engineer',
+        password: workerPass
+      })
+    });
+    workerLogin = await api('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email: workerEmail, password: workerPass })
+    });
+  }
   const workerToken = workerLogin.data.token;
   const workerId = workerLogin.data.user.id || workerLogin.data.user._id;
   console.log('✅ Worker authenticated:', workerLogin.data.user.name);
 
-  const clientLogin = await api('/auth/login', {
+  // Ensure test client exists
+  const clientEmail = 'constraints.client@clientportal.com';
+  const clientPass = 'Client@123';
+  let clientLogin = await api('/auth/login', {
     method: 'POST',
-    body: JSON.stringify({ email: 'client@clientportal.com', password: 'Client@123' })
+    body: JSON.stringify({ email: clientEmail, password: clientPass })
   });
+  if (clientLogin.status !== 200) {
+    await api('/users', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${adminToken}` },
+      body: JSON.stringify({
+        name: 'Sarah Jenkins',
+        email: clientEmail,
+        companyName: 'Jenkins Enterprises',
+        role: 'CLIENT',
+        password: clientPass
+      })
+    });
+    clientLogin = await api('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email: clientEmail, password: clientPass })
+    });
+  }
   const clientToken = clientLogin.data.token;
   const clientId = clientLogin.data.user.id || clientLogin.data.user._id;
   console.log('✅ Client authenticated:', clientLogin.data.user.name);
 
   // 2. Test INTERNAL COMMENTS ISOLATION
   console.log('\n[Constraint 1: Internal Comments Filtered at Backend]');
-  // Get Sarah's project
-  const projectsRes = await api('/projects', {
+  // Get or create client project
+  let projectsRes = await api('/projects', {
     headers: { Authorization: `Bearer ${clientToken}` }
   });
-  const clientProject = projectsRes.data.projects[0];
+  let clientProject = (projectsRes.data.projects || [])[0];
+  if (!clientProject) {
+    const newProj = await api('/projects', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${adminToken}` },
+      body: JSON.stringify({
+        name: 'Enterprise Constraints Test Project',
+        description: 'Project created for constraints verification',
+        client: clientId,
+        assignedWorkers: [workerId],
+        budget: 50000
+      })
+    });
+    clientProject = newProj.data.project;
+  }
   console.log(`Using Project: "${clientProject.name}" (ID: ${clientProject._id})`);
 
   // Admin posts an internal comment

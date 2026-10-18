@@ -16,19 +16,19 @@ router.use(authenticateToken);
 // Stats overview (Admin)
 router.get('/stats/overview', authorizeRoles('ADMIN'), getFinanceStats);
 
-// Invoices CRUD & Access
+// Invoices CRUD & Access (Strictly ADMIN and CLIENT only)
 router.route('/')
-  .get(getInvoices)
+  .get(authorizeRoles('ADMIN', 'CLIENT'), getInvoices)
   .post(authorizeRoles('ADMIN'), createInvoice);
 
 router.route('/:id')
-  .get(getInvoiceById)
+  .get(authorizeRoles('ADMIN', 'CLIENT'), getInvoiceById)
   .delete(authorizeRoles('ADMIN'), deleteInvoice);
 
-// Download PDF
-router.get('/:id/pdf', generateInvoicePDF);
+// Download PDF (ADMIN and CLIENT only)
+router.get('/:id/pdf', authorizeRoles('ADMIN', 'CLIENT'), generateInvoicePDF);
 
-// Record payment (Offline bank transfer / UPI)
-router.post('/:id/record-payment', recordPayment);
+// Record payment (Offline bank transfer / UPI - ADMIN and CLIENT only)
+router.post('/:id/record-payment', authorizeRoles('ADMIN', 'CLIENT'), recordPayment);
 
 module.exports = router;

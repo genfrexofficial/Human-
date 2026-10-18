@@ -21,6 +21,10 @@ const getInvoices = async (req, res, next) => {
     const { status, project, client } = req.query;
     let query = {};
 
+    if (req.user.role !== 'ADMIN' && req.user.role !== 'CLIENT') {
+      return res.status(403).json({ success: false, message: 'Forbidden. Role not authorized to access invoices.' });
+    }
+
     if (req.user.role === 'CLIENT') {
       query.client = req.user._id;
     } else {
@@ -58,6 +62,10 @@ const getInvoiceById = async (req, res, next) => {
 
     if (!invoice) {
       return res.status(404).json({ success: false, message: 'Invoice not found.' });
+    }
+
+    if (req.user.role !== 'ADMIN' && req.user.role !== 'CLIENT') {
+      return res.status(403).json({ success: false, message: 'Forbidden. Role not authorized to access invoices.' });
     }
 
     if (req.user.role === 'CLIENT' && invoice.client._id.toString() !== req.user._id.toString()) {
@@ -147,6 +155,10 @@ const recordPayment = async (req, res, next) => {
 
     if (!invoice) {
       return res.status(404).json({ success: false, message: 'Invoice not found.' });
+    }
+
+    if (req.user.role !== 'ADMIN' && req.user.role !== 'CLIENT') {
+      return res.status(403).json({ success: false, message: 'Forbidden. Only Admins and Clients can record payments.' });
     }
 
     if (req.user.role === 'CLIENT' && invoice.client.toString() !== req.user._id.toString()) {

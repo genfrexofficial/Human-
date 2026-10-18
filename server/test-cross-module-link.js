@@ -1,6 +1,6 @@
-require('dotenv').config();
-const fs = require('fs');
 const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
+const fs = require('fs');
 
 const BASE_URL = 'http://localhost:5000/api';
 
@@ -32,31 +32,41 @@ async function runCrossModuleIntegrationTests() {
     // Authenticate all 4 actors
     console.log('[Setup] Authenticating test actors (Admin, HR, Worker, Client)...');
     const adminLogin = await req('POST', '/auth/login', {
-      email: 'admin@clientportal.com',
+      email: 'admin@genfrex.com',
       password: 'Admin@123'
     });
-    const hrLogin = await req('POST', '/auth/login', {
-      email: 'hr@genfrex.com',
-      password: 'Hr@123'
-    });
-    const workerLogin = await req('POST', '/auth/login', {
-      email: 'arun@clientportal.com',
-      password: 'Worker@123'
-    });
-    const clientLogin = await req('POST', '/auth/login', {
-      email: 'client@clientportal.com',
-      password: 'Client@123'
-    });
+
+    async function ensureUser(email, password, role, name, extra = {}) {
+      try {
+        return await req('POST', '/auth/login', { email, password });
+      } catch {
+        await req('POST', '/users', {
+          name,
+          email,
+          role,
+          password,
+          ...extra
+        }, adminLogin.token);
+        return await req('POST', '/auth/login', { email, password });
+      }
+    }
+
+    const hrLogin = await ensureUser('hr@genfrex.com', 'Hr@123', 'HR', 'HR Talent Lead');
+    const workerLogin = await ensureUser('worker.cross@genfrex.com', 'Worker@123', 'WORKER', 'Arun Kumar', { title: 'Full Stack Engineer' });
+    const clientLogin = await ensureUser('client.cross@clientcorp.com', 'Client@123', 'CLIENT', 'Sarah Jenkins', { companyName: 'ClientCorp' });
     console.log('✅ All 4 actors authenticated successfully.');
 
-    // Retrieve or create an active Client project
+    // Retrieve or create an active project belonging to clientLogin
+    const clientUserId = (clientLogin.user.id || clientLogin.user._id).toString();
+    const workerUserId = (workerLogin.user.id || workerLogin.user._id).toString();
     const projectsRes = await req('GET', '/projects', null, adminLogin.token);
-    let targetProject = (projectsRes.projects || [])[0];
+    let targetProject = (projectsRes.projects || []).find(p => (p.client?._id || p.client)?.toString() === clientUserId);
     if (!targetProject) {
       const newProj = await req('POST', '/projects', {
         name: 'E-Commerce Website Revamp',
         description: 'Client engagement for full-stack ecommerce marketplace',
-        client: clientLogin.user.id || clientLogin.user._id,
+        client: clientUserId,
+        assignedWorkers: [workerUserId],
         budget: 150000
       }, adminLogin.token);
       targetProject = newProj.project;

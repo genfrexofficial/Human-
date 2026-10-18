@@ -32,6 +32,19 @@ const generateProjectSummary = async (req, res, next) => {
       });
     }
 
+    if (req.user.role === 'WORKER') {
+      const isAssigned = project.assignedWorkers && project.assignedWorkers.some(
+        (w) => (w._id ? w._id.toString() : w.toString()) === req.user._id.toString()
+      );
+      const hasTask = await Task.exists({ project: project._id, assignedTo: req.user._id });
+      if (!isAssigned && !hasTask) {
+        return res.status(403).json({
+          success: false,
+          message: 'Unauthorized.'
+        });
+      }
+    }
+
     const now = new Date();
     const tasks = await Task.find({ project: projectId }).populate('assignedTo', 'name');
     const milestones = await Milestone.find({ project: projectId }).sort({ dueDate: 1 });

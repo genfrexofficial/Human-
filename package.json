@@ -11,5 +11,8 @@
     "client": "npm run dev --prefix client",
     "cleanup": "npm run cleanup --prefix server",
     "build:client": "npm run build --prefix client"
+  },
+  "dependencies": {
+    "express-rate-limit": "^8.7.1"
   }
 }

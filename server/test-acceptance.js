@@ -23,20 +23,78 @@ async function runAcceptanceTest() {
   console.log('🧪 RUNNING CRITICAL ACCEPTANCE TEST SCENARIO (REQUIREMENT 32)');
   console.log('===========================================================');
 
-  try {
-    // 1. Login as Client
-    console.log('\n[Step 1] Logging in as Client (Sarah Jenkins)...');
-    const clientLogin = await req('POST', '/auth/login', {
-      email: 'client@clientportal.com',
-      password: 'Client@123'
-    });
-    const clientToken = clientLogin.token;
-    const clientUser = clientLogin.user;
-    console.log(`✅ Logged in as: ${clientUser.name} (Role: ${clientUser.role})`);
+  let adminToken = null;
+  let clientId = null;
+  let workerId = null;
+  let projectId = null;
 
-    // Get client's project
+  try {
+    // Setup: Admin authenticates first
+    console.log('\n[Setup] Authenticating Platform Admin...');
+    const adminLogin = await req('POST', '/auth/login', {
+      email: 'admin@genfrex.com',
+      password: 'Admin@123'
+    });
+    adminToken = adminLogin.token;
+    console.log(`✅ Admin authenticated: ${adminLogin.user.name}`);
+
+    // Ensure test Client exists
+    const clientEmail = 'sarah.jenkins@testcorp.com';
+    const clientPass = 'Client@123';
+    let clientLogin;
+    try {
+      clientLogin = await req('POST', '/auth/login', { email: clientEmail, password: clientPass });
+      clientId = clientLogin.user.id || clientLogin.user._id;
+    } catch {
+      const clientCreate = await req('POST', '/users', {
+        name: 'Sarah Jenkins',
+        email: clientEmail,
+        companyName: 'Jenkins Enterprises',
+        role: 'CLIENT',
+        password: clientPass
+      }, adminToken);
+      clientId = clientCreate.user.id || clientCreate.user._id;
+      clientLogin = await req('POST', '/auth/login', { email: clientEmail, password: clientPass });
+    }
+    const clientToken = clientLogin.token;
+    console.log(`✅ Client authenticated: ${clientLogin.user.name}`);
+
+    // Ensure test Worker exists
+    const workerEmail = 'arun.kumar@genfrex.internal';
+    const workerPass = 'Worker@123';
+    let workerLogin;
+    try {
+      workerLogin = await req('POST', '/auth/login', { email: workerEmail, password: workerPass });
+      workerId = workerLogin.user.id || workerLogin.user._id;
+    } catch {
+      const workerCreate = await req('POST', '/users', {
+        name: 'Arun Kumar',
+        email: workerEmail,
+        role: 'WORKER',
+        title: 'Senior Full Stack Engineer',
+        skills: ['React', 'Node.js', 'MongoDB'],
+        password: workerPass
+      }, adminToken);
+      workerId = workerCreate.user.id || workerCreate.user._id;
+      workerLogin = await req('POST', '/auth/login', { email: workerEmail, password: workerPass });
+    }
+    const workerToken = workerLogin.token;
+    console.log(`✅ Worker authenticated: ${workerLogin.user.name}`);
+
+    // Ensure test Project exists for Client
     const clientProjects = await req('GET', '/projects', null, clientToken);
-    const project = clientProjects.projects[0];
+    let project = (clientProjects.projects || [])[0];
+    if (!project) {
+      const projCreate = await req('POST', '/projects', {
+        name: 'Customer Portal Modernization',
+        description: 'Enterprise client digital portal revamp',
+        client: clientId,
+        assignedWorkers: [workerId],
+        budget: 100000
+      }, adminToken);
+      project = projCreate.project;
+    }
+    projectId = project._id;
     console.log(`✅ Selected Client Project: "${project.name}" (ID: ${project._id})`);
 
     // 2. Client submits Task Request: "Add WhatsApp Notification"
@@ -60,28 +118,13 @@ async function runAcceptanceTest() {
       throw new Error(`Expected status PENDING_APPROVAL, got ${taskRequest.status}`);
     }
 
-    // 3. Admin logs in
-    console.log('\n[Step 3] Logging in as Admin (Alex Rivera)...');
-    const adminLogin = await req('POST', '/auth/login', {
-      email: 'admin@clientportal.com',
-      password: 'Admin@123'
-    });
-    const adminToken = adminLogin.token;
-    console.log(`✅ Logged in as Admin: ${adminLogin.user.name}`);
-
-    // Admin fetches workers to find Arun
-    const workersRes = await req('GET', '/users/workers', null, adminToken);
-    const arun = workersRes.workers.find((w) => w.name.includes('Arun'));
-    if (!arun) throw new Error('Worker Arun Kumar not found in database!');
-    console.log(`✅ Found Worker: ${arun.name} (ID: ${arun._id})`);
-
     // 4. Admin approves Task Request and assigns to Arun
     console.log('\n[Step 4] Admin approving task request and assigning to Arun Kumar...');
     const approveRes = await req(
       'POST',
       `/task-requests/${taskRequest._id}/approve`,
       {
-        assignedTo: arun._id,
+        assignedTo: workerId,
         priority: 'HIGH',
         adminNotes: 'Assigned to Arun for immediate implementation.'
       },
@@ -96,16 +139,8 @@ async function runAcceptanceTest() {
       throw new Error('Approval or Assignment state mismatch!');
     }
 
-    // 5. Worker (Arun) logs in
-    console.log('\n[Step 5] Logging in as Worker (Arun Kumar)...');
-    const workerLogin = await req('POST', '/auth/login', {
-      email: 'arun@clientportal.com',
-      password: 'Worker@123'
-    });
-    const workerToken = workerLogin.token;
-    console.log(`✅ Logged in as Worker: ${workerLogin.user.name}`);
-
-    // Arun verifies task in my-tasks
+    // 5. Arun verifies task in my-tasks
+    console.log('\n[Step 5] Worker verifying task in queue...');
     const myTasksRes = await req('GET', '/tasks/my-tasks', null, workerToken);
     const arunTask = myTasksRes.tasks.find((t) => t._id === assignedTask._id);
     if (!arunTask) throw new Error('Assigned task not found in Arun queue!');
@@ -146,24 +181,21 @@ async function runAcceptanceTest() {
 
     // Verify activities
     const activitiesRes = await req('GET', `/activities/project/${project._id}`, null, clientToken);
-    const taskActivities = activitiesRes.activities.filter(
-      (a) => a.description.includes('Add WhatsApp Notification') || a.entityId === assignedTask._id
+    const taskActivities = (activitiesRes.activities || []).filter(
+      (a) => a.description?.includes('Add WhatsApp Notification') || a.entityId === assignedTask._id
     );
-    console.log(`✅ Activity trail contains ${taskActivities.length} audit entries for this task workflow:`);
-    taskActivities.forEach((a) => console.log(`   - [${a.action}] ${a.description}`));
+    console.log(`✅ Activity trail contains ${taskActivities.length} audit entries for this task workflow`);
 
     // 11. Test Role Isolation (Security Check)
     console.log('\n[Step 11] Security & Role Isolation Checks:');
     try {
-      // Worker attempting to approve task requests -> should be 403
-      await req('POST', `/task-requests/${taskRequest._id}/approve`, { assignedTo: arun._id }, workerToken);
+      await req('POST', `/task-requests/${taskRequest._id}/approve`, { assignedTo: workerId }, workerToken);
       throw new Error('SECURITY VIOLATION: Worker was able to approve task requests!');
     } catch (err) {
       console.log(`✅ Worker blocked from Admin endpoint (HTTP ${err.status})`);
     }
 
     try {
-      // Client attempting to access Admin workers list -> should be 403
       await req('GET', '/users/workers', null, clientToken);
       throw new Error('SECURITY VIOLATION: Client was able to access workers list!');
     } catch (err) {
@@ -179,6 +211,13 @@ async function runAcceptanceTest() {
       console.error('Response Data:', err.data);
     }
     process.exit(1);
+  } finally {
+    // Teardown temporary test entities
+    if (adminToken) {
+      if (projectId) await req('DELETE', `/projects/${projectId}`, null, adminToken).catch(() => {});
+      if (clientId) await req('DELETE', `/users/${clientId}`, null, adminToken).catch(() => {});
+      if (workerId) await req('DELETE', `/users/${workerId}`, null, adminToken).catch(() => {});
+    }
   }
 }
 

@@ -1,4 +1,5 @@
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 const mongoose = require('mongoose');
 
 const BASE_URL = 'http://localhost:5000/api';
@@ -37,30 +38,36 @@ async function runUnifiedPlatformTests() {
     
     // Admin login
     const adminLogin = await req('POST', '/auth/login', {
-      email: 'admin@clientportal.com',
+      email: 'admin@genfrex.com',
       password: 'Admin@123'
     });
     console.log(`✅ Admin Authenticated: ${adminLogin.user.name} (Role: ${adminLogin.user.role})`);
 
+    async function ensureUser(email, password, role, name, extra = {}) {
+      try {
+        return await req('POST', '/auth/login', { email, password });
+      } catch {
+        await req('POST', '/users', {
+          name,
+          email,
+          role,
+          password,
+          ...extra
+        }, adminLogin.token);
+        return await req('POST', '/auth/login', { email, password });
+      }
+    }
+
     // HR login
-    const hrLogin = await req('POST', '/auth/login', {
-      email: 'hr@genfrex.com',
-      password: 'Hr@123'
-    });
+    const hrLogin = await ensureUser('hr@genfrex.com', 'Hr@123', 'HR', 'HR Talent Lead');
     console.log(`✅ HR Authenticated:    ${hrLogin.user.name} (Role: ${hrLogin.user.role})`);
 
     // Worker login
-    const workerLogin = await req('POST', '/auth/login', {
-      email: 'arun@clientportal.com',
-      password: 'Worker@123'
-    });
+    const workerLogin = await ensureUser('worker.unified@genfrex.com', 'Worker@123', 'WORKER', 'Arun Kumar', { title: 'Full Stack Engineer' });
     console.log(`✅ Worker Authenticated: ${workerLogin.user.name} (Role: ${workerLogin.user.role})`);
 
     // Client login
-    const clientLogin = await req('POST', '/auth/login', {
-      email: 'client@clientportal.com',
-      password: 'Client@123'
-    });
+    const clientLogin = await ensureUser('client.unified@clientcorp.com', 'Client@123', 'CLIENT', 'Sarah Jenkins', { companyName: 'ClientCorp' });
     console.log(`✅ Client Authenticated: ${clientLogin.user.name} (Role: ${clientLogin.user.role})`);
 
     // 3. Strict RBAC Enforcement

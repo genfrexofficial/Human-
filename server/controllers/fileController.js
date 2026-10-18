@@ -155,6 +155,19 @@ const uploadProjectFile = async (req, res, next) => {
         });
       }
 
+      if (req.user.role === 'WORKER') {
+        const isAssigned = project.assignedWorkers && project.assignedWorkers.some(
+          (w) => w.toString() === req.user._id.toString()
+        );
+        const hasTask = await Task.exists({ project: project._id, assignedTo: req.user._id });
+        if (!isAssigned && !hasTask) {
+          return res.status(403).json({
+            success: false,
+            message: 'Unauthorized to upload files to this project.'
+          });
+        }
+      }
+
       projectName = project.name || 'Project';
       clientName = project.client?.name || 'Client';
     }

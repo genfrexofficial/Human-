@@ -1,6 +1,7 @@
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 const mongoose = require('mongoose');
 const fs = require('fs');
-const path = require('path');
 const File = require('./models/File');
 const User = require('./models/User');
 const Project = require('./models/Project');
@@ -28,6 +29,21 @@ async function runStorageTestSuite() {
 
   // Connect directly to MongoDB
   await mongoose.connect(process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/clientportal');
+
+  // Purge any stale test accounts/files from prior runs before recording baseline
+  await User.deleteMany({
+    email: {
+      $in: [
+        'test_hr_storage@genfrex.com',
+        'test_worker_storage@genfrex.com',
+        'client1_storage@test.com',
+        'client2_storage@test.com'
+      ]
+    }
+  });
+  await File.deleteMany({
+    fileName: { $in: ['HR_Offer_Letter_2026.pdf', 'HR_Offer_Letter_2026_V2.pdf', 'client1_requirement_brief.docx'] }
+  });
 
   const initialUserCount = await User.countDocuments();
   const initialFileCount = await File.countDocuments();

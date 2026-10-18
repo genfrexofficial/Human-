@@ -175,7 +175,9 @@ const createUser = async (req, res, next) => {
       message: `${targetRole} account created successfully.`,
       temporaryPassword: tempPassword,
       user: userPayload,
-      worker: userPayload
+      worker: userPayload,
+      client: userPayload,
+      hr: userPayload
     });
   } catch (error) {
     next(error);

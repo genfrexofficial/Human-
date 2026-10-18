@@ -164,19 +164,19 @@ const generateAppointmentPDF = async (appointment, candidate = {}, template = nu
           curY,
           { width: contentWidth, align: 'justify' }
         );
-      curY += 30;
+      curY = doc.y + 11;
 
       // 1. About GENFREX (matching text-xs font-bold text-blue-700)
       doc.fontSize(8.8).font('Helvetica-Bold').fillColor(cBlue700).text('1. ABOUT GENFREX', leftMargin, curY);
-      curY += 11;
+      curY = doc.y + 3.5;
       const aboutText = 'GENFREX is a next-generation digital services and talent ecosystem committed to empowering enterprises and innovators with cutting-edge engineering, scalable digital products, and high-impact talent solutions. We bridge industry demands with world-class technical capabilities to build robust, modern digital solutions.';
       doc.fontSize(8).font('Helvetica').fillColor(cSlate600).lineGap(2.5)
         .text(aboutText, leftMargin, curY, { width: contentWidth, align: 'justify' });
-      curY += 36;
+      curY = doc.y + 11;
 
       // 2. Appointment Details Grid (matching text-xs font-bold text-blue-700 and 8-row table)
       doc.fontSize(8.8).font('Helvetica-Bold').fillColor(cBlue700).text('2. APPOINTMENT DETAILS', leftMargin, curY);
-      curY += 11;
+      curY = doc.y + 4;
 
       const detailsRows = [
         { label: 'Designation / Role:', val: designation, isBold: true, color: cSlate900 },
@@ -227,23 +227,24 @@ const generateAppointmentPDF = async (appointment, candidate = {}, template = nu
 
       // 3. Role & Responsibilities (matching text-xs font-bold text-blue-700)
       doc.fontSize(8.8).font('Helvetica-Bold').fillColor(cBlue700).text('3. ROLE & RESPONSIBILITIES', leftMargin, curY);
-      curY += 12;
+      curY = doc.y + 4;
 
       const rawResp = (appointment.responsibilities && appointment.responsibilities.length > 0)
         ? appointment.responsibilities
         : (template?.roleAndResponsibilities || [
-            'Execute assigned technical tasks, modules, and software features in alignment with GENFREX quality standards.',
-            'Collaborate proactively with technical leads, cross-functional engineering teams, and project stakeholders.',
-            'Participate in sprint planning, architecture reviews, daily standups, and codebase documentation.',
-            'Continuously enhance technical proficiencies and adhere to best development and security practices.'
-          ]);
+          'Execute assigned technical tasks, modules, and software features in alignment with GENFREX quality standards.',
+          'Collaborate proactively with technical leads, cross-functional engineering teams, and project stakeholders.',
+          'Participate in sprint planning, architecture reviews, daily standups, and codebase documentation.',
+          'Continuously enhance technical proficiencies and adhere to best development and security practices.'
+        ]);
 
       rawResp.forEach((resp) => {
         const cleanResp = sanitizeText(resp);
-        doc.circle(leftMargin + 6, curY + 4.5, 2).fill(cBlue600);
+        const bulletY = curY;
+        doc.circle(leftMargin + 6, bulletY + 4.5, 2).fill(cBlue600);
         doc.fontSize(8).font('Helvetica').fillColor(cSlate600).lineGap(2)
-          .text(cleanResp, leftMargin + 16, curY, { width: contentWidth - 18, align: 'justify' });
-        curY += 17;
+          .text(cleanResp, leftMargin + 16, bulletY, { width: contentWidth - 18, align: 'justify' });
+        curY = Math.max(bulletY + 14, doc.y + 3.5);
       });
 
       // =========================================================================
@@ -263,66 +264,67 @@ const generateAppointmentPDF = async (appointment, candidate = {}, template = nu
         .text(`Ref: ${refNumber}`, 350, p2Y, { align: 'right', width: 200 });
       p2Y += 12;
       doc.strokeColor(cBorder).lineWidth(0.5).moveTo(leftMargin, p2Y).lineTo(rightEdge, p2Y).stroke();
-      p2Y += 16;
+      p2Y += 14;
 
       // 4. Terms & Conditions (matching text-xs font-bold text-blue-700 on Page 2)
       doc.fontSize(8.8).font('Helvetica-Bold').fillColor(cBlue700).text('4. TERMS & CONDITIONS', leftMargin, p2Y);
-      p2Y += 13;
+      p2Y = doc.y + 4;
 
       const rawTerms = (appointment.terms && appointment.terms.length > 0)
         ? appointment.terms
         : (template?.termsAndConditions || [
-            'Appointment Status: This appointment is for training and professional development within the GENFREX ecosystem. Successful completion of the trainee period may lead to performance-based full-time consideration.',
-            'Working Hours & Mode: The trainee shall adhere to the agreed schedule and mode of engagement specified in the appointment details.',
-            'Compensation: A monthly stipend/compensation shall be disbursed in accordance with GENFREX payroll schedules, subject to statutory deductions where applicable.',
-            'Notice Period: Either party may terminate this trainee engagement by providing a written notice of 15 days or compensation in lieu thereof during the trainee period.'
-          ]);
+          'Appointment Status: This appointment is for training and professional development within the GENFREX ecosystem. Successful completion of the trainee period may lead to performance-based full-time consideration.',
+          'Working Hours & Mode: The trainee shall adhere to the agreed schedule and mode of engagement specified in the appointment details.',
+          'Compensation: A monthly stipend/compensation shall be disbursed in accordance with GENFREX payroll schedules, subject to statutory deductions where applicable.',
+          'Notice Period: Either party may terminate this trainee engagement by providing a written notice of 15 days or compensation in lieu thereof during the trainee period.'
+        ]);
 
       rawTerms.forEach((term, idx) => {
         const cleanTerm = sanitizeText(term);
-        doc.fontSize(8.2).font('Helvetica-Bold').fillColor(cSlate900).text(`${idx + 1}.`, leftMargin + 4, p2Y);
+        const termY = p2Y;
+        doc.fontSize(8.2).font('Helvetica-Bold').fillColor(cSlate900).text(`${idx + 1}.`, leftMargin + 4, termY);
         doc.fontSize(8.2).font('Helvetica').fillColor(cSlate600).lineGap(2.5)
-          .text(cleanTerm, leftMargin + 18, p2Y, { width: contentWidth - 20, align: 'justify' });
-        p2Y += 28;
+          .text(cleanTerm, leftMargin + 18, termY, { width: contentWidth - 20, align: 'justify' });
+        p2Y = Math.max(termY + 16, doc.y + 5);
       });
 
-      p2Y += 6;
+      p2Y += 4;
 
       // 5. Confidentiality & Data Protection
       doc.fontSize(8.8).font('Helvetica-Bold').fillColor(cBlue700).text('5. CONFIDENTIALITY & DATA PROTECTION', leftMargin, p2Y);
-      p2Y += 12;
+      p2Y = doc.y + 3;
       const confDesc = sanitizeText(appointment.confidentialityTerms || template?.confidentialityClause ||
         'The Trainee acknowledges that during the tenure of this appointment, they may have access to confidential, proprietary, trade secret, client data, and intellectual property belonging to GENFREX or its affiliated clients. The Trainee agrees to hold all such information in strict confidence and shall not disclose, replicate, reverse-engineer, or misuse any proprietary data without prior written authorization from GENFREX. This obligation survives the termination or expiration of this appointment.'
       );
       doc.fontSize(8.2).font('Helvetica').fillColor(cSlate600).lineGap(2.5)
         .text(confDesc, leftMargin, p2Y, { width: contentWidth, align: 'justify' });
-      p2Y += 54;
+      p2Y = doc.y + 10;
 
       // 6. Professional Conduct & Compliance
       doc.fontSize(8.8).font('Helvetica-Bold').fillColor(cBlue700).text('6. PROFESSIONAL CONDUCT & COMPLIANCE', leftMargin, p2Y);
-      p2Y += 12;
+      p2Y = doc.y + 3;
       const conductDesc = sanitizeText(appointment.professionalConductTerms || template?.professionalConductClause ||
         'The Trainee agrees to maintain the highest standards of professional integrity, diligence, and ethical conduct. Non-compliance with company policies, willful misconduct, breach of client trust, or unauthorized external representation of GENFREX may result in immediate revocation of this appointment.'
       );
       doc.fontSize(8.2).font('Helvetica').fillColor(cSlate600).lineGap(2.5)
         .text(conductDesc, leftMargin, p2Y, { width: contentWidth, align: 'justify' });
-      p2Y += 46;
+      p2Y = doc.y + 10;
 
       // 7. Acceptance & Acknowledgement
       doc.fontSize(8.8).font('Helvetica-Bold').fillColor(cBlue700).text('7. ACCEPTANCE & ACKNOWLEDGEMENT', leftMargin, p2Y);
-      p2Y += 12;
+      p2Y = doc.y + 3;
       const acceptDesc = `Please signify your acceptance of this Trainee Appointment Letter and its incorporated terms by signing and returning the duplicate copy on or before ${deadlineDateStr}.`;
       doc.fontSize(8.2).font('Helvetica').fillColor(cSlate600).lineGap(2.5)
         .text(acceptDesc, leftMargin, p2Y, { width: contentWidth, align: 'justify' });
-      p2Y += 36;
+      p2Y = doc.y + 10;
 
       // Divider line before Signatories (matching pt-6 border-t border-slate-200 mt-8 in LetterPreviewModal.jsx)
-      const dividerY = Math.max(p2Y + 10, 520);
+      const dividerY = Math.max(p2Y + 8, 545);
       doc.strokeColor(cBorder).lineWidth(0.75).moveTo(leftMargin, dividerY).lineTo(rightEdge, dividerY).stroke();
 
       // Signatories & Candidate Acceptance Grid (matching 3-box grid in LetterPreviewModal.jsx)
-      const sigCardY = dividerY + 20;
-      const sigCardH = 150;
+      const sigCardY = dividerY + 16;
+      const sigCardH = 145;
       const cardGap = 12;
       const cardW = (contentWidth - cardGap * 2) / 3;
 

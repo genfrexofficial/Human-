@@ -100,8 +100,8 @@ function App() {
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/landing" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Navigate to="/login" replace />} />
-          <Route path="/setup-admin" element={<Navigate to="/login" replace />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/setup-admin" element={<AdminSetup />} />
 
           {/* Admin Routes (Role: ADMIN) */}
           <Route

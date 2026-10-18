@@ -66,10 +66,11 @@ const AdminClients = () => {
       setSaving(true);
       const res = await clientService.createClient(formData);
       if (res.success) {
+        const clientObj = res.client || res.user || {};
         setCreatedClientInfo({
-          email: res.client.email,
-          password: res.temporaryPassword,
-          name: res.client.name
+          email: clientObj.email || formData.email,
+          password: res.temporaryPassword || formData.password,
+          name: clientObj.name || formData.name
         });
         setModalOpen(false);
         setFormData({ name: '', email: '', companyName: '', phone: '', password: '' });

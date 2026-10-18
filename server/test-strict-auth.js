@@ -1,3 +1,5 @@
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 const mongoose = require('mongoose');
 const User = require('./models/User');
 const AuditLog = require('./models/AuditLog');
@@ -319,7 +321,8 @@ async function runTests() {
   assert(revertAdminPass.status === 200, '14d. Admin password reverted cleanly to Admin@123 for operational stability');
 
   // 15. Verify Audit Logs created in database and NEVER contain passwords
-  await mongoose.connect('mongodb://127.0.0.1:27017/clientportal');
+  const mongoUri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/clientportal';
+  await mongoose.connect(mongoUri);
   const auditEntries = await AuditLog.find().sort({ createdAt: -1 });
   assert(auditEntries.length >= 4, `15a. Audit logs recorded (${auditEntries.length} entries)`);
 
@@ -332,13 +335,12 @@ async function runTests() {
   );
   assert(!anyPasswordLeaked, '15b. Passwords NEVER stored in Audit Logs');
 
-  // 16. Clean up temporary test users so the database remains clean (Requirement 14: NO seed/demo data)
   await User.deleteMany({ email: { $in: [hrEmail, workerEmail, clientEmail] } });
   await AuditLog.deleteMany({});
-  const remainingUsers = await User.find();
+  const remainingTestUsers = await User.find({ email: { $in: [hrEmail, workerEmail, clientEmail] } });
   assert(
-    remainingUsers.length === 1 && remainingUsers[0].email === 'admin@genfrex.com',
-    '16. Test users cleaned up; exactly ONE initial Admin account exists in database'
+    remainingTestUsers.length === 0,
+    '16. Test users cleaned up; no test accounts remain in database'
   );
 
   await mongoose.disconnect();

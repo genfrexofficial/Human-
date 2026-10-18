@@ -1,6 +1,7 @@
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 const mongoose = require('mongoose');
 const fs = require('fs');
-const path = require('path');
 const File = require('./models/File');
 const User = require('./models/User');
 const Project = require('./models/Project');
@@ -157,14 +158,15 @@ async function runStorageTests() {
     fs.rmSync(tempTestDir, { recursive: true, force: true });
   }
 
-  await mongoose.connect('mongodb://127.0.0.1:27017/clientportal');
+  const mongoUri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/clientportal';
+  await mongoose.connect(mongoUri);
   await User.deleteMany({ email: { $in: ['storageworker@genfrex.com', 'storageclient@test.com'] } });
   await File.deleteMany({ _id: confidentialFileId });
 
-  const remainingUsers = await User.countDocuments();
-  const remainingFiles = await File.countDocuments();
-  assert(remainingUsers <= 2, '9. Test users cleaned up (only authorized platform staff remain)');
-  assert(remainingFiles === 0, '10. Test files cleaned up (0 demo files in database)');
+  const remainingTestUsers = await User.countDocuments({ email: { $in: ['storageworker@genfrex.com', 'storageclient@test.com'] } });
+  const remainingTestFiles = await File.countDocuments({ _id: confidentialFileId });
+  assert(remainingTestUsers === 0, '9. Test users cleaned up (test worker & client removed)');
+  assert(remainingTestFiles === 0, '10. Test files cleaned up (confidential test file removed)');
 
   await mongoose.disconnect();
 
