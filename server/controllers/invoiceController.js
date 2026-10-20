@@ -339,13 +339,13 @@ const generateInvoicePDF = async (req, res, next) => {
     // Authorized Signatory Stamp Box on right
     const signX = 380;
     doc.roundedRect(signX, bottomY, 175, 85, 4).fill('#F8FAFC');
-    doc.fontSize(8).fillColor('#475569').text('For GENFREX TECHNOLOGIES PVT LTD', signX + 10, bottomY + 10, { align: 'center', width: 155, bold: true });
+    doc.fontSize(8).fillColor('#475569').text('For GENFREX', signX + 10, bottomY + 10, { align: 'center', width: 155, bold: true });
     doc.fontSize(7.5).fillColor('#94A3B8').text('[ Digitally Certified Tax Invoice ]', signX + 10, bottomY + 45, { align: 'center', width: 155 });
     doc.fontSize(8).fillColor('#0F172A').text('Authorized Signatory', signX + 10, bottomY + 68, { align: 'center', width: 155, bold: true });
 
     // --- Footer Notes ---
     doc.fontSize(7.5).fillColor('#94A3B8').text(
-      'This is a computer-generated tax invoice issued by GENFREX Technologies Pvt Ltd. No physical signature is required. Thank you for your partnership!',
+      'This is a computer-generated tax invoice issued by GENFREX. No physical signature is required. Thank you for your partnership!',
       40,
       770,
       { align: 'center', width: 515 }

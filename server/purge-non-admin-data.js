@@ -18,6 +18,9 @@ const HRApproval = require('./models/HRApproval');
 const HRAuditLog = require('./models/HRAuditLog');
 const HRSettings = require('./models/HRSettings');
 const AuditLog = require('./models/AuditLog');
+const Invoice = require('./models/Invoice');
+const Attendance = require('./models/Attendance');
+const LeaveRequest = require('./models/LeaveRequest');
 
 async function purgeData() {
   const mongoUri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/clientportal';
@@ -44,7 +47,10 @@ async function purgeData() {
     delLetters,
     delApprovals,
     delHRAuditLogs,
-    delAuditLogs
+    delAuditLogs,
+    delInvoices,
+    delAttendances,
+    delLeaveRequests
   ] = await Promise.all([
     Project.deleteMany({}),
     Task.deleteMany({}),
@@ -58,7 +64,10 @@ async function purgeData() {
     AppointmentLetter.deleteMany({}),
     HRApproval.deleteMany({}),
     HRAuditLog.deleteMany({}),
-    AuditLog.deleteMany({})
+    AuditLog.deleteMany({}),
+    Invoice.deleteMany({}),
+    Attendance.deleteMany({}),
+    LeaveRequest.deleteMany({})
   ]);
 
   console.log('[Purge] Records purged:');
@@ -75,6 +84,9 @@ async function purgeData() {
   console.log(`  - HR Approvals: ${delApprovals.deletedCount}`);
   console.log(`  - HR Audit Logs: ${delHRAuditLogs.deletedCount}`);
   console.log(`  - Audit Logs: ${delAuditLogs.deletedCount}`);
+  console.log(`  - Invoices: ${delInvoices.deletedCount}`);
+  console.log(`  - Attendances: ${delAttendances.deletedCount}`);
+  console.log(`  - Leave Requests: ${delLeaveRequests.deletedCount}`);
 
   // 3. Reset HR reference sequence to 1
   await HRSettings.updateMany({}, { $set: { currentSequence: 1 } });

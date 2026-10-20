@@ -318,13 +318,13 @@ const generateAppointmentPDF = async (appointment, candidate = {}, template = nu
         .text(acceptDesc, leftMargin, p2Y, { width: contentWidth, align: 'justify' });
       p2Y = doc.y + 10;
 
-      // Divider line before Signatories (matching pt-6 border-t border-slate-200 mt-8 in LetterPreviewModal.jsx)
-      const dividerY = Math.max(p2Y + 8, 545);
+      // Divider line before Signatories & Seal
+      const dividerY = Math.max(p2Y + 8, 470);
       doc.strokeColor(cBorder).lineWidth(0.75).moveTo(leftMargin, dividerY).lineTo(rightEdge, dividerY).stroke();
 
-      // Signatories & Candidate Acceptance Grid (matching 3-box grid in LetterPreviewModal.jsx)
-      const sigCardY = dividerY + 16;
-      const sigCardH = 145;
+      // Signatories & Company Seal Grid (matching 3-box grid in LetterPreviewModal.jsx)
+      const sigCardY = dividerY + 12;
+      const sigCardH = 120;
       const cardGap = 12;
       const cardW = (contentWidth - cardGap * 2) / 3;
 
@@ -332,34 +332,66 @@ const generateAppointmentPDF = async (appointment, candidate = {}, template = nu
       const x1 = leftMargin;
       doc.roundedRect(x1, sigCardY, cardW, sigCardH, 4).fill(cBgCard);
       doc.roundedRect(x1, sigCardY, cardW, sigCardH, 4).strokeColor(cBorder).lineWidth(0.75).stroke();
-      doc.fontSize(7.5).font('Helvetica-Bold').fillColor(cSlate400).text('AUTHORIZED SIGNATORY', x1 + 12, sigCardY + 12);
-      doc.strokeColor(cBorder).lineWidth(0.5).moveTo(x1 + 12, sigCardY + 80).lineTo(x1 + cardW - 12, sigCardY + 80).stroke();
-      doc.fontSize(10).font('Helvetica-Bold').fillColor(cSlate900).text('P.S. Dharshan', x1 + 12, sigCardY + 92);
-      doc.fontSize(8).font('Helvetica').fillColor(cSlate600).text('Founder', x1 + 12, sigCardY + 108);
-      doc.fontSize(7.5).font('Helvetica').fillColor(cSlate400).text('GENFREX Ecosystem', x1 + 12, sigCardY + 122);
+      doc.fontSize(7.5).font('Helvetica-Bold').fillColor(cSlate400).text('AUTHORIZED SIGNATORY', x1 + 10, sigCardY + 10);
+      doc.strokeColor(cBorder).lineWidth(0.5).moveTo(x1 + 10, sigCardY + 68).lineTo(x1 + cardW - 10, sigCardY + 68).stroke();
+      doc.fontSize(9.5).font('Helvetica-Bold').fillColor(cSlate900).text('P.S. Dharshan', x1 + 10, sigCardY + 76);
+      doc.fontSize(7.8).font('Helvetica').fillColor(cSlate600).text('Founder', x1 + 10, sigCardY + 90);
+      doc.fontSize(7.2).font('Helvetica').fillColor(cSlate400).text('GENFREX Ecosystem', x1 + 10, sigCardY + 102);
 
       // Card 2: Authorized Signatory - Deepak P
       const x2 = leftMargin + cardW + cardGap;
       doc.roundedRect(x2, sigCardY, cardW, sigCardH, 4).fill(cBgCard);
       doc.roundedRect(x2, sigCardY, cardW, sigCardH, 4).strokeColor(cBorder).lineWidth(0.75).stroke();
-      doc.fontSize(7.5).font('Helvetica-Bold').fillColor(cSlate400).text('AUTHORIZED SIGNATORY', x2 + 12, sigCardY + 12);
-      doc.strokeColor(cBorder).lineWidth(0.5).moveTo(x2 + 12, sigCardY + 80).lineTo(x2 + cardW - 12, sigCardY + 80).stroke();
-      doc.fontSize(10).font('Helvetica-Bold').fillColor(cSlate900).text('Deepak P', x2 + 12, sigCardY + 92);
-      doc.fontSize(8).font('Helvetica').fillColor(cSlate600).text('Chief Operating Officer', x2 + 12, sigCardY + 108);
-      doc.fontSize(7.5).font('Helvetica').fillColor(cSlate400).text('GENFREX Ecosystem', x2 + 12, sigCardY + 122);
+      doc.fontSize(7.5).font('Helvetica-Bold').fillColor(cSlate400).text('AUTHORIZED SIGNATORY', x2 + 10, sigCardY + 10);
+      doc.strokeColor(cBorder).lineWidth(0.5).moveTo(x2 + 10, sigCardY + 68).lineTo(x2 + cardW - 10, sigCardY + 68).stroke();
+      doc.fontSize(9.5).font('Helvetica-Bold').fillColor(cSlate900).text('Deepak P', x2 + 10, sigCardY + 76);
+      doc.fontSize(7.8).font('Helvetica').fillColor(cSlate600).text('Chief Operating Officer', x2 + 10, sigCardY + 90);
+      doc.fontSize(7.2).font('Helvetica').fillColor(cSlate400).text('GENFREX Ecosystem', x2 + 10, sigCardY + 102);
 
-      // Card 3: Candidate Acceptance
+      // Card 3: Official Company Seal (in Candidate Signature old place)
       const x3 = leftMargin + (cardW + cardGap) * 2;
       doc.roundedRect(x3, sigCardY, cardW, sigCardH, 4).fill(cBgCard);
       doc.roundedRect(x3, sigCardY, cardW, sigCardH, 4).strokeColor(cBorder).lineWidth(0.75).stroke();
-      doc.fontSize(7.5).font('Helvetica-Bold').fillColor(cSlate400).text('CANDIDATE ACCEPTANCE', x3 + 12, sigCardY + 12);
-      doc.fontSize(7.5).font('Helvetica-Oblique').fillColor(cSlate500).text('Signature & Date', x3 + 12, sigCardY + 68);
+      doc.fontSize(7.5).font('Helvetica-Bold').fillColor(cSlate400).text('COMPANY SEAL', x3 + 10, sigCardY + 10);
+
+      const sealPath = path.join(__dirname, '../assets/company-seal.png');
+      const sealW = 50;
+      const sealH = 43;
+      const sealX = x3 + (cardW - sealW) / 2;
+      const sealY = sigCardY + 23;
+      if (fs.existsSync(sealPath)) {
+        try {
+          doc.image(sealPath, sealX, sealY, { width: sealW, height: sealH });
+        } catch {
+          doc.fontSize(7.5).font('Helvetica-Bold').fillColor(cBlue600).text('[ GENFREX SEAL ]', x3 + 10, sigCardY + 40, { width: cardW - 20, align: 'center' });
+        }
+      } else {
+        doc.fontSize(7.5).font('Helvetica-Bold').fillColor(cBlue600).text('[ GENFREX SEAL ]', x3 + 10, sigCardY + 40, { width: cardW - 20, align: 'center' });
+      }
+      doc.fontSize(7.5).font('Helvetica-Bold').fillColor(cSlate700).text('GENFREX', x3 + 6, sigCardY + 82, { width: cardW - 12, align: 'center' });
+      doc.fontSize(6.8).font('Helvetica').fillColor(cSlate400).text('Karur • 639113', x3 + 6, sigCardY + 95, { width: cardW - 12, align: 'center' });
+
+      // Row 2: Candidate Acceptance Card (moved below)
+      const candCardY = sigCardY + sigCardH + 10;
+      const candCardH = 68;
+      doc.roundedRect(leftMargin, candCardY, contentWidth, candCardH, 4).fill(cBgCard);
+      doc.roundedRect(leftMargin, candCardY, contentWidth, candCardH, 4).strokeColor(cBorder).lineWidth(0.75).stroke();
+
+      // Left column: Candidate details & statement
+      doc.fontSize(7.5).font('Helvetica-Bold').fillColor(cSlate400).text('CANDIDATE ACCEPTANCE', leftMargin + 12, candCardY + 10);
+      doc.fontSize(7.5).font('Helvetica').fillColor(cSlate600).text('I accept the appointment and agree to abide by the terms and conditions outlined in this letter.', leftMargin + 12, candCardY + 22, { width: contentWidth - 190 });
+      doc.fontSize(9.5).font('Helvetica-Bold').fillColor(cSlate900).text(candidateName, leftMargin + 12, candCardY + 40);
+      doc.fontSize(7.2).font('Helvetica').fillColor(cSlate400).text('Appointed Trainee', leftMargin + 12, candCardY + 52);
+
+      // Right column: Signature dashed line & label
+      const sigLineW = 150;
+      const sigLineX = rightEdge - sigLineW - 14;
+      doc.fontSize(7.5).font('Helvetica-Oblique').fillColor(cSlate500).text('Signature & Date', sigLineX, candCardY + 24, { width: sigLineW, align: 'center' });
       doc.save();
       doc.strokeColor(cSlate400).lineWidth(0.75).dash(2.5, { space: 2.5 })
-        .moveTo(x3 + 12, sigCardY + 80).lineTo(x3 + cardW - 12, sigCardY + 80).stroke();
+        .moveTo(sigLineX, candCardY + 42).lineTo(sigLineX + sigLineW, candCardY + 42).stroke();
       doc.restore();
-      doc.fontSize(10).font('Helvetica-Bold').fillColor(cSlate900).text(candidateName, x3 + 12, sigCardY + 92);
-      doc.fontSize(7.5).font('Helvetica').fillColor(cSlate400).text('Appointed Trainee', x3 + 12, sigCardY + 108);
+      doc.fontSize(7).font('Helvetica').fillColor(cSlate400).text('Authorized Candidate Signature', sigLineX, candCardY + 48, { width: sigLineW, align: 'center' });
 
       // Document Footers on All Pages (matching LetterPreviewModal.jsx bottom footer)
       const range = doc.bufferedPageRange();

@@ -46,12 +46,11 @@ const LetterPreviewModal = ({ isOpen, onClose, appointment, candidate }) => {
             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-200">
               {appointment.referenceNumber || 'DRAFT'}
             </span>
-            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-              appointment.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-800' :
-              appointment.status === 'PENDING_APPROVAL' ? 'bg-amber-100 text-amber-800' :
-              appointment.status === 'SENT' ? 'bg-blue-100 text-blue-800' :
-              appointment.status === 'REJECTED' ? 'bg-rose-100 text-rose-800' : 'bg-slate-100 text-slate-700'
-            }`}>
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${appointment.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-800' :
+                appointment.status === 'PENDING_APPROVAL' ? 'bg-amber-100 text-amber-800' :
+                  appointment.status === 'SENT' ? 'bg-blue-100 text-blue-800' :
+                    appointment.status === 'REJECTED' ? 'bg-rose-100 text-rose-800' : 'bg-slate-100 text-slate-700'
+              }`}>
               {appointment.status?.replace('_', ' ')}
             </span>
           </div>
@@ -263,29 +262,62 @@ const LetterPreviewModal = ({ isOpen, onClose, appointment, candidate }) => {
               </p>
             </div>
 
-            {/* Signatories & Candidate Acceptance Grid */}
+            {/* Signatories & Official Seal Grid */}
             <div className="grid grid-cols-3 gap-4 pt-6 border-t border-slate-200 mt-8">
-              <div className="border border-slate-200 rounded p-3 bg-slate-50/50">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-8">Authorized Signatory</p>
-                <p className="font-bold text-slate-900 text-xs">P.S. Dharshan</p>
-                <p className="text-[11px] text-slate-600">Founder</p>
-                <p className="text-[10px] text-slate-400">GENFREX Ecosystem</p>
-              </div>
-
-              <div className="border border-slate-200 rounded p-3 bg-slate-50/50">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-8">Authorized Signatory</p>
-                <p className="font-bold text-slate-900 text-xs">Deepak P</p>
-                <p className="text-[11px] text-slate-600">Chief Operating Officer</p>
-                <p className="text-[10px] text-slate-400">GENFREX Ecosystem</p>
-              </div>
-
-              <div className="border border-slate-200 rounded p-3 bg-slate-50/50">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-8">Candidate Acceptance</p>
-                <div className="border-b border-dashed border-slate-400 pb-1 mb-1">
-                  <span className="text-[11px] text-slate-500 italic">Signature & Date</span>
+              <div className="border border-slate-200 rounded-lg p-3 bg-slate-50/50 flex flex-col justify-between">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-6">Authorized Signatory</p>
+                <div>
+                  <div className="border-b border-slate-200 pb-1 mb-1.5" />
+                  <p className="font-bold text-slate-900 text-xs">P.S. Dharshan</p>
+                  <p className="text-[11px] text-slate-600">Founder</p>
+                  <p className="text-[10px] text-slate-400">GENFREX Ecosystem</p>
                 </div>
-                <p className="font-bold text-slate-900 text-xs">{cand.name || 'Candidate Name'}</p>
-                <p className="text-[10px] text-slate-400">Appointed Trainee</p>
+              </div>
+
+              <div className="border border-slate-200 rounded-lg p-3 bg-slate-50/50 flex flex-col justify-between">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-6">Authorized Signatory</p>
+                <div>
+                  <div className="border-b border-slate-200 pb-1 mb-1.5" />
+                  <p className="font-bold text-slate-900 text-xs">Deepak P</p>
+                  <p className="text-[11px] text-slate-600">Chief Operating Officer</p>
+                  <p className="text-[10px] text-slate-400">GENFREX Ecosystem</p>
+                </div>
+              </div>
+
+              {/* Company Seal (in Candidate Signature old place) */}
+              <div className="border border-slate-200 rounded-lg p-3 bg-slate-50/50 flex flex-col items-center justify-between text-center">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider w-full text-left">Company Seal</p>
+                <div className="my-1 flex items-center justify-center">
+                  <img
+                    src="/company-seal.png"
+                    alt="GENFREX Official Seal"
+                    className="w-16 h-16 object-contain drop-shadow-sm select-none"
+                  />
+                </div>
+                <div>
+                  <p className="text-[11px] font-bold text-slate-700 leading-tight">GENFREX</p>
+                  <p className="text-[10px] text-slate-400">Karur • 639113</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Candidate Acceptance - Moved Below */}
+            <div className="mt-4 border border-slate-200 rounded-lg p-4 bg-slate-50/50">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Candidate Acceptance</p>
+                  <p className="text-xs text-slate-600">
+                    I accept the appointment and agree to abide by the terms and conditions outlined in this letter.
+                  </p>
+                  <p className="text-xs font-bold text-slate-900 mt-2">{cand.name || 'Candidate Name'}</p>
+                  <p className="text-[10px] text-slate-400">Appointed Trainee</p>
+                </div>
+                <div className="sm:w-56 text-right sm:text-center shrink-0">
+                  <div className="border-b border-dashed border-slate-400 pb-1 mb-1 mt-4 sm:mt-6">
+                    <span className="text-[11px] text-slate-500 italic">Signature & Date</span>
+                  </div>
+                  <p className="text-[10px] text-slate-400">Authorized Candidate Signature</p>
+                </div>
               </div>
             </div>
 

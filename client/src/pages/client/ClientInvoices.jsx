@@ -130,9 +130,8 @@ const ClientInvoices = () => {
                     <tr
                       key={inv._id}
                       onClick={() => setSelectedInvoice(inv)}
-                      className={`cursor-pointer hover:bg-slate-50/80 transition ${
-                        selectedInvoice?._id === inv._id ? 'bg-blue-50/40' : ''
-                      }`}
+                      className={`cursor-pointer hover:bg-slate-50/80 transition ${selectedInvoice?._id === inv._id ? 'bg-blue-50/40' : ''
+                        }`}
                     >
                       <td className="py-3 px-4 font-bold text-blue-600">{inv.invoiceNumber}</td>
                       <td className="py-3 px-4 font-semibold text-slate-900">{inv.project?.name}</td>
@@ -144,11 +143,10 @@ const ClientInvoices = () => {
                       </td>
                       <td className="py-3 px-4">
                         <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                            inv.status === 'PAID'
+                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${inv.status === 'PAID'
                               ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                               : 'bg-amber-50 text-amber-700 border border-amber-200'
-                          }`}
+                            }`}
                         >
                           {inv.status}
                         </span>
@@ -194,11 +192,10 @@ const ClientInvoices = () => {
               <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                 <img src="/logo.png" alt="GENFREX" className="h-7 w-auto object-contain" />
                 <span
-                  className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                    selectedInvoice.status === 'PAID'
+                  className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${selectedInvoice.status === 'PAID'
                       ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                       : 'bg-amber-50 text-amber-700 border border-amber-200'
-                  }`}
+                    }`}
                 >
                   {selectedInvoice.status}
                 </span>
@@ -250,7 +247,7 @@ const ClientInvoices = () => {
 
             <div className="bg-slate-800/80 p-3 rounded-xl space-y-1.5 text-xs text-slate-200 font-mono">
               <p>
-                <span className="text-slate-400">Account:</span> GENFREX TECHNOLOGIES PVT LTD
+                <span className="text-slate-400">Account:</span> GENFREX
               </p>
               <p>
                 <span className="text-slate-400">A/C No:</span> 987654321098

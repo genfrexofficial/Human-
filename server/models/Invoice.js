@@ -64,10 +64,10 @@ const invoiceSchema = new mongoose.Schema(
       default: 'UNPAID'
     },
     bankDetails: {
-      accountName: { type: String, default: 'GENFREX TECHNOLOGIES PVT LTD' },
+      accountName: { type: String, default: 'GENFREX' },
       accountNumber: { type: String, default: '987654321098' },
       ifscCode: { type: String, default: 'HDFC0001234' },
-      bankName: { type: String, default: 'HDFC Bank, Bengaluru' },
+      bankName: { type: String, default: 'HDFC Bank, Karur' },
       upiId: { type: String, default: 'genfrex@hdfcbank' }
     },
     paymentDetails: {
