@@ -15,10 +15,10 @@ const SendEmailModal = ({ isOpen, onClose, appointment, onSend, loading }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-      <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-3 sm:p-4 overflow-y-auto">
+      <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden my-auto sm:my-8 max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="p-5 flex items-center justify-between border-b bg-blue-50/60 border-blue-100">
+        <div className="p-4 sm:p-5 flex shrink-0 items-center justify-between border-b bg-blue-50/60 border-blue-100">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-xl bg-blue-600 text-white shadow-md shadow-blue-500/20">
               <Mail className="w-5 h-5" />
@@ -42,7 +42,7 @@ const SendEmailModal = ({ isOpen, onClose, appointment, onSend, loading }) => {
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-4 text-xs">
+        <div className="p-4 sm:p-6 space-y-4 text-xs overflow-y-auto flex-1">
           {isAlreadySent && (
             <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 space-y-2">
               <div className="flex items-center gap-2 font-bold">

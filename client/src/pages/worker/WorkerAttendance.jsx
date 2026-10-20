@@ -237,7 +237,7 @@ const WorkerAttendance = () => {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
+            <table className="w-full text-left border-collapse text-xs min-w-[550px]">
               <thead>
                 <tr className="bg-slate-50/80 border-b border-slate-100 text-slate-500 font-semibold">
                   <th className="py-3 px-4">Date</th>
@@ -313,7 +313,7 @@ const WorkerAttendance = () => {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
+            <table className="w-full text-left border-collapse text-xs min-w-[650px]">
               <thead>
                 <tr className="bg-slate-50/80 border-b border-slate-100 text-slate-500 font-semibold">
                   <th className="py-3 px-4">Type</th>
@@ -383,9 +383,9 @@ const WorkerAttendance = () => {
 
       {/* Apply Leave Modal */}
       {showLeaveModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden">
-            <div className="flex items-center justify-between p-5 border-b border-slate-100">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md my-4 max-h-[90vh] flex flex-col overflow-hidden">
+            <div className="flex shrink-0 items-center justify-between p-5 border-b border-slate-100">
               <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                 <Calendar className="w-4 h-4 text-blue-600" /> Apply for Leave
               </h3>
@@ -397,7 +397,7 @@ const WorkerAttendance = () => {
               </button>
             </div>
 
-            <form onSubmit={handleApplyLeave} className="p-5 space-y-4">
+            <form onSubmit={handleApplyLeave} className="p-5 space-y-4 overflow-y-auto flex-1">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">Leave Type</label>
                 <select

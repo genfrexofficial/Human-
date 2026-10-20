@@ -588,7 +588,7 @@ const CreateAppointment = () => {
 
             <div>
               <label className="block font-semibold text-slate-700 mb-1">
-                Stipend / Compensation (INR) <span className="text-rose-500">*</span>
+                Stipend / Compensation (₹) <span className="text-rose-500">*</span>
               </label>
               <input
                 type="number"
@@ -908,7 +908,7 @@ const CreateAppointment = () => {
       {/* STEP 5: LIVE A4 PREVIEW */}
       {step === 5 && (
         <Card className="space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
             <div>
               <h2 className="text-sm font-bold text-slate-900">Step 5: Live A4 Document Preview</h2>
               <p className="text-xs text-slate-500">
@@ -923,8 +923,8 @@ const CreateAppointment = () => {
           </div>
 
           {/* Live A4 Container */}
-          <div className="bg-slate-100 p-6 rounded-xl border border-slate-200">
-            <div className="mx-auto max-w-[720px] bg-white rounded-lg shadow-lg p-10 border border-slate-200 text-slate-800 text-xs space-y-4">
+          <div className="bg-slate-100 p-2 sm:p-6 rounded-xl border border-slate-200 overflow-x-auto">
+            <div className="mx-auto min-w-[300px] max-w-[720px] bg-white rounded-lg shadow-lg p-4 sm:p-10 border border-slate-200 text-slate-800 text-xs space-y-4">
               <div className="w-full h-1.5 bg-blue-600 mb-4" />
 
               <div className="flex justify-between items-start pb-3 border-b border-slate-200">
@@ -974,7 +974,7 @@ const CreateAppointment = () => {
                 <div className="grid grid-cols-2 p-2 bg-slate-50 border-b border-slate-200">
                   <span className="font-semibold text-slate-600">Compensation / Stipend:</span>
                   <span className="font-bold text-emerald-700">
-                    INR {Number(formData.compensation).toLocaleString('en-IN')} / {formData.compensationFrequency}
+                    ₹ {Number(formData.compensation).toLocaleString('en-IN')} / {formData.compensationFrequency}
                   </span>
                 </div>
                 <div className="grid grid-cols-2 p-2">
@@ -1052,7 +1052,7 @@ const CreateAppointment = () => {
               <div>
                 <span className="text-[10px] text-slate-400 font-bold uppercase block">Stipend</span>
                 <span className="font-bold text-emerald-700">
-                  INR {Number(formData.compensation).toLocaleString('en-IN')}
+                  ₹ {Number(formData.compensation).toLocaleString('en-IN')}
                 </span>
               </div>
             </div>

@@ -20,10 +20,10 @@ const ApprovalModal = ({ isOpen, onClose, mode, appointment, onConfirm, loading 
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-      <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-3 sm:p-4 overflow-y-auto">
+      <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden my-auto sm:my-8 max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className={`p-5 flex items-center justify-between border-b ${
+        <div className={`p-4 sm:p-5 flex shrink-0 items-center justify-between border-b ${
           isApprove ? 'bg-emerald-50/70 border-emerald-100' : 'bg-rose-50/70 border-rose-100'
         }`}>
           <div className="flex items-center gap-3">
@@ -51,7 +51,7 @@ const ApprovalModal = ({ isOpen, onClose, mode, appointment, onConfirm, loading 
         </div>
 
         {/* Body */}
-        <div className="p-6 space-y-4 text-xs">
+        <div className="p-4 sm:p-6 space-y-4 text-xs overflow-y-auto flex-1">
           <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
             <div className="flex justify-between">
               <span className="text-slate-500">Candidate:</span>
@@ -68,7 +68,7 @@ const ApprovalModal = ({ isOpen, onClose, mode, appointment, onConfirm, loading 
             <div className="flex justify-between">
               <span className="text-slate-500">Stipend / Compensation:</span>
               <span className="font-semibold text-emerald-700">
-                INR {Number(appointment.compensation).toLocaleString('en-IN')} / {appointment.compensationFrequency}
+                ₹ {Number(appointment.compensation).toLocaleString('en-IN')} / {appointment.compensationFrequency}
               </span>
             </div>
           </div>

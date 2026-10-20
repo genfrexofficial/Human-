@@ -199,7 +199,7 @@ const HRAttendanceLeaves = () => {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
+            <table className="w-full text-left border-collapse text-xs min-w-[650px]">
               <thead>
                 <tr className="bg-slate-50/80 border-b border-slate-100 text-slate-500 font-semibold">
                   <th className="py-3 px-4">Employee</th>
@@ -290,7 +290,7 @@ const HRAttendanceLeaves = () => {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
+            <table className="w-full text-left border-collapse text-xs min-w-[700px]">
               <thead>
                 <tr className="bg-slate-50/80 border-b border-slate-100 text-slate-500 font-semibold">
                   <th className="py-3 px-4">Employee</th>
@@ -369,9 +369,9 @@ const HRAttendanceLeaves = () => {
 
       {/* Review Leave Modal */}
       {reviewModalData && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden">
-            <div className="p-5 border-b border-slate-100 flex items-center justify-between">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md my-auto max-h-[90vh] flex flex-col overflow-hidden">
+            <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between shrink-0">
               <h3 className="text-sm font-bold text-slate-900">
                 Review Leave Application
               </h3>
@@ -383,7 +383,7 @@ const HRAttendanceLeaves = () => {
               </button>
             </div>
 
-            <div className="p-5 space-y-4">
+            <div className="p-4 sm:p-5 space-y-4 overflow-y-auto flex-1">
               <div className="bg-slate-50 p-3.5 rounded-xl text-xs space-y-1">
                 <p>
                   <strong className="text-slate-700">Applicant:</strong>{' '}

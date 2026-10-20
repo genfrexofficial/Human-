@@ -188,7 +188,7 @@ const Login = () => {
 
 
   return (
-    <div className="h-screen w-screen max-h-screen overflow-hidden flex flex-col lg:flex-row bg-[#040711] text-slate-100 relative select-none">
+    <div className="min-h-screen w-full lg:h-screen lg:max-h-screen lg:overflow-hidden flex flex-col lg:flex-row bg-[#040711] text-slate-100 relative select-none">
       {/* Background Animated Tech Grid */}
       <div className="absolute inset-0 bg-tech-grid opacity-25 pointer-events-none" />
 
@@ -313,7 +313,7 @@ const Login = () => {
       </div>
 
       {/* ================= RIGHT AUTHENTICATION GLASS PORTAL ================= */}
-      <div className="w-full lg:w-[50%] xl:w-[46%] h-full max-h-screen flex flex-col justify-center items-center p-3 sm:p-6 lg:p-8 relative z-20 overflow-hidden">
+      <div className="w-full lg:w-[50%] xl:w-[46%] min-h-screen lg:h-full lg:max-h-screen flex flex-col justify-center items-center p-4 sm:p-6 lg:p-8 relative z-20 overflow-y-auto">
         {/* Mobile Header (Visible only on small screens) */}
         <div className="lg:hidden text-center mb-3 animate-card-entrance">
           <div className="inline-flex p-2 px-4 rounded-xl bg-white/95 backdrop-blur-xl shadow-lg border border-white/40 mb-1">

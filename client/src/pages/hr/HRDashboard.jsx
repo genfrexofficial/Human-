@@ -293,7 +293,7 @@ const HRDashboard = () => {
                 const isProjectView = activeFilter === 'PROJECT_LINKED';
 
                 return (
-                  <table className="w-full text-left text-xs">
+                  <table className="w-full text-left text-xs min-w-[650px]">
                     <thead>
                       <tr className="border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                         {isProjectView ? (

@@ -99,7 +99,7 @@ const AdminHRReports = () => {
       </div>
 
       {/* Overview Stat Numbers */}
-      <div className="grid grid-cols-2 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         {[
           { label: 'Total Offers', val: stats?.totalAppointments || 0, color: 'text-slate-900' },
           { label: 'Pending Approvals', val: stats?.pendingApprovals || 0, color: 'text-amber-600' },
@@ -204,7 +204,7 @@ const AdminHRReports = () => {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
+          <table className="w-full text-left text-xs min-w-[650px]">
             <thead className="bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
               <tr>
                 <th className="py-2.5 px-4">Timestamp</th>

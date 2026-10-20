@@ -325,7 +325,7 @@ const AppointmentDetails = () => {
       )}
 
       {isApproved && (
-        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-start justify-between gap-3">
+        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex flex-col sm:flex-row sm:items-start justify-between gap-3">
           <div className="flex items-start gap-3">
             <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
             <div className="text-xs text-emerald-900">
@@ -344,7 +344,7 @@ const AppointmentDetails = () => {
       )}
 
       {isSent && (
-        <div className="p-4 bg-blue-50 border border-blue-200 rounded-2xl flex items-start justify-between gap-3">
+        <div className="p-4 bg-blue-50 border border-blue-200 rounded-2xl flex flex-col sm:flex-row sm:items-start justify-between gap-3">
           <div className="flex items-start gap-3">
             <Mail className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
             <div className="text-xs text-blue-900">
@@ -450,7 +450,7 @@ const AppointmentDetails = () => {
               Appointment Summary
             </h2>
 
-            <div className="grid grid-cols-2 gap-4 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
               <div>
                 <span className="text-slate-500 block text-[11px]">Position / Designation:</span>
                 <span className="font-bold text-slate-900">{appointment.designation}</span>
@@ -490,7 +490,7 @@ const AppointmentDetails = () => {
               <div>
                 <span className="text-slate-500 block text-[11px]">Stipend / Compensation:</span>
                 <span className="font-bold text-emerald-700 text-sm">
-                  INR {Number(appointment.compensation).toLocaleString('en-IN')} / {appointment.compensationFrequency}
+                  ₹ {Number(appointment.compensation).toLocaleString('en-IN')} / {appointment.compensationFrequency}
                 </span>
               </div>
               <div>
@@ -505,7 +505,7 @@ const AppointmentDetails = () => {
             <h2 className="text-xs font-bold text-slate-900 uppercase tracking-wider pb-2 border-b border-slate-100">
               Candidate Information
             </h2>
-            <div className="grid grid-cols-2 gap-4 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
               <div>
                 <span className="text-slate-500 block text-[11px]">Candidate Name:</span>
                 <span className="font-bold text-slate-900">{candidate.name}</span>
@@ -545,7 +545,7 @@ const AppointmentDetails = () => {
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-4 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                 <div>
                   <span className="text-slate-500 block text-[11px]">Client:</span>
                   <span className="font-bold text-slate-900">

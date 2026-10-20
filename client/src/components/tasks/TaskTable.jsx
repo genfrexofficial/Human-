@@ -21,7 +21,7 @@ const TaskTable = ({
   return (
     <div className="overflow-hidden bg-white rounded-xl border border-slate-200/80 shadow-card">
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-slate-200">
+        <table className="min-w-[600px] w-full divide-y divide-slate-200 text-xs">
           <thead>
             <tr className="bg-slate-50/70">
               <th className="py-3 px-4 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider">

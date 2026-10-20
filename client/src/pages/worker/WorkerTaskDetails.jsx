@@ -439,8 +439,8 @@ const WorkerTaskDetails = () => {
       </div>
 
       {/* Tabs */}
-      <div className="border-b border-slate-200">
-        <nav className="flex space-x-6">
+      <div className="border-b border-slate-200 overflow-x-auto">
+        <nav className="flex space-x-6 min-w-max pb-px">
           <button
             type="button"
             onClick={() => setActiveTab('discussion')}
@@ -558,8 +558,8 @@ const WorkerTaskDetails = () => {
 
       {/* Tab 2: Files & Deliverables */}
       {activeTab === 'files' && (
-        <div className="rounded-xl border border-slate-200/80 bg-white p-6 shadow-sm space-y-4">
-          <div className="flex items-center justify-between">
+        <div className="rounded-xl border border-slate-200/80 bg-white p-4 sm:p-6 shadow-sm space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <h3 className="text-sm font-bold text-slate-900">Deliverables & Attachments</h3>
               <p className="text-xs text-slate-500">Upload code artifacts, design documents, or build outputs for this task</p>

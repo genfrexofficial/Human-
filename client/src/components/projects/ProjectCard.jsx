@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { PROJECT_STATUS } from '../../utils/constants';
 import { formatDate, formatCurrency } from '../../utils/formatters';
 import ProgressBar from '../common/ProgressBar';
-import { Calendar, CheckSquare, Layers, ArrowRight, User } from 'lucide-react';
+import { Calendar, CheckSquare, Layers, ArrowRight, User, IndianRupee } from 'lucide-react';
 
 const ProjectCard = ({ project, basePath = '/admin/projects' }) => {
   const statusConfig = PROJECT_STATUS[project.status] || {
@@ -71,8 +71,9 @@ const ProjectCard = ({ project, basePath = '/admin/projects' }) => {
 
       {/* Footer */}
       <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-        <span className="text-[11px] text-slate-400">
-          Budget: <strong className="text-slate-700">{formatCurrency(project.budget)}</strong>
+        <span className="text-[11px] text-slate-400 inline-flex items-center gap-1">
+          <IndianRupee className="w-3.5 h-3.5 text-slate-400" />
+          <span>Budget: <strong className="text-slate-700">{formatCurrency(project.budget)}</strong></span>
         </span>
 
         <Link

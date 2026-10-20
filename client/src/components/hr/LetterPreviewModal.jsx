@@ -37,11 +37,11 @@ const LetterPreviewModal = ({ isOpen, onClose, appointment, candidate }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 backdrop-blur-sm p-4 overflow-y-auto">
-      <div className="relative w-full max-w-4xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden my-8 max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 backdrop-blur-sm p-2 sm:p-4 overflow-y-auto">
+      <div className="relative w-full max-w-4xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden my-auto sm:my-8 max-h-[90vh] flex flex-col">
         {/* Modal Top Actions Bar */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50 no-print">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-200 bg-slate-50 gap-3 shrink-0 no-print">
+          <div className="flex flex-wrap items-center gap-2">
             <span className="font-bold text-sm text-slate-800">A4 Document Preview</span>
             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-200">
               {appointment.referenceNumber || 'DRAFT'}
@@ -85,10 +85,10 @@ const LetterPreviewModal = ({ isOpen, onClose, appointment, candidate }) => {
         </div>
 
         {/* Scrollable Letter Document (A4 styling) */}
-        <div className="flex-1 overflow-y-auto p-6 sm:p-12 bg-slate-100">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-6 md:p-12 bg-slate-100">
           <div
             ref={printRef}
-            className="mx-auto max-w-[760px] bg-white shadow-xl rounded-lg p-10 sm:p-14 border border-slate-200 text-slate-800 text-[13px] leading-relaxed print:shadow-none print:border-none print:p-0"
+            className="mx-auto max-w-[760px] bg-white shadow-xl rounded-lg p-4 sm:p-10 md:p-14 border border-slate-200 text-slate-800 text-xs sm:text-[13px] leading-relaxed print:shadow-none print:border-none print:p-0"
             style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
           >
             {/* Top Blue Brand Line */}
@@ -186,7 +186,7 @@ const LetterPreviewModal = ({ isOpen, onClose, appointment, candidate }) => {
                 <div className="grid grid-cols-2 bg-slate-50 border-b border-slate-200 p-2">
                   <span className="font-semibold text-slate-600">Stipend / Compensation:</span>
                   <span className="font-bold text-emerald-700">
-                    INR {Number(appointment.compensation || 0).toLocaleString('en-IN')} / {formatFrequency(appointment.compensationFrequency)}
+                    ₹ {Number(appointment.compensation || 0).toLocaleString('en-IN')} / {formatFrequency(appointment.compensationFrequency)}
                   </span>
                 </div>
                 <div className="grid grid-cols-2 p-2">

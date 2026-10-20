@@ -183,7 +183,7 @@ const Candidates = () => {
       {/* Candidates Table Card */}
       <Card className="overflow-hidden p-0">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
+          <table className="w-full text-left text-xs min-w-[750px]">
             <thead className="bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
               <tr>
                 <th className="py-3 px-4">Candidate Details</th>
@@ -294,7 +294,7 @@ const Candidates = () => {
 
                       <td className="py-3.5 px-4">
                         <span className="font-bold text-emerald-700">
-                          INR {Number(cand.compensation || 0).toLocaleString('en-IN')}
+                          ₹ {Number(cand.compensation || 0).toLocaleString('en-IN')}
                         </span>
                         <span className="block text-[10px] text-slate-400">
                           {cand.compensationFrequency?.replace('_', ' ')}

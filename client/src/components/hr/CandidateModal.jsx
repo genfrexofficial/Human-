@@ -135,10 +135,10 @@ const CandidateModal = ({ isOpen, onClose, candidate, onSave, loading }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto">
-      <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden my-8 max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-3 sm:p-4 overflow-y-auto">
+      <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden my-auto sm:my-8 max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="p-5 flex items-center justify-between border-b bg-slate-50 border-slate-200">
+        <div className="p-4 sm:p-5 flex shrink-0 items-center justify-between border-b bg-slate-50 border-slate-200">
           <div className="flex items-center gap-2.5">
             <div className="p-2 rounded-xl bg-blue-600 text-white">
               <UserPlus className="w-5 h-5" />
@@ -161,7 +161,7 @@ const CandidateModal = ({ isOpen, onClose, candidate, onSave, loading }) => {
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-4 text-xs">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 text-xs">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
@@ -358,7 +358,7 @@ const CandidateModal = ({ isOpen, onClose, candidate, onSave, loading }) => {
 
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Stipend / Compensation (INR)
+                Stipend / Compensation (₹)
               </label>
               <input
                 type="number"

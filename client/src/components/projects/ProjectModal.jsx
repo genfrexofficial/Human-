@@ -157,10 +157,10 @@ const ProjectModal = ({ isOpen, onClose, project = null, onSaved }) => {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Input
-            label="Budget (USD)"
+            label="Budget (₹)"
             name="budget"
             type="number"
-            placeholder="e.g. 15000"
+            placeholder="e.g. 500000"
             value={formData.budget}
             onChange={handleChange}
           />

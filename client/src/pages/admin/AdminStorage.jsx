@@ -601,7 +601,7 @@ const AdminStorage = () => {
                   <Button size="sm" onClick={() => setUploadModalOpen(true)}>Upload Document</Button>
                 </div>
               ) : (
-                <table className="w-full text-left text-xs">
+                <table className="w-full text-left text-xs min-w-[750px]">
                   <thead className="bg-slate-50 text-[10px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-100">
                     <tr>
                       <th className="py-3 px-4">Document / Asset</th>
@@ -745,7 +745,7 @@ const AdminStorage = () => {
                 No recent file deletions recorded.
               </div>
             ) : (
-              <table className="w-full text-left text-xs">
+              <table className="w-full text-left text-xs min-w-[650px]">
                 <thead className="bg-slate-50 text-[10px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-100">
                   <tr>
                     <th className="py-3 px-4">File Name</th>
@@ -795,7 +795,7 @@ const AdminStorage = () => {
                 Zero security access violations recorded. All operations authorized.
               </div>
             ) : (
-              <table className="w-full text-left text-xs">
+              <table className="w-full text-left text-xs min-w-[650px]">
                 <thead className="bg-rose-50/50 text-[10px] font-bold text-rose-700 uppercase tracking-wider border-b border-rose-100">
                   <tr>
                     <th className="py-3 px-4">Target File</th>

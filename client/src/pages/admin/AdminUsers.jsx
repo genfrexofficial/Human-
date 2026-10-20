@@ -448,7 +448,7 @@ const AdminUsers = () => {
       ) : (
         <div className="overflow-hidden bg-white rounded-xl border border-slate-200/80 shadow-xs">
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-slate-200 text-xs">
+            <table className="min-w-[750px] w-full divide-y divide-slate-200 text-xs">
               <thead>
                 <tr className="bg-slate-50/80 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
                   <th className="py-3 px-4 text-left">User</th>

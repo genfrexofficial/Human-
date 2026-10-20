@@ -107,7 +107,7 @@ const ClientInvoices = () => {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
+            <table className="w-full text-left border-collapse text-xs min-w-[550px]">
               <thead>
                 <tr className="bg-slate-50/80 border-b border-slate-100 text-slate-500 font-semibold">
                   <th className="py-3 px-4">Invoice #</th>
@@ -269,21 +269,21 @@ const ClientInvoices = () => {
 
       {/* Submit Payment Ref Modal */}
       {showSubmitModal && targetInvoice && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden">
-            <div className="p-5 border-b border-slate-100 flex items-center justify-between">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md my-auto sm:my-8 max-h-[90vh] flex flex-col overflow-hidden">
+            <div className="p-4 sm:p-5 border-b border-slate-100 flex shrink-0 items-center justify-between">
               <h3 className="text-sm font-bold text-slate-900">
                 Submit Wire / UPI Transfer Reference
               </h3>
               <button
                 onClick={() => setShowSubmitModal(false)}
-                className="text-slate-400 hover:text-slate-600"
+                className="text-slate-400 hover:text-slate-600 p-1"
               >
                 ✕
               </button>
             </div>
 
-            <form onSubmit={handleSubmitPaymentRef} className="p-5 space-y-4">
+            <form onSubmit={handleSubmitPaymentRef} className="p-4 sm:p-5 space-y-4 overflow-y-auto flex-1">
               <div className="bg-slate-50 p-3 rounded-xl text-xs space-y-1">
                 <p>
                   <strong>Invoice:</strong> {targetInvoice.invoiceNumber}

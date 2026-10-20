@@ -146,7 +146,7 @@ const AdminReports = () => {
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Task Velocity Chart */}
-        <div className="rounded-xl border border-slate-200/80 bg-white p-6 shadow-sm">
+        <div className="rounded-xl border border-slate-200/80 bg-white p-4 sm:p-6 shadow-sm min-w-0">
           <h2 className="text-sm font-bold text-slate-900 mb-1">Task Status Throughput</h2>
           <p className="text-xs text-slate-500 mb-6">Current breakdown of engineering tasks across all active projects</p>
 
@@ -169,7 +169,7 @@ const AdminReports = () => {
         </div>
 
         {/* Worker Workload Capacity */}
-        <div className="rounded-xl border border-slate-200/80 bg-white p-6 shadow-sm">
+        <div className="rounded-xl border border-slate-200/80 bg-white p-4 sm:p-6 shadow-sm min-w-0">
           <h2 className="text-sm font-bold text-slate-900 mb-1">Engineer Workload Distribution</h2>
           <p className="text-xs text-slate-500 mb-6">Active tasks allocated per team member</p>
 

@@ -46,10 +46,12 @@ export const formatFileSize = (bytes) => {
 export const formatBytes = formatFileSize;
 
 export const formatCurrency = (amount) => {
-  if (amount === undefined || amount === null) return '$0';
-  return new Intl.NumberFormat('en-US', {
+  if (amount === undefined || amount === null || amount === '') return '₹0';
+  const num = Number(amount);
+  if (isNaN(num)) return '₹0';
+  return new Intl.NumberFormat('en-IN', {
     style: 'currency',
-    currency: 'USD',
+    currency: 'INR',
     maximumFractionDigits: 0
-  }).format(amount);
+  }).format(num);
 };

@@ -132,7 +132,8 @@ const WorkerFiles = () => {
         </div>
       ) : (
         <div className="rounded-xl border border-slate-200/80 bg-white overflow-hidden shadow-sm">
-          <table className="w-full text-left text-xs">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs min-w-[650px]">
             <thead className="border-b border-slate-200 bg-slate-50 text-slate-500 uppercase tracking-wider font-semibold">
               <tr>
                 <th className="px-5 py-3">File Name</th>
@@ -197,6 +198,7 @@ const WorkerFiles = () => {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 

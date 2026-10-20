@@ -110,7 +110,7 @@ const AdminSetup = () => {
   }
 
   return (
-    <div className="min-h-screen w-screen overflow-y-auto flex flex-col justify-center items-center p-4 bg-[#040711] text-slate-100 relative select-none">
+    <div className="min-h-screen w-full overflow-y-auto flex flex-col justify-center items-center p-4 bg-[#040711] text-slate-100 relative select-none">
       {/* Background Animated Tech Grid & Ambient Orbs */}
       <div className="absolute inset-0 bg-tech-grid opacity-25 pointer-events-none" />
       <div className="absolute top-[-10%] left-[-5%] w-[600px] h-[600px] bg-blue-600/15 blur-[160px] rounded-full pointer-events-none" />

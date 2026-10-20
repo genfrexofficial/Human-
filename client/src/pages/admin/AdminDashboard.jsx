@@ -374,7 +374,7 @@ const AdminDashboard = () => {
                 </Link>
               </div>
             ) : (
-              <table className="w-full text-left text-xs">
+              <table className="w-full text-left text-xs min-w-[550px]">
                 <thead className="border-b border-slate-100 text-slate-400 uppercase tracking-wider font-semibold text-[10px]">
                   <tr>
                     <th className="pb-2">Worker</th>
@@ -482,7 +482,7 @@ const AdminDashboard = () => {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
+          <table className="w-full text-left text-xs min-w-[650px]">
             <thead>
               <tr className="border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                 <th className="py-2.5">Project</th>

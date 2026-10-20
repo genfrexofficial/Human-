@@ -312,7 +312,7 @@ const AdminInvoices = () => {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs">
+          <table className="w-full text-left border-collapse text-xs min-w-[750px]">
             <thead>
               <tr className="bg-slate-50/80 border-b border-slate-100 text-slate-500 font-semibold">
                 <th className="py-3 px-4">Invoice #</th>
@@ -415,21 +415,21 @@ const AdminInvoices = () => {
 
       {/* Create Invoice Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-2xl my-8 overflow-hidden">
-            <div className="p-5 border-b border-slate-100 flex items-center justify-between">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-2xl my-auto sm:my-8 max-h-[90vh] flex flex-col overflow-hidden">
+            <div className="p-4 sm:p-5 border-b border-slate-100 flex shrink-0 items-center justify-between">
               <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                 <FileText className="w-4 h-4 text-blue-600" /> Create New Invoice
               </h3>
               <button
                 onClick={() => setShowCreateModal(false)}
-                className="text-slate-400 hover:text-slate-600"
+                className="text-slate-400 hover:text-slate-600 p-1"
               >
                 ✕
               </button>
             </div>
 
-            <form onSubmit={handleCreateInvoice} className="p-5 space-y-4">
+            <form onSubmit={handleCreateInvoice} className="p-4 sm:p-5 space-y-4 overflow-y-auto flex-1">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">Project</label>
@@ -510,7 +510,7 @@ const AdminInvoices = () => {
 
                 <div className="space-y-2">
                   {invoiceForm.items.map((item, idx) => (
-                    <div key={idx} className="flex items-center gap-2">
+                    <div key={idx} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 p-2 rounded-xl bg-slate-50 border border-slate-200/60 sm:bg-transparent sm:border-0 sm:p-0">
                       <input
                         type="text"
                         placeholder="Description (e.g. Milestone 1 - Backend APIs)"
@@ -519,31 +519,33 @@ const AdminInvoices = () => {
                         onChange={(e) => handleItemChange(idx, 'description', e.target.value)}
                         className="flex-1 text-xs rounded-xl border border-slate-300 p-2 focus:outline-none"
                       />
-                      <input
-                        type="number"
-                        placeholder="Qty"
-                        min="1"
-                        value={item.quantity}
-                        onChange={(e) => handleItemChange(idx, 'quantity', e.target.value)}
-                        className="w-16 text-xs rounded-xl border border-slate-300 p-2 text-center focus:outline-none"
-                      />
-                      <input
-                        type="number"
-                        placeholder="Rate (₹)"
-                        min="0"
-                        value={item.rate}
-                        onChange={(e) => handleItemChange(idx, 'rate', e.target.value)}
-                        className="w-28 text-xs rounded-xl border border-slate-300 p-2 text-right focus:outline-none"
-                      />
-                      {invoiceForm.items.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveItem(idx)}
-                          className="p-1.5 text-slate-400 hover:text-rose-600"
-                        >
-                          ✕
-                        </button>
-                      )}
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          placeholder="Qty"
+                          min="1"
+                          value={item.quantity}
+                          onChange={(e) => handleItemChange(idx, 'quantity', e.target.value)}
+                          className="w-16 text-xs rounded-xl border border-slate-300 p-2 text-center focus:outline-none"
+                        />
+                        <input
+                          type="number"
+                          placeholder="Rate (₹)"
+                          min="0"
+                          value={item.rate}
+                          onChange={(e) => handleItemChange(idx, 'rate', e.target.value)}
+                          className="w-28 text-xs rounded-xl border border-slate-300 p-2 text-right focus:outline-none"
+                        />
+                        {invoiceForm.items.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveItem(idx)}
+                            className="p-1.5 text-slate-400 hover:text-rose-600 shrink-0"
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -595,21 +597,21 @@ const AdminInvoices = () => {
 
       {/* Record Payment Modal */}
       {recordPaymentModalData && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden">
-            <div className="p-5 border-b border-slate-100 flex items-center justify-between">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md my-auto sm:my-8 max-h-[90vh] flex flex-col overflow-hidden">
+            <div className="p-4 sm:p-5 border-b border-slate-100 flex shrink-0 items-center justify-between">
               <h3 className="text-sm font-bold text-slate-900">
                 Record Offline Payment
               </h3>
               <button
                 onClick={() => setRecordPaymentModalData(null)}
-                className="text-slate-400 hover:text-slate-600"
+                className="text-slate-400 hover:text-slate-600 p-1"
               >
                 ✕
               </button>
             </div>
 
-            <form onSubmit={handleRecordPayment} className="p-5 space-y-4">
+            <form onSubmit={handleRecordPayment} className="p-4 sm:p-5 space-y-4 overflow-y-auto flex-1">
               <div className="bg-slate-50 p-3.5 rounded-xl text-xs space-y-1">
                 <p>
                   <strong className="text-slate-700">Invoice:</strong> {recordPaymentModalData.invoiceNumber}
@@ -684,13 +686,13 @@ const AdminInvoices = () => {
 
       {/* Executive Invoice Preview Modal with Official Logo */}
       {previewInvoiceModalData && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-3xl my-8 overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-3xl my-auto sm:my-8 max-h-[90vh] flex flex-col overflow-hidden">
             {/* Modal Top Bar */}
-            <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between">
-              <div className="flex items-center gap-3">
+            <div className="bg-slate-900 text-white px-4 sm:px-6 py-3.5 sm:py-4 flex shrink-0 items-center justify-between">
+              <div className="flex items-center gap-2 sm:gap-3">
                 <FileText className="w-5 h-5 text-blue-400" />
-                <span className="text-sm font-bold">Tax Invoice: {previewInvoiceModalData.invoiceNumber}</span>
+                <span className="text-xs sm:text-sm font-bold truncate">Tax Invoice: {previewInvoiceModalData.invoiceNumber}</span>
               </div>
               <div className="flex items-center gap-2">
                 <button
@@ -698,7 +700,7 @@ const AdminInvoices = () => {
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg transition"
                 >
                   <Download className="w-3.5 h-3.5" />
-                  Download PDF
+                  <span className="hidden sm:inline">Download</span> PDF
                 </button>
                 <button
                   onClick={() => setPreviewInvoiceModalData(null)}
@@ -710,7 +712,7 @@ const AdminInvoices = () => {
             </div>
 
             {/* Document Sheet */}
-            <div className="p-8 space-y-6 bg-white text-slate-800 text-xs">
+            <div className="p-4 sm:p-8 space-y-6 bg-white text-slate-800 text-xs overflow-y-auto flex-1">
               {/* Header with Official Logo */}
               <div className="flex flex-col sm:flex-row justify-between items-start gap-4 pb-6 border-b border-slate-100">
                 <div>
@@ -766,13 +768,13 @@ const AdminInvoices = () => {
                   <p className="text-[10px] font-bold uppercase tracking-wider text-blue-600">PROJECT SCOPE</p>
                   <p className="text-sm font-bold text-slate-900">{previewInvoiceModalData.project?.name}</p>
                   <p className="text-slate-600">Billing: Milestone Deliverable</p>
-                  <p className="text-slate-500">Currency: Indian Rupee (INR)</p>
+                  <p className="text-slate-500">Currency: Indian Rupee (₹ / INR)</p>
                 </div>
               </div>
 
               {/* Line Items Table */}
-              <div className="rounded-xl border border-slate-200 overflow-hidden">
-                <table className="w-full text-left border-collapse text-xs">
+              <div className="rounded-xl border border-slate-200 overflow-x-auto">
+                <table className="w-full text-left border-collapse text-xs min-w-[500px]">
                   <thead className="bg-slate-900 text-white font-semibold">
                     <tr>
                       <th className="py-2.5 px-4">Item & Description</th>

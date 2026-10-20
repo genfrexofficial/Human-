@@ -541,9 +541,9 @@ const HRSettings = () => {
 
       {/* CREATE NEW TEMPLATE MODAL */}
       {isNewTemplateModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-          <div className="relative w-full max-w-xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
-            <div className="p-4 flex items-center justify-between border-b bg-blue-50/60 border-blue-100">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-3 sm:p-4 overflow-y-auto">
+          <div className="relative w-full max-w-xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden my-auto sm:my-8 max-h-[90vh] flex flex-col">
+            <div className="p-4 flex shrink-0 items-center justify-between border-b bg-blue-50/60 border-blue-100">
               <div className="flex items-center gap-2">
                 <Layers className="w-5 h-5 text-blue-600" />
                 <h3 className="text-sm font-bold text-slate-900">Add New Master Role Template</h3>
@@ -556,7 +556,7 @@ const HRSettings = () => {
               </button>
             </div>
 
-            <form onSubmit={handleCreateNewTemplate} className="p-6 space-y-4 text-xs">
+            <form onSubmit={handleCreateNewTemplate} className="p-4 sm:p-6 space-y-4 text-xs overflow-y-auto flex-1">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block font-semibold text-slate-700 mb-1">Template Name *</label>
