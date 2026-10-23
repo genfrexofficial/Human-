@@ -27,7 +27,8 @@ import {
   ChevronDown,
   ChevronRight,
   UserCheck,
-  HardDrive
+  HardDrive,
+  Banknote
 } from 'lucide-react';
 
 const Sidebar = ({ isOpen, onClose }) => {
@@ -62,6 +63,7 @@ const Sidebar = ({ isOpen, onClose }) => {
       items: [
         { label: 'User Management', path: '/admin/users', icon: Users },
         { label: 'Attendance & Leaves', path: '/admin/attendance-leaves', icon: Clock },
+        { label: 'Payroll & Salaries', path: '/admin/payroll', icon: Banknote },
         { label: 'Workers', path: '/admin/workers', icon: HardHat },
         { label: 'Clients', path: '/admin/clients', icon: Users },
         { label: 'HR Team', path: '/admin/hr-team', icon: UserCheck }
@@ -99,6 +101,7 @@ const Sidebar = ({ isOpen, onClose }) => {
       items: [
         { label: 'Dashboard', path: '/hr/dashboard', icon: LayoutDashboard },
         { label: 'Attendance & Leaves', path: '/hr/attendance-leaves', icon: Clock },
+        { label: 'Payroll & Salaries', path: '/hr/payroll', icon: Banknote },
         { label: 'Candidates', path: '/hr/candidates', icon: UserPlus },
         { label: 'Create Appointment', path: '/hr/appointments/create', icon: FilePlusIcon },
         { label: 'My Drafts', path: '/hr/appointments?status=DRAFT', icon: FileText },
@@ -118,6 +121,7 @@ const Sidebar = ({ isOpen, onClose }) => {
       items: [
         { label: 'Dashboard', path: '/worker/dashboard', icon: LayoutDashboard },
         { label: 'Attendance & Leaves', path: '/worker/attendance', icon: Clock },
+        { label: 'My Payslips', path: '/worker/payroll', icon: Banknote },
         { label: 'My Tasks', path: '/worker/tasks', icon: CheckSquare },
         { label: 'Assigned Projects', path: '/worker/projects', icon: FolderKanban },
         { label: 'Deliverables & Files', path: '/worker/files', icon: Files },

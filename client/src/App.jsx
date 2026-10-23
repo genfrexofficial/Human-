@@ -31,6 +31,7 @@ import AdminStorage from './pages/admin/AdminStorage';
 import AdminPendingApprovals from './pages/admin/AdminPendingApprovals';
 import AdminHRReports from './pages/admin/AdminHRReports';
 import AdminInvoices from './pages/admin/AdminInvoices';
+import AdminPayroll from './pages/admin/AdminPayroll';
 
 // HR Pages
 import HRDashboard from './pages/hr/HRDashboard';
@@ -50,6 +51,7 @@ import WorkerFiles from './pages/worker/WorkerFiles';
 import WorkerActivity from './pages/worker/WorkerActivity';
 import WorkerProfile from './pages/worker/WorkerProfile';
 import WorkerAttendance from './pages/worker/WorkerAttendance';
+import WorkerPayroll from './pages/worker/WorkerPayroll';
 
 // Client Pages
 import ClientDashboard from './pages/client/ClientDashboard';
@@ -125,6 +127,7 @@ function App() {
             <Route path="files" element={<AdminFiles />} />
             <Route path="invoices" element={<AdminInvoices />} />
             <Route path="attendance-leaves" element={<HRAttendanceLeaves />} />
+            <Route path="payroll" element={<AdminPayroll />} />
             <Route path="reports" element={<AdminReports />} />
             <Route path="activities" element={<AdminActivities />} />
             <Route path="notifications" element={<AdminNotifications />} />
@@ -156,6 +159,7 @@ function App() {
             <Route index element={<Navigate to="/hr/dashboard" replace />} />
             <Route path="dashboard" element={<HRDashboard />} />
             <Route path="attendance-leaves" element={<HRAttendanceLeaves />} />
+            <Route path="payroll" element={<AdminPayroll />} />
             <Route path="candidates" element={<Candidates />} />
             <Route path="appointments" element={<AppointmentsList />} />
             <Route path="appointments/create" element={<CreateAppointment />} />
@@ -177,6 +181,7 @@ function App() {
             <Route index element={<Navigate to="/worker/dashboard" replace />} />
             <Route path="dashboard" element={<WorkerDashboard />} />
             <Route path="attendance" element={<WorkerAttendance />} />
+            <Route path="payroll" element={<WorkerPayroll />} />
             <Route path="tasks" element={<WorkerTasks />} />
             <Route path="tasks/:id" element={<WorkerTaskDetails />} />
             <Route path="projects" element={<WorkerProjects />} />

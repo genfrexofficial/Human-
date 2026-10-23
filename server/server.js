@@ -97,6 +97,8 @@ app.use('/api/hr', require('./routes/hrRoutes'));
 app.use('/api/attendance', require('./routes/attendanceRoutes'));
 app.use('/api/leaves', require('./routes/leaveRoutes'));
 app.use('/api/invoices', require('./routes/invoiceRoutes'));
+app.use('/api/salary-structures', require('./routes/salaryStructureRoutes'));
+app.use('/api/payrolls', require('./routes/payrollRoutes'));
 
 // 404 handler for undefined API routes
 app.use('/api/*', (req, res) => {

@@ -430,8 +430,234 @@ const generateAppointmentPDF = async (appointment, candidate = {}, template = nu
   });
 };
 
+/**
+ * Generate 1-Page Freelance Payment Voucher / Payslip PDF
+ * matching the official GENFREX PDF document.
+ */
+const generatePaymentVoucherPDF = async (payroll) => {
+  return new Promise((resolve, reject) => {
+    try {
+      const uploadsDir = path.join(__dirname, '../uploads');
+      if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+      }
+
+      const safeRef = (payroll.voucherNumber || payroll._id.toString()).replace(/[^a-zA-Z0-9_-]/g, '_');
+      const fileName = `GENFREX_Voucher_${safeRef}_${Date.now()}.pdf`;
+      const filePath = path.join(uploadsDir, fileName);
+
+      // A4 page dimensions: 595.28 x 841.89 points
+      const doc = new PDFDocument({
+        size: 'A4',
+        margins: { top: 40, bottom: 40, left: 45, right: 45 },
+        bufferPages: true,
+        autoFirstPage: true
+      });
+
+      const writeStream = fs.createWriteStream(filePath);
+      doc.pipe(writeStream);
+
+      const leftMargin = 45;
+      const rightMargin = 45;
+      const contentWidth = 595.28 - leftMargin - rightMargin; // ~505 pt
+      const rightEdge = leftMargin + contentWidth;
+
+      const cNavy = '#0B2545';
+      const cSlate900 = '#0F172A';
+      const cSlate800 = '#1E293B';
+      const cSlate700 = '#334155';
+      const cSlate500 = '#64748B';
+      const cSlate400 = '#94A3B8';
+      const cBorder = '#CBD5E1';
+      const cBgHeader = '#F8FAFC';
+      const cRose700 = '#BE123C';
+
+      let y = 42;
+
+      // Centered Logo
+      const logoPath = path.join(__dirname, '../assets/logo.png');
+      if (fs.existsSync(logoPath)) {
+        try {
+          const logoW = 120;
+          const logoH = 34;
+          doc.image(logoPath, leftMargin + (contentWidth - logoW) / 2, y, { width: logoW, height: logoH });
+          y += 42;
+        } catch {
+          doc.fontSize(16).font('Helvetica-Bold').fillColor(cNavy).text('GENFREX', leftMargin, y, { align: 'center', width: contentWidth });
+          y += 24;
+        }
+      } else {
+        doc.fontSize(16).font('Helvetica-Bold').fillColor(cNavy).text('GENFREX', leftMargin, y, { align: 'center', width: contentWidth });
+        y += 24;
+      }
+
+      doc.fontSize(8.5).font('Helvetica').fillColor(cSlate700).text('Remote Digital Services and Talent Ecosystem', leftMargin, y, { align: 'center', width: contentWidth });
+      y += 13;
+      doc.fontSize(8).font('Helvetica').fillColor(cSlate500).text('Karur – 639113', leftMargin, y, { align: 'center', width: contentWidth });
+      y += 20;
+
+      // Title Banner Box
+      const bannerH = 26;
+      doc.rect(leftMargin, y, contentWidth, bannerH).strokeColor(cBorder).lineWidth(0.75).stroke();
+      doc.rect(leftMargin, y, contentWidth, bannerH).fillColor('#F1F5F9').fill();
+      doc.fontSize(10).font('Helvetica-Bold').fillColor(cNavy).text('FREELANCE PAYMENT VOUCHER / PAYSLIP', leftMargin, y + 8, { align: 'center', width: contentWidth });
+      y += bannerH + 16;
+
+      // Helper function for date formatting
+      const formatDate = (val) => {
+        if (!val) return '—';
+        const d = new Date(val);
+        if (isNaN(d.getTime())) return String(val);
+        const m = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        return `${d.getDate()} ${m[d.getMonth()]} ${d.getFullYear()}`;
+      };
+
+      const voucherDateStr = formatDate(payroll.voucherDate || payroll.createdAt || new Date());
+      const joiningDateStr = formatDate(payroll.dateOfJoining || payroll.user?.createdAt || new Date());
+      const payPeriodStr = payroll.payPeriod || `01 Oct 2026 – 31 Oct 2026`;
+
+      // Metadata Table Grid (5 rows x 4 columns)
+      const col1W = 110;
+      const col2W = 142;
+      const col3W = 110;
+      const col4W = contentWidth - col1W - col2W - col3W; // ~143 pt
+      const rowH = 20;
+
+      const gridData = [
+        ['Freelancer Name', payroll.user?.name || 'Freelancer', 'Voucher Date', voucherDateStr],
+        ['Designation', payroll.user?.title || 'SEO Analyst (Freelance)', 'Pay Period', payPeriodStr],
+        ['Date of Joining', joiningDateStr, 'Working Mode', payroll.workingMode || 'Remote (Freelance)'],
+        ['Engagement Type', payroll.engagementType || 'Freelance – Monthly Retainer', 'Payment Cycle', 'Released after 30 days of placement'],
+        ['Payment Method', payroll.paymentMethod || 'Bank Transfer', 'Status / Ref', payroll.paymentReference ? `UTR: ${payroll.paymentReference}` : payroll.status]
+      ];
+
+      gridData.forEach((row, rIdx) => {
+        const curY = y + rIdx * rowH;
+
+        // Draw cells outline
+        doc.rect(leftMargin, curY, col1W, rowH).strokeColor(cBorder).lineWidth(0.5).stroke();
+        doc.rect(leftMargin + col1W, curY, col2W, rowH).strokeColor(cBorder).lineWidth(0.5).stroke();
+        doc.rect(leftMargin + col1W + col2W, curY, col3W, rowH).strokeColor(cBorder).lineWidth(0.5).stroke();
+        doc.rect(leftMargin + col1W + col2W + col3W, curY, col4W, rowH).strokeColor(cBorder).lineWidth(0.5).stroke();
+
+        // Shading for label columns (1 & 3)
+        doc.rect(leftMargin + 0.5, curY + 0.5, col1W - 1, rowH - 1).fillColor('#F8FAFC').fill();
+        doc.rect(leftMargin + col1W + col2W + 0.5, curY + 0.5, col3W - 1, rowH - 1).fillColor('#F8FAFC').fill();
+
+        // Text
+        doc.fontSize(8).font('Helvetica-Bold').fillColor(cSlate900).text(row[0], leftMargin + 6, curY + 5, { width: col1W - 12 });
+        doc.fontSize(8).font('Helvetica').fillColor(cSlate800).text(row[1], leftMargin + col1W + 6, curY + 5, { width: col2W - 12 });
+        doc.fontSize(8).font('Helvetica-Bold').fillColor(cSlate900).text(row[2], leftMargin + col1W + col2W + 6, curY + 5, { width: col3W - 12 });
+        doc.fontSize(8).font('Helvetica').fillColor(cSlate800).text(row[3], leftMargin + col1W + col2W + col3W + 6, curY + 5, { width: col4W - 12 });
+      });
+
+      y += gridData.length * rowH + 20;
+
+      // Particulars & Amount Table
+      const partColW = contentWidth - 130;
+      const amtColW = 130;
+      const thH = 22;
+
+      // Table Header (Dark Navy)
+      doc.rect(leftMargin, y, contentWidth, thH).fillColor(cNavy).fill();
+      doc.fontSize(8.5).font('Helvetica-Bold').fillColor('#FFFFFF').text('Particulars', leftMargin + 8, y + 6);
+      doc.fontSize(8.5).font('Helvetica-Bold').fillColor('#FFFFFF').text('Amount (Rs)', leftMargin + partColW, y + 6, { width: amtColW - 8, align: 'right' });
+      y += thH;
+
+      const gross = payroll.grossSalary || payroll.baseSalary || 0;
+      const deductions = payroll.totalDeductions || 0;
+      const net = payroll.netSalary || (gross - deductions);
+
+      // Row 1: Compensation
+      const tr1H = 24;
+      doc.rect(leftMargin, y, contentWidth, tr1H).strokeColor(cBorder).lineWidth(0.5).stroke();
+      doc.fontSize(8.5).font('Helvetica').fillColor(cSlate800).text(`Monthly Retainer Compensation (${payPeriodStr})`, leftMargin + 8, y + 7, { width: partColW - 16 });
+      doc.fontSize(8.5).font('Helvetica-Bold').fillColor(cSlate900).text(gross.toLocaleString('en-IN', { minimumFractionDigits: 2 }), leftMargin + partColW, y + 7, { width: amtColW - 8, align: 'right' });
+      y += tr1H;
+
+      // Row 2: Deductions if any
+      if (deductions > 0) {
+        const tr2H = 24;
+        const dedLabel = payroll.leaveDeductionNote || `Less: Deduction for ${payroll.unpaidLeaves || 0} Days Leave`;
+        doc.rect(leftMargin, y, contentWidth, tr2H).strokeColor(cBorder).lineWidth(0.5).stroke();
+        doc.fontSize(8.5).font('Helvetica').fillColor(cRose700).text(dedLabel, leftMargin + 8, y + 7, { width: partColW - 16 });
+        doc.fontSize(8.5).font('Helvetica-Bold').fillColor(cRose700).text(`- ${deductions.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, leftMargin + partColW, y + 7, { width: amtColW - 8, align: 'right' });
+        y += tr2H;
+      }
+
+      // Net Payable Row
+      const netH = 26;
+      doc.rect(leftMargin, y, contentWidth, netH).strokeColor(cBorder).lineWidth(0.75).stroke();
+      doc.rect(leftMargin, y, contentWidth, netH).fillColor('#F8FAFC').fill();
+      doc.fontSize(9).font('Helvetica-Bold').fillColor(cNavy).text('Net Payable Amount', leftMargin + 8, y + 8);
+      doc.fontSize(9.5).font('Helvetica-Bold').fillColor(cNavy).text(`Rs ${net.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, leftMargin + partColW, y + 8, { width: amtColW - 8, align: 'right' });
+      y += netH + 16;
+
+      // Amount in Words & Notes
+      doc.fontSize(8.5).font('Helvetica-Bold').fillColor(cSlate900).text('Amount in Words: ', leftMargin, y, { continued: true });
+      doc.font('Helvetica').fillColor(cSlate700).text(`Indian Rupees ${numberToWordsINR(net)} Only.`);
+      y += 14;
+
+      doc.fontSize(8.5).font('Helvetica-Bold').fillColor(cSlate900).text('Payment Cycle Note: ', leftMargin, y, { continued: true });
+      doc.font('Helvetica').fillColor(cSlate700).text(payroll.paymentCycleNote || 'Released after 30 days of placement as per engagement terms.');
+      y += 35;
+
+      // Signatures & Seal Section (Matching PDF)
+      const sigY = y + 10;
+      doc.strokeColor(cBorder).lineWidth(0.5).moveTo(leftMargin, sigY).lineTo(rightEdge, sigY).stroke();
+
+      // Left Column: For GENFREX
+      const leftColX = leftMargin;
+      doc.fontSize(8.5).font('Helvetica-Bold').fillColor(cSlate900).text('For GENFREX', leftColX, sigY + 14);
+
+      // Stamp representation
+      doc.fontSize(8).font('Helvetica-Bold').fillColor(cSlate800).text('For M/S GENFREX,', leftColX, sigY + 36);
+      doc.fontSize(12).font('Times-BoldItalic').fillColor('#1E3A8A').text('P.S. Dharshan', leftColX, sigY + 48);
+      doc.fontSize(8).font('Helvetica-Bold').fillColor(cSlate800).text('Proprietor.', leftColX, sigY + 63);
+
+      doc.fontSize(8.5).font('Helvetica-Bold').fillColor(cSlate900).text('Dharshan', leftColX, sigY + 84);
+      doc.fontSize(7.5).font('Helvetica').fillColor(cSlate500).text('Founder & Authorized Signatory', leftColX, sigY + 96);
+
+      // Right Column: Official Seal & Freelancer Acknowledgement
+      const rightColW = 180;
+      const rightColX = rightEdge - rightColW;
+
+      // Circular Stamp Image
+      const sealPath = path.join(__dirname, '../assets/company-seal.png');
+      if (fs.existsSync(sealPath)) {
+        try {
+          doc.image(sealPath, rightEdge - 85, sigY + 8, { width: 75, height: 75 });
+        } catch {
+          // fallback
+        }
+      }
+
+      doc.fontSize(8.5).font('Helvetica-Bold').fillColor(cSlate900).text('Freelancer Acknowledgement', rightColX, sigY + 90, { width: rightColW, align: 'right' });
+      doc.fontSize(8).font('Helvetica').fillColor(cSlate600).text(`Designation: ______________   Date: __________`, rightColX - 20, sigY + 104, { width: rightColW + 20, align: 'right' });
+
+      doc.end();
+
+      writeStream.on('finish', () => {
+        resolve({
+          filePath,
+          fileName,
+          fileUrl: `/uploads/${fileName}`
+        });
+      });
+
+      writeStream.on('error', (err) => {
+        reject(err);
+      });
+    } catch (err) {
+      reject(err);
+    }
+  });
+};
+
 module.exports = {
   generateAppointmentPDF,
+  generatePaymentVoucherPDF,
   sanitizeText,
   formatDisplayDate
 };
+
