@@ -101,27 +101,27 @@ const EmployeeDashboard = () => {
   return (
     <div className="space-y-6">
       {/* Welcome banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl border border-slate-200/80 bg-white p-6 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5 rounded-2xl border border-slate-200/90 bg-gradient-to-r from-white via-blue-50/30 to-indigo-50/30 p-6 sm:p-8 shadow-sm">
         <div>
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full border border-indigo-100">
-            Engineer Portal
+          <span className="text-xs font-bold uppercase tracking-wider text-indigo-700 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-200/80 shadow-xs">
+            Employee Workspace
           </span>
-          <h1 className="text-xl font-bold text-slate-900 mt-2">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-2.5">
             Welcome back, {user?.name}
           </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            {user?.title || 'Team Member'} &bull; Apex Digital Systems
+          <p className="text-sm text-slate-500 mt-1">
+            {user?.title || 'Team Member'} &bull; GENFREX Unified Operations
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-3">
           <Link to="/Employee/tasks">
-            <Button size="sm" variant="secondary">
+            <Button size="md" variant="secondary">
               View All Tasks ({tasks.length})
             </Button>
           </Link>
           <Link to="/Employee/files">
-            <Button size="sm">
+            <Button size="md">
               Upload Work File
             </Button>
           </Link>
@@ -129,59 +129,71 @@ const EmployeeDashboard = () => {
       </div>
 
       {/* Metrics Row */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-medium text-slate-500">Assigned</span>
-            <CheckSquare className="h-4 w-4 text-blue-500" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm hover:shadow-md transition-all duration-200 stat-card-glow group">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Assigned</span>
+            <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100 group-hover:scale-110 transition-transform">
+              <CheckSquare className="h-4 w-4" />
+            </div>
           </div>
-          <p className="text-2xl font-bold text-slate-900 mt-2">{assignedCount}</p>
-          <p className="text-[10px] text-slate-400 mt-0.5">Awaiting start</p>
+          <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-2">{assignedCount}</p>
+          <p className="text-xs text-slate-500 font-medium mt-1">Awaiting start</p>
         </div>
 
-        <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-medium text-slate-500">In Progress</span>
-            <Clock className="h-4 w-4 text-amber-500" />
+        <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm hover:shadow-md transition-all duration-200 stat-card-glow group">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">In Progress</span>
+            <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center border border-amber-100 group-hover:scale-110 transition-transform">
+              <Clock className="h-4 w-4" />
+            </div>
           </div>
-          <p className="text-2xl font-bold text-slate-900 mt-2">{inProgressCount}</p>
-          <p className="text-[10px] text-slate-400 mt-0.5">Active execution</p>
+          <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-2">{inProgressCount}</p>
+          <p className="text-xs text-slate-500 font-medium mt-1">Active execution</p>
         </div>
 
-        <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-medium text-slate-500">Under Review</span>
-            <Send className="h-4 w-4 text-purple-500" />
+        <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm hover:shadow-md transition-all duration-200 stat-card-glow group">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Under Review</span>
+            <div className="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center border border-purple-100 group-hover:scale-110 transition-transform">
+              <Send className="h-4 w-4" />
+            </div>
           </div>
-          <p className="text-2xl font-bold text-slate-900 mt-2">{awaitingReviewCount}</p>
-          <p className="text-[10px] text-slate-400 mt-0.5">Submitted to Admin</p>
+          <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-2">{awaitingReviewCount}</p>
+          <p className="text-xs text-slate-500 font-medium mt-1">Submitted to Admin</p>
         </div>
 
-        <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-medium text-slate-500">Blocked</span>
-            <AlertCircle className="h-4 w-4 text-rose-500" />
+        <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm hover:shadow-md transition-all duration-200 stat-card-glow group">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Blocked</span>
+            <div className="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center border border-rose-100 group-hover:scale-110 transition-transform">
+              <AlertCircle className="h-4 w-4" />
+            </div>
           </div>
-          <p className="text-2xl font-bold text-slate-900 mt-2">{blockedCount}</p>
-          <p className="text-[10px] text-slate-400 mt-0.5">Need resolution</p>
+          <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-2">{blockedCount}</p>
+          <p className="text-xs text-rose-600 font-semibold mt-1">Need resolution</p>
         </div>
 
-        <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-medium text-slate-500">Overdue</span>
-            <Clock className="h-4 w-4 text-rose-600" />
+        <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm hover:shadow-md transition-all duration-200 stat-card-glow group">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Overdue</span>
+            <div className="w-8 h-8 rounded-xl bg-red-50 text-red-600 flex items-center justify-center border border-red-100 group-hover:scale-110 transition-transform">
+              <Clock className="h-4 w-4" />
+            </div>
           </div>
-          <p className="text-2xl font-bold text-slate-900 mt-2">{overdueCount}</p>
-          <p className="text-[10px] text-slate-400 mt-0.5">Past target date</p>
+          <p className="text-2xl sm:text-3xl font-extrabold text-rose-600 mt-2">{overdueCount}</p>
+          <p className="text-xs text-rose-600 font-medium mt-1">Past target date</p>
         </div>
 
-        <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-medium text-slate-500">Completed</span>
-            <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+        <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm hover:shadow-md transition-all duration-200 stat-card-glow group">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Completed</span>
+            <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100 group-hover:scale-110 transition-transform">
+              <CheckCircle2 className="h-4 w-4" />
+            </div>
           </div>
-          <p className="text-2xl font-bold text-slate-900 mt-2">{completedCount}</p>
-          <p className="text-[10px] text-slate-400 mt-0.5">Delivered</p>
+          <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-2">{completedCount}</p>
+          <p className="text-xs text-emerald-600 font-semibold mt-1">Delivered</p>
         </div>
       </div>
 

@@ -38,25 +38,25 @@ const Modal = ({
       />
 
       {/* Modal Dialog */}
-      <div className="flex min-h-full items-center justify-center p-3 sm:p-4 text-center">
+      <div className="flex min-h-full items-center justify-center p-3 sm:p-6 text-center">
         <div
-          className={`relative transform overflow-hidden rounded-2xl bg-white text-left shadow-2xl transition-all w-full my-auto sm:my-8 max-h-[calc(100dvh-2rem)] flex flex-col ${maxWidth} border border-slate-200/80 animate-in fade-in zoom-in-95 duration-200`}
+          className={`relative transform overflow-hidden rounded-3xl bg-white text-left shadow-2xl transition-all w-full my-auto sm:my-8 max-h-[calc(100dvh-2.5rem)] flex flex-col ${maxWidth} border border-slate-200/90 animate-in fade-in zoom-in-95 duration-200`}
         >
           {title && (
-            <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-5 sm:px-6 py-4 bg-slate-50/50">
-              <h3 className="text-base font-semibold text-slate-900">{title}</h3>
+            <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-6 sm:px-8 py-5 bg-slate-50/70">
+              <h3 className="text-lg font-bold text-slate-900">{title}</h3>
               {showClose && (
                 <button
                   type="button"
                   onClick={onClose}
-                  className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
+                  className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-200/60 hover:text-slate-700 transition-colors"
                 >
                   <X className="h-5 w-5" />
                 </button>
               )}
             </div>
           )}
-          <div className="p-4 sm:p-6 overflow-y-auto flex-1">{children}</div>
+          <div className="p-5 sm:p-8 overflow-y-auto flex-1">{children}</div>
         </div>
       </div>
     </div>

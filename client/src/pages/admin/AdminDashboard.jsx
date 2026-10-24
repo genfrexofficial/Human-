@@ -168,89 +168,101 @@ const AdminDashboard = () => {
           <CardSkeleton />
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           {/* Active Projects */}
-          <Link to="/admin/projects" className="rounded-xl border border-slate-200/80 bg-white p-3.5 shadow-sm hover:shadow transition-shadow">
-            <div className="flex items-center justify-between text-slate-400">
-              <span className="text-[11px] font-semibold text-slate-500">Active Projects</span>
-              <FolderKanban className="h-4 w-4 text-blue-600" />
+          <Link to="/admin/projects" className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm hover:shadow-md hover:border-blue-200 transition-all duration-200 stat-card-glow group">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Active Projects</span>
+              <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100 group-hover:scale-110 transition-transform">
+                <FolderKanban className="h-4 w-4" />
+              </div>
             </div>
-            <p className="text-xl font-black text-slate-900 mt-1">
+            <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-2">
               {analytics?.projects?.active || 0}
-              <span className="text-[11px] font-normal text-slate-400"> / {analytics?.projects?.total || 0}</span>
+              <span className="text-sm font-normal text-slate-400"> / {analytics?.projects?.total || 0}</span>
             </p>
-            <span className="text-[10px] text-emerald-600 font-semibold block mt-1">
+            <span className="text-xs text-emerald-600 font-semibold block mt-1.5">
               {analytics?.projects?.health?.onTrack || 0} On Track
             </span>
           </Link>
 
           {/* Pending Task Requests */}
-          <Link to="/admin/task-requests" className="rounded-xl border border-slate-200/80 bg-white p-3.5 shadow-sm hover:shadow transition-shadow">
-            <div className="flex items-center justify-between text-slate-400">
-              <span className="text-[11px] font-semibold text-slate-500">Client Requests</span>
-              <Inbox className="h-4 w-4 text-amber-500" />
+          <Link to="/admin/task-requests" className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm hover:shadow-md hover:border-amber-200 transition-all duration-200 stat-card-glow group">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Client Requests</span>
+              <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center border border-amber-100 group-hover:scale-110 transition-transform">
+                <Inbox className="h-4 w-4" />
+              </div>
             </div>
-            <p className="text-xl font-black text-slate-900 mt-1">
+            <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-2">
               {analytics?.taskRequests?.pendingApproval || 0}
             </p>
-            <span className="text-[10px] text-blue-600 font-medium block mt-1">
-              Awaiting review &rarr;
+            <span className="text-xs text-blue-600 font-semibold block mt-1.5 flex items-center gap-1">
+              Review requests &rarr;
             </span>
           </Link>
 
           {/* Overdue Tasks */}
-          <Link to="/admin/tasks" className="rounded-xl border border-slate-200/80 bg-white p-3.5 shadow-sm hover:shadow transition-shadow">
-            <div className="flex items-center justify-between text-slate-400">
-              <span className="text-[11px] font-semibold text-slate-500">Overdue Tasks</span>
-              <Clock className="h-4 w-4 text-rose-500" />
+          <Link to="/admin/tasks" className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm hover:shadow-md hover:border-rose-200 transition-all duration-200 stat-card-glow group">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Overdue Tasks</span>
+              <div className="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center border border-rose-100 group-hover:scale-110 transition-transform">
+                <Clock className="h-4 w-4" />
+              </div>
             </div>
-            <p className="text-xl font-black text-slate-900 mt-1">
+            <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-2">
               {analytics?.tasks?.overdue || 0}
             </p>
-            <span className="text-[10px] text-slate-400 block mt-1 truncate">
+            <span className="text-xs text-slate-500 font-medium block mt-1.5 truncate">
               {analytics?.tasks?.inProgress || 0} In Progress
             </span>
           </Link>
 
           {/* HR: Pending Approvals */}
-          <Link to="/admin/hr/pending-approvals" className="rounded-xl border border-amber-200/80 bg-amber-50/40 p-3.5 shadow-sm hover:shadow transition-shadow">
-            <div className="flex items-center justify-between text-amber-700">
-              <span className="text-[11px] font-semibold">HR Approvals</span>
-              <ShieldCheck className="h-4 w-4 text-amber-600" />
+          <Link to="/admin/hr/pending-approvals" className="rounded-2xl border border-amber-200 bg-amber-50/60 p-5 shadow-sm hover:shadow-md hover:border-amber-300 transition-all duration-200 group">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-amber-800 uppercase tracking-wider">HR Approvals</span>
+              <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center border border-amber-200 group-hover:scale-110 transition-transform">
+                <ShieldCheck className="h-4 w-4" />
+              </div>
             </div>
-            <p className="text-xl font-black text-amber-900 mt-1">
+            <p className="text-2xl sm:text-3xl font-extrabold text-amber-950 mt-2">
               {hrStats?.pendingApprovals || 0}
             </p>
-            <span className="text-[10px] text-amber-700 font-semibold block mt-1">
+            <span className="text-xs text-amber-700 font-bold block mt-1.5">
               Action required &rarr;
             </span>
           </Link>
 
           {/* HR: Approved Letters */}
-          <Link to="/admin/hr/approved" className="rounded-xl border border-slate-200/80 bg-white p-3.5 shadow-sm hover:shadow transition-shadow">
-            <div className="flex items-center justify-between text-slate-400">
-              <span className="text-[11px] font-semibold text-slate-500">Approved Offers</span>
-              <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+          <Link to="/admin/hr/approved" className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm hover:shadow-md hover:border-emerald-200 transition-all duration-200 stat-card-glow group">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Approved Offers</span>
+              <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100 group-hover:scale-110 transition-transform">
+                <CheckCircle2 className="h-4 w-4" />
+              </div>
             </div>
-            <p className="text-xl font-black text-slate-900 mt-1">
+            <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-2">
               {hrStats?.approvedLetters || 0}
             </p>
-            <span className="text-[10px] text-slate-400 block mt-1">
+            <span className="text-xs text-slate-500 font-medium block mt-1.5">
               {hrStats?.sentLetters || 0} Dispatched
             </span>
           </Link>
 
           {/* Total Employees & Clients */}
-          <Link to="/admin/Employees" className="rounded-xl border border-slate-200/80 bg-white p-3.5 shadow-sm hover:shadow transition-shadow">
-            <div className="flex items-center justify-between text-slate-400">
-              <span className="text-[11px] font-semibold text-slate-500">People</span>
-              <Users className="h-4 w-4 text-purple-600" />
+          <Link to="/admin/Employees" className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm hover:shadow-md hover:border-indigo-200 transition-all duration-200 stat-card-glow group">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">People</span>
+              <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center border border-indigo-100 group-hover:scale-110 transition-transform">
+                <Users className="h-4 w-4" />
+              </div>
             </div>
-            <p className="text-xl font-black text-slate-900 mt-1">
+            <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-2">
               {Employees.length}
-              <span className="text-[11px] font-normal text-slate-400"> Employees</span>
+              <span className="text-sm font-normal text-slate-400"> Emp</span>
             </p>
-            <span className="text-[10px] text-slate-400 block mt-1">
+            <span className="text-xs text-slate-500 font-medium block mt-1.5">
               {hrStats?.totalCandidates || 0} Candidates
             </span>
           </Link>

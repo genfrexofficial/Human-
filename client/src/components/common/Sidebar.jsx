@@ -182,17 +182,17 @@ const Sidebar = ({ isOpen, onClose }) => {
 
       {/* Sidebar container */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-64 h-[100dvh] lg:h-full flex-col justify-between border-r border-slate-200/80 bg-white transition-transform duration-200 ease-in-out lg:static lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'
+        className={`fixed inset-y-0 left-0 z-50 flex w-72 h-[100dvh] lg:h-full flex-col justify-between border-r border-slate-200/80 bg-white transition-transform duration-200 ease-in-out lg:static lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'
           }`}
       >
         {/* Top brand header */}
         <div className="flex flex-col flex-1 min-h-0">
-          <div className="flex h-16 shrink-0 items-center justify-between px-5 border-b border-slate-100 bg-slate-50/50">
+          <div className="flex h-16 shrink-0 items-center justify-between px-6 border-b border-slate-100 bg-slate-50/70">
             <div className="flex items-center">
               <img
                 src="/logo.png"
                 alt="GENFREX"
-                className="h-9 w-auto max-w-[175px] object-contain"
+                className="h-9 w-auto max-w-[180px] object-contain"
               />
             </div>
 
@@ -200,22 +200,22 @@ const Sidebar = ({ isOpen, onClose }) => {
             <button
               type="button"
               onClick={onClose}
-              className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 lg:hidden"
+              className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 lg:hidden"
             >
               <X className="h-5 w-5" />
             </button>
           </div>
 
           {/* Navigation links - scrollable */}
-          <div className="flex-1 overflow-y-auto px-3 py-3 space-y-4">
-            <div className="px-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
+          <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5">
+            <div className="px-3 py-1.5 rounded-xl bg-slate-100/70 border border-slate-200/60 text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center justify-between">
               <span>{workspaceLabel}</span>
-              <span className={`w-2 h-2 rounded-full ${badgeColor}`} />
+              <span className={`w-2.5 h-2.5 rounded-full ${badgeColor} ring-4 ring-blue-500/10`} />
             </div>
 
             {sections.map((section) => (
-              <div key={section.group} className="space-y-1">
-                <p className="px-2 pt-1 text-[9px] font-bold uppercase tracking-widest text-slate-400">
+              <div key={section.group} className="space-y-1.5">
+                <p className="px-3 pt-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">
                   {section.group}
                 </p>
                 {section.items.map((item) => {
@@ -226,14 +226,18 @@ const Sidebar = ({ isOpen, onClose }) => {
                       to={item.path}
                       onClick={() => onClose && onClose()}
                       className={({ isActive }) =>
-                        `flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${isActive
-                          ? 'bg-blue-50 text-blue-700 font-semibold border-r-2 border-blue-600'
-                          : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                        `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 ${isActive
+                          ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold shadow-md shadow-blue-600/25'
+                          : 'text-slate-600 hover:bg-slate-100/80 hover:text-slate-900'
                         }`
                       }
                     >
-                      <Icon className="h-4 w-4 shrink-0 text-slate-500" />
-                      <span className="truncate">{item.label}</span>
+                      {({ isActive }) => (
+                        <>
+                          <Icon className={`h-5 w-5 shrink-0 transition-colors ${isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-700'}`} />
+                          <span className="truncate">{item.label}</span>
+                        </>
+                      )}
                     </NavLink>
                   );
                 })}
@@ -243,17 +247,17 @@ const Sidebar = ({ isOpen, onClose }) => {
         </div>
 
         {/* Bottom user summary & logout */}
-        <div className="p-3 border-t border-slate-100 shrink-0 bg-slate-50/50">
-          <div className="flex items-center justify-between p-2 rounded-lg bg-white border border-slate-200/60 mb-2">
-            <div className="flex items-center gap-2 min-w-0">
-              <div className="h-7 w-7 rounded-full bg-blue-100 text-blue-700 font-bold text-xs flex items-center justify-center shrink-0">
+        <div className="p-4 border-t border-slate-100 shrink-0 bg-slate-50/70">
+          <div className="flex items-center justify-between p-3 rounded-2xl bg-white border border-slate-200/80 shadow-sm mb-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="h-9 w-9 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-bold text-sm flex items-center justify-center shrink-0 shadow-sm">
                 {user?.name?.charAt(0) || 'U'}
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-semibold text-slate-900 truncate">{user?.name}</p>
-                <div className="flex items-center gap-1">
-                  <span className={`inline-block w-1.5 h-1.5 rounded-full ${badgeColor}`} />
-                  <p className="text-[10px] text-slate-500 truncate font-semibold uppercase">
+                <p className="text-sm font-bold text-slate-900 truncate">{user?.name}</p>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className={`inline-block w-2 h-2 rounded-full ${badgeColor}`} />
+                  <p className="text-xs text-slate-500 truncate font-semibold uppercase tracking-wide">
                     {user?.role}
                   </p>
                 </div>
@@ -264,7 +268,7 @@ const Sidebar = ({ isOpen, onClose }) => {
           <button
             type="button"
             onClick={handleLogout}
-            className="flex w-full items-center gap-2 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+            className="flex w-full items-center justify-center gap-2 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-rose-600 hover:bg-rose-50 rounded-xl border border-transparent hover:border-rose-100 transition-all duration-150"
           >
             <LogOut className="h-4 w-4" />
             <span>Sign Out</span>
