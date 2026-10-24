@@ -45,9 +45,9 @@ router.get('/clients', authorizeRoles('ADMIN'), getClients);
 router.post('/clients', authorizeRoles('ADMIN'), createClient);
 router.get('/clients/:id', authorizeRoles('ADMIN'), getClientById);
 
-router.get('/Employees', authorizeRoles('ADMIN'), getEmployees);
+router.get('/Employees', authorizeRoles('ADMIN', 'HR'), getEmployees);
 router.post('/Employees', authorizeRoles('ADMIN'), createEmployee);
-router.get('/Employees/:id', authorizeRoles('ADMIN'), getEmployeeById);
+router.get('/Employees/:id', authorizeRoles('ADMIN', 'HR'), getEmployeeById);
 
 router.get('/hr', authorizeRoles('ADMIN'), getHRUsers);
 router.post('/hr', authorizeRoles('ADMIN'), createHRUser);

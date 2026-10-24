@@ -214,6 +214,10 @@ const EmployeeTaskDetails = () => {
   const handleAddComment = async (e) => {
     e.preventDefault();
     if (!commentText.trim()) return;
+    if (!task?.project?._id) {
+      toast.error('Notes and discussion are only enabled for project tasks.');
+      return;
+    }
 
     try {
       setCommentLoading(true);
@@ -240,6 +244,10 @@ const EmployeeTaskDetails = () => {
     e.preventDefault();
     if (!selectedFile) {
       toast.error('Please select a file to upload.');
+      return;
+    }
+    if (!task?.project?._id) {
+      toast.error('File storage is only available for client project deliverables.');
       return;
     }
 
@@ -293,9 +301,17 @@ const EmployeeTaskDetails = () => {
           <div>
             <div className="flex items-center gap-2 mb-2">
               <span className="text-xs font-medium text-slate-500">
-                {task.project?.name}
+                {task.taskType === 'PERSONAL' ? 'Personal Company Assignment' : (task.project?.name || 'Project Deliverable')}
               </span>
               <span className="text-slate-300">&bull;</span>
+              {task.personalCategory && (
+                <>
+                  <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                    {task.personalCategory.replace('_', ' ')}
+                  </span>
+                  <span className="text-slate-300">&bull;</span>
+                </>
+              )}
               <Badge variant={task.priority?.toLowerCase() || 'default'}>
                 {task.priority} Priority
               </Badge>
@@ -431,15 +447,19 @@ const EmployeeTaskDetails = () => {
             </span>
           </div>
           <div>
-            <span className="text-slate-400 block text-[10px] uppercase font-semibold">Milestone</span>
+            <span className="text-slate-400 block text-[10px] uppercase font-semibold">
+              {task.taskType === 'PERSONAL' ? 'Category' : 'Milestone'}
+            </span>
             <span className="font-medium text-slate-800 mt-0.5 block truncate">
-              {task.milestone?.title || 'None assigned'}
+              {task.taskType === 'PERSONAL'
+                ? (task.personalCategory?.replace('_', ' ') || 'Internal')
+                : (task.milestone?.title || 'None assigned')}
             </span>
           </div>
           <div>
             <span className="text-slate-400 block text-[10px] uppercase font-semibold">Assigned By</span>
             <span className="font-medium text-slate-800 mt-0.5 block">
-              {task.createdBy?.name || 'Admin'}
+              {task.assignedBy?.name || task.createdBy?.name || 'Admin'}
             </span>
           </div>
           <div>

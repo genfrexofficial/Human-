@@ -55,6 +55,7 @@ const determineProjectHealth = async (projectId, projectEndDate = null) => {
  */
 const recalculateProjectProgress = async (projectId, actingUserId = null) => {
   try {
+    if (!projectId) return null;
     const totalTasks = await Task.countDocuments({ project: projectId });
     const completedTasks = await Task.countDocuments({ project: projectId, status: 'COMPLETED' });
 

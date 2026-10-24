@@ -166,6 +166,7 @@ function App() {
             <Route path="appointments/:id" element={<AppointmentDetails />} />
             <Route path="approvals-status" element={<AppointmentsList defaultStatus="PENDING_APPROVAL" />} />
             <Route path="sent-letters" element={<AppointmentsList defaultStatus="SENT" />} />
+            <Route path="tasks" element={<AdminTasks />} />
             <Route path="settings" element={<HRSettings />} />
           </Route>
 

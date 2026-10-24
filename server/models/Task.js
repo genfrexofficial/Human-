@@ -5,7 +5,19 @@ const taskSchema = new mongoose.Schema(
     project: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Project',
-      required: [true, 'Project reference is required']
+      required: function () {
+        return this.taskType === 'PROJECT';
+      }
+    },
+    taskType: {
+      type: String,
+      enum: ['PROJECT', 'PERSONAL'],
+      default: 'PROJECT'
+    },
+    personalCategory: {
+      type: String,
+      enum: ['INTERNAL_WORK', 'TRAINING', 'MAINTENANCE', 'RESEARCH', 'HR_COMPLIANCE', 'OTHER'],
+      default: 'INTERNAL_WORK'
     },
     milestone: {
       type: mongoose.Schema.Types.ObjectId,
@@ -104,6 +116,7 @@ const taskSchema = new mongoose.Schema(
   }
 );
 
+taskSchema.index({ taskType: 1 });
 taskSchema.index({ project: 1, status: 1 });
 taskSchema.index({ assignedTo: 1, status: 1 });
 taskSchema.index({ dueDate: 1 });

@@ -89,6 +89,45 @@ const getProjectTasks = async (req, res, next) => {
   }
 };
 
+// @desc    Get all personal company tasks
+// @route   GET /api/tasks/personal
+// @access  Private (ADMIN, HR, Employee)
+const getPersonalTasks = async (req, res, next) => {
+  try {
+    let query = { taskType: 'PERSONAL' };
+
+    if (req.user.role === 'Employee') {
+      query.assignedTo = req.user._id;
+    } else if (req.query.assignedTo) {
+      query.assignedTo = req.query.assignedTo;
+    }
+
+    if (req.query.status) {
+      query.status = req.query.status;
+    }
+    if (req.query.personalCategory || req.query.category) {
+      query.personalCategory = req.query.personalCategory || req.query.category;
+    }
+    if (req.query.priority) {
+      query.priority = req.query.priority;
+    }
+
+    const tasks = await Task.find(query)
+      .populate('assignedTo', 'name email avatar title phone')
+      .populate('createdBy', 'name email role')
+      .populate('assignedBy', 'name email role')
+      .sort({ dueDate: 1, createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      count: tasks.length,
+      tasks
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // @desc    Get my assigned tasks (Employee portal)
 // @route   GET /api/tasks/my-tasks
 // @access  Private (Employee)
@@ -96,6 +135,9 @@ const getMyTasks = async (req, res, next) => {
   try {
     let query = { assignedTo: req.user._id };
 
+    if (req.query.taskType) {
+      query.taskType = req.query.taskType;
+    }
     if (req.query.status) {
       query.status = req.query.status;
     }
@@ -106,7 +148,8 @@ const getMyTasks = async (req, res, next) => {
     const tasks = await Task.find(query)
       .populate('project', 'name status stage client health')
       .populate('milestone', 'title dueDate status')
-      .populate('createdBy', 'name email')
+      .populate('createdBy', 'name email role')
+      .populate('assignedBy', 'name email role')
       .sort({ dueDate: 1, createdAt: -1 });
 
     res.status(200).json({
@@ -121,13 +164,14 @@ const getMyTasks = async (req, res, next) => {
 
 // @desc    Get single task by ID
 // @route   GET /api/tasks/:id
-// @access  Private (Admin, Assigned Employee, Client if visible)
+// @access  Private (Admin, HR, Assigned Employee, Client if visible)
 const getTaskById = async (req, res, next) => {
   try {
     const task = await Task.findById(req.params.id)
       .populate('project', 'name status stage client health createdBy')
       .populate('assignedTo', 'name email avatar title phone')
-      .populate('createdBy', 'name email')
+      .populate('createdBy', 'name email role')
+      .populate('assignedBy', 'name email role')
       .populate('requestedBy', 'name email companyName')
       .populate('milestone', 'title dueDate status')
       .populate('taskRequest', 'title description priority');
@@ -139,9 +183,32 @@ const getTaskById = async (req, res, next) => {
       });
     }
 
-    // Role checks
+    // Personal Task Access Rules
+    if (task.taskType === 'PERSONAL') {
+      if (req.user.role === 'CLIENT') {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied. Personal company tasks are internal only.'
+        });
+      }
+      if (req.user.role === 'Employee') {
+        const isAssigned = task.assignedTo && task.assignedTo._id.toString() === req.user._id.toString();
+        if (!isAssigned) {
+          return res.status(403).json({
+            success: false,
+            message: 'Access denied. You are not assigned to this personal task.'
+          });
+        }
+      }
+      return res.status(200).json({
+        success: true,
+        task
+      });
+    }
+
+    // Project Task Access Rules
     if (req.user.role === 'CLIENT') {
-      if (task.project.client.toString() !== req.user._id.toString() || !task.clientVisible) {
+      if (!task.project || task.project.client?.toString() !== req.user._id.toString() || !task.clientVisible) {
         return res.status(403).json({
           success: false,
           message: 'Access denied. You cannot view this task.'
@@ -166,13 +233,15 @@ const getTaskById = async (req, res, next) => {
   }
 };
 
-// @desc    Create a new task
+// @desc    Create a new task (Project or Personal Company Task)
 // @route   POST /api/tasks
-// @access  Private (Admin only)
+// @access  Private (Admin, HR)
 const createTask = async (req, res, next) => {
   try {
     const {
       project: projectId,
+      taskType = 'PROJECT',
+      personalCategory = 'INTERNAL_WORK',
       title,
       description,
       assignedTo,
@@ -184,7 +253,70 @@ const createTask = async (req, res, next) => {
       clientVisible
     } = req.body;
 
-    if (!projectId || !title) {
+    if (!title || !title.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Task title is required.'
+      });
+    }
+
+    // PERSONAL TASK FLOW
+    if (taskType === 'PERSONAL') {
+      if (!assignedTo) {
+        return res.status(400).json({
+          success: false,
+          message: 'An Employee must be assigned to a personal task.'
+        });
+      }
+
+      const assignedEmployee = await User.findById(assignedTo);
+      if (!assignedEmployee) {
+        return res.status(404).json({
+          success: false,
+          message: 'Assigned employee not found.'
+        });
+      }
+
+      const task = await Task.create({
+        taskType: 'PERSONAL',
+        personalCategory: personalCategory || 'INTERNAL_WORK',
+        project: null,
+        title: title.trim(),
+        description: description || '',
+        createdBy: req.user._id,
+        assignedBy: req.user._id,
+        assignedTo: assignedEmployee._id,
+        status: status || 'ASSIGNED',
+        priority: priority || 'MEDIUM',
+        dueDate: dueDate || null,
+        estimatedHours: Number(estimatedHours) || 0,
+        clientVisible: false,
+        progress: 0
+      });
+
+      const populatedTask = await Task.findById(task._id)
+        .populate('assignedTo', 'name email avatar title phone')
+        .populate('createdBy', 'name email role')
+        .populate('assignedBy', 'name email role');
+
+      // Dispatch in-app notification to the assigned employee
+      await sendNotification({
+        userId: assignedEmployee._id,
+        title: 'New Personal Task Assigned',
+        type: 'TASK',
+        message: `${req.user.name} (${req.user.role}) assigned you a personal task: "${task.title}".`,
+        link: `/Employee/tasks`
+      });
+
+      return res.status(201).json({
+        success: true,
+        message: 'Personal task created and assigned successfully.',
+        task: populatedTask
+      });
+    }
+
+    // PROJECT TASK FLOW
+    if (!projectId) {
       return res.status(400).json({
         success: false,
         message: 'Project ID and task title are required.'
@@ -211,6 +343,7 @@ const createTask = async (req, res, next) => {
     }
 
     const task = await Task.create({
+      taskType: 'PROJECT',
       project: projectId,
       title: title.trim(),
       description: description || '',
@@ -221,14 +354,15 @@ const createTask = async (req, res, next) => {
       status: status || (assignedTo ? 'ASSIGNED' : 'TODO'),
       priority: priority || 'MEDIUM',
       dueDate: dueDate || null,
-      estimatedHours: estimatedHours || 0,
+      estimatedHours: Number(estimatedHours) || 0,
       clientVisible: clientVisible !== undefined ? clientVisible : true,
       progress: 0
     });
 
     const populatedTask = await Task.findById(task._id)
       .populate('assignedTo', 'name email avatar title')
-      .populate('milestone', 'title dueDate');
+      .populate('milestone', 'title dueDate')
+      .populate('createdBy', 'name email role');
 
     // Recalculate progress & health
     await recalculateProjectProgress(projectId, req.user._id);
@@ -335,16 +469,17 @@ const updateTask = async (req, res, next) => {
       if (actualHours !== undefined) task.actualHours = Number(actualHours) || task.actualHours;
       if (description !== undefined) task.description = description;
 
-    } else if (req.user.role === 'ADMIN') {
-      // Admin update
+    } else if (req.user.role === 'ADMIN' || req.user.role === 'HR') {
+      // Admin / HR update
       if (title) task.title = title.trim();
       if (description !== undefined) task.description = description;
+      if (personalCategory) task.personalCategory = personalCategory;
       if (milestone !== undefined) task.milestone = milestone || null;
       if (priority) task.priority = priority;
       if (dueDate !== undefined) task.dueDate = dueDate || null;
       if (estimatedHours !== undefined) task.estimatedHours = Number(estimatedHours) || 0;
       if (actualHours !== undefined) task.actualHours = Number(actualHours) || 0;
-      if (clientVisible !== undefined) task.clientVisible = clientVisible;
+      if (clientVisible !== undefined && task.taskType !== 'PERSONAL') task.clientVisible = clientVisible;
 
       if (assignedTo !== undefined && assignedTo !== (task.assignedTo ? task.assignedTo.toString() : null)) {
         task.assignedTo = assignedTo || null;
@@ -389,12 +524,17 @@ const updateTask = async (req, res, next) => {
     await task.save();
 
     const populatedTask = await Task.findById(task._id)
-      .populate('assignedTo', 'name email avatar title')
+      .populate('assignedTo', 'name email avatar title phone')
       .populate('milestone', 'title dueDate')
-      .populate('project', 'name client');
+      .populate('project', 'name client')
+      .populate('createdBy', 'name email role')
+      .populate('assignedBy', 'name email role');
 
-    // Recalculate project progress
-    const progressResult = await recalculateProjectProgress(task.project, req.user._id);
+    // Recalculate project progress if project task
+    let progressResult = null;
+    if (task.project) {
+      progressResult = await recalculateProjectProgress(task.project, req.user._id);
+    }
 
     // Activity & notifications
     if (oldStatus !== task.status) {
@@ -404,65 +544,79 @@ const updateTask = async (req, res, next) => {
       if (task.status === 'IN_REVIEW') action = 'TASK_SUBMITTED_FOR_REVIEW';
       if (task.status === 'COMPLETED') action = 'TASK_COMPLETED';
 
-      await logActivity({
-        projectId: task.project,
-        userId: req.user._id,
-        action,
-        description: `${req.user.name} transitioned task "${task.title}" from ${oldStatus} to ${task.status}.`,
-        entityType: 'TASK',
-        entityId: task._id,
-        clientVisible: task.clientVisible
-      });
+      if (task.project) {
+        await logActivity({
+          projectId: task.project,
+          userId: req.user._id,
+          action,
+          description: `${req.user.name} transitioned task "${task.title}" from ${oldStatus} to ${task.status}.`,
+          entityType: 'TASK',
+          entityId: task._id,
+          clientVisible: task.clientVisible
+        });
+      }
 
-      // If Employee submitted for review, notify Admin
+      // If Employee submitted for review, notify Admin or assigner
       if (task.status === 'IN_REVIEW' && req.user.role === 'Employee') {
-        const project = await Project.findById(task.project);
-        if (project && project.createdBy) {
+        let recipientId = null;
+        if (task.project) {
+          const project = await Project.findById(task.project);
+          recipientId = project?.createdBy;
+        } else {
+          recipientId = task.assignedBy || task.createdBy;
+        }
+
+        if (recipientId) {
           await sendNotification({
-            userId: project.createdBy,
-            projectId: project._id,
+            userId: recipientId,
+            projectId: task.project || undefined,
             title: 'Task Awaiting Review',
             type: 'TASK',
             message: `Employee ${req.user.name} submitted task "${task.title}" for review.`,
-            link: `/admin/tasks`
+            link: task.taskType === 'PERSONAL' ? `/admin/tasks` : `/admin/tasks`
           });
         }
       }
 
-      // If admin completed task, notify Employee and client
-      if (task.status === 'COMPLETED' && req.user.role === 'ADMIN') {
+      // If admin or HR completed task, notify Employee and client (if applicable)
+      if (task.status === 'COMPLETED' && (req.user.role === 'ADMIN' || req.user.role === 'HR')) {
         if (task.assignedTo) {
           await sendNotification({
             userId: task.assignedTo,
-            projectId: task.project,
+            projectId: task.project || undefined,
             title: 'Task Approved & Completed',
             type: 'TASK',
-            message: `Admin approved and completed your task "${task.title}".`,
-            link: `/Employee/tasks/${task._id}`
+            message: `${req.user.role} approved and completed your task "${task.title}".`,
+            link: `/Employee/tasks`
           });
         }
-        const project = await Project.findById(task.project);
-        if (project && project.client && task.clientVisible) {
-          await sendNotification({
-            userId: project.client,
-            projectId: project._id,
-            title: 'Task Completed',
-            type: 'TASK',
-            message: `Task "${task.title}" has been completed!`,
-            link: `/client/projects/${project._id}`
-          });
+
+        if (task.project) {
+          const project = await Project.findById(task.project);
+          if (project && project.client && task.clientVisible) {
+            await sendNotification({
+              userId: project.client,
+              projectId: project._id,
+              title: 'Task Completed',
+              type: 'TASK',
+              message: `Task "${task.title}" has been completed!`,
+              link: `/client/projects/${project._id}`
+            });
+          }
         }
       }
     } else if (oldProgress !== task.progress) {
-      await logActivity({
-        projectId: task.project,
-        userId: req.user._id,
-        action: 'TASK_PROGRESS_UPDATED',
-        description: `${req.user.name} updated progress on "${task.title}" to ${task.progress}%.`,
-        entityType: 'TASK',
-        entityId: task._id,
-        clientVisible: task.clientVisible
-      });
+      if (task.project) {
+        await logActivity({
+          projectId: task.project,
+          userId: req.user._id,
+          action: 'TASK_PROGRESS_UPDATED',
+          description: `${req.user.name} updated progress on "${task.title}" to ${task.progress}%.`,
+          entityType: 'TASK',
+          entityId: task._id,
+          clientVisible: task.clientVisible
+        });
+      }
     }
 
     res.status(200).json({
@@ -501,15 +655,17 @@ const startTask = async (req, res, next) => {
     if (!task.startedAt) task.startedAt = new Date();
     await task.save();
 
-    await logActivity({
-      projectId: task.project,
-      userId: req.user._id,
-      action: 'TASK_STARTED',
-      description: `${req.user.name} started working on "${task.title}".`,
-      entityType: 'TASK',
-      entityId: task._id,
-      clientVisible: task.clientVisible
-    });
+    if (task.project) {
+      await logActivity({
+        projectId: task.project,
+        userId: req.user._id,
+        action: 'TASK_STARTED',
+        description: `${req.user.name} started working on "${task.title}".`,
+        entityType: 'TASK',
+        entityId: task._id,
+        clientVisible: task.clientVisible
+      });
+    }
 
     res.status(200).json({
       success: true,
@@ -550,17 +706,18 @@ const updateTaskProgress = async (req, res, next) => {
     task.progress = pNum;
     await task.save();
 
-    await recalculateProjectProgress(task.project, req.user._id);
-
-    await logActivity({
-      projectId: task.project,
-      userId: req.user._id,
-      action: 'TASK_PROGRESS_UPDATED',
-      description: `${req.user.name} updated progress on "${task.title}" to ${pNum}%.`,
-      entityType: 'TASK',
-      entityId: task._id,
-      clientVisible: task.clientVisible
-    });
+    if (task.project) {
+      await recalculateProjectProgress(task.project, req.user._id);
+      await logActivity({
+        projectId: task.project,
+        userId: req.user._id,
+        action: 'TASK_PROGRESS_UPDATED',
+        description: `${req.user.name} updated progress on "${task.title}" to ${pNum}%.`,
+        entityType: 'TASK',
+        entityId: task._id,
+        clientVisible: task.clientVisible
+      });
+    }
 
     res.status(200).json({
       success: true,
@@ -598,21 +755,30 @@ const submitTaskForReview = async (req, res, next) => {
     task.progress = 100;
     await task.save();
 
-    await logActivity({
-      projectId: task.project,
-      userId: req.user._id,
-      action: 'TASK_SUBMITTED_FOR_REVIEW',
-      description: `Employee ${req.user.name} submitted task "${task.title}" for admin review.`,
-      entityType: 'TASK',
-      entityId: task._id,
-      clientVisible: false
-    });
+    if (task.project) {
+      await logActivity({
+        projectId: task.project,
+        userId: req.user._id,
+        action: 'TASK_SUBMITTED_FOR_REVIEW',
+        description: `Employee ${req.user.name} submitted task "${task.title}" for review.`,
+        entityType: 'TASK',
+        entityId: task._id,
+        clientVisible: false
+      });
+    }
 
-    const project = await Project.findById(task.project);
-    if (project && project.createdBy) {
+    let recipientId = null;
+    if (task.project) {
+      const project = await Project.findById(task.project);
+      recipientId = project?.createdBy;
+    } else {
+      recipientId = task.assignedBy || task.createdBy;
+    }
+
+    if (recipientId) {
       await sendNotification({
-        userId: project.createdBy,
-        projectId: project._id,
+        userId: recipientId,
+        projectId: task.project || undefined,
         title: 'Task Submitted for Review',
         type: 'TASK',
         message: `Employee ${req.user.name} completed and submitted task "${task.title}" for review.`,
@@ -630,9 +796,9 @@ const submitTaskForReview = async (req, res, next) => {
   }
 };
 
-// @desc    Admin marks task as completed (IN_REVIEW -> COMPLETED)
+// @desc    Admin / HR marks task as completed (IN_REVIEW -> COMPLETED)
 // @route   POST /api/tasks/:id/complete
-// @access  Private (Admin only)
+// @access  Private (Admin, HR)
 const completeTask = async (req, res, next) => {
   try {
     const task = await Task.findById(req.params.id);
@@ -645,39 +811,44 @@ const completeTask = async (req, res, next) => {
     task.completedAt = new Date();
     await task.save();
 
-    const progressResult = await recalculateProjectProgress(task.project, req.user._id);
+    let progressResult = null;
+    if (task.project) {
+      progressResult = await recalculateProjectProgress(task.project, req.user._id);
 
-    await logActivity({
-      projectId: task.project,
-      userId: req.user._id,
-      action: 'TASK_COMPLETED',
-      description: `Admin ${req.user.name} marked task "${task.title}" as completed.`,
-      entityType: 'TASK',
-      entityId: task._id,
-      clientVisible: task.clientVisible
-    });
+      await logActivity({
+        projectId: task.project,
+        userId: req.user._id,
+        action: 'TASK_COMPLETED',
+        description: `${req.user.role} ${req.user.name} marked task "${task.title}" as completed.`,
+        entityType: 'TASK',
+        entityId: task._id,
+        clientVisible: task.clientVisible
+      });
+    }
 
     if (task.assignedTo) {
       await sendNotification({
         userId: task.assignedTo,
-        projectId: task.project,
+        projectId: task.project || undefined,
         title: 'Task Approved',
         type: 'TASK',
         message: `Your task "${task.title}" has been approved and marked as completed!`,
-        link: `/Employee/tasks/${task._id}`
+        link: `/Employee/tasks`
       });
     }
 
-    const project = await Project.findById(task.project);
-    if (project && project.client && task.clientVisible) {
-      await sendNotification({
-        userId: project.client,
-        projectId: project._id,
-        title: 'Task Completed',
-        type: 'TASK',
-        message: `Task "${task.title}" is now complete.`,
-        link: `/client/projects/${project._id}`
-      });
+    if (task.project) {
+      const project = await Project.findById(task.project);
+      if (project && project.client && task.clientVisible) {
+        await sendNotification({
+          userId: project.client,
+          projectId: project._id,
+          title: 'Task Completed',
+          type: 'TASK',
+          message: `Task "${task.title}" is now complete.`,
+          link: `/client/projects/${project._id}`
+        });
+      }
     }
 
     res.status(200).json({
@@ -709,23 +880,32 @@ const blockTask = async (req, res, next) => {
     task.status = 'BLOCKED';
     await task.save();
 
-    await recalculateProjectProgress(task.project, req.user._id);
+    if (task.project) {
+      await recalculateProjectProgress(task.project, req.user._id);
 
-    await logActivity({
-      projectId: task.project,
-      userId: req.user._id,
-      action: 'TASK_BLOCKED',
-      description: `Employee ${req.user.name} marked task "${task.title}" as blocked: ${reason || 'Technical obstacle'}`,
-      entityType: 'TASK',
-      entityId: task._id,
-      clientVisible: false
-    });
+      await logActivity({
+        projectId: task.project,
+        userId: req.user._id,
+        action: 'TASK_BLOCKED',
+        description: `Employee ${req.user.name} marked task "${task.title}" as blocked: ${reason || 'Technical obstacle'}`,
+        entityType: 'TASK',
+        entityId: task._id,
+        clientVisible: false
+      });
+    }
 
-    const project = await Project.findById(task.project);
-    if (project && project.createdBy) {
+    let recipientId = null;
+    if (task.project) {
+      const project = await Project.findById(task.project);
+      recipientId = project?.createdBy;
+    } else {
+      recipientId = task.assignedBy || task.createdBy;
+    }
+
+    if (recipientId) {
       await sendNotification({
-        userId: project.createdBy,
-        projectId: project._id,
+        userId: recipientId,
+        projectId: task.project || undefined,
         title: 'Task Blocked Alert',
         type: 'TASK',
         message: `Employee ${req.user.name} reported task "${task.title}" is BLOCKED: ${reason || 'Immediate attention needed.'}`,
@@ -735,7 +915,7 @@ const blockTask = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      message: 'Task marked as blocked. Admin notified.',
+      message: 'Task marked as blocked. Supervisors notified.',
       task
     });
   } catch (error) {
@@ -745,7 +925,7 @@ const blockTask = async (req, res, next) => {
 
 // @desc    Delete task
 // @route   DELETE /api/tasks/:id
-// @access  Private (Admin only)
+// @access  Private (Admin, HR)
 const deleteTask = async (req, res, next) => {
   try {
     const task = await Task.findById(req.params.id);
@@ -759,7 +939,9 @@ const deleteTask = async (req, res, next) => {
     const projectId = task.project;
     await task.deleteOne();
 
-    await recalculateProjectProgress(projectId, req.user._id);
+    if (projectId) {
+      await recalculateProjectProgress(projectId, req.user._id);
+    }
 
     res.status(200).json({
       success: true,
@@ -773,6 +955,7 @@ const deleteTask = async (req, res, next) => {
 module.exports = {
   getProjectTasks,
   getMyTasks,
+  getPersonalTasks,
   getTaskById,
   createTask,
   updateTask,

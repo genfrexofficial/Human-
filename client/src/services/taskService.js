@@ -14,6 +14,11 @@ export const taskService = {
     return response.data;
   },
 
+  getPersonalTasks: async (params = {}) => {
+    const response = await api.get('/tasks/personal', { params });
+    return response.data;
+  },
+
   getTaskById: async (id) => {
     const response = await api.get(`/tasks/${id}`);
     return response.data;
