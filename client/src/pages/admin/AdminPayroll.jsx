@@ -65,7 +65,7 @@ const AdminPayroll = () => {
   const [selectedSlipForPreview, setSelectedSlipForPreview] = useState(null);
   const [selectedSlipForEdit, setSelectedSlipForEdit] = useState(null);
   const [selectedSlipForPayment, setSelectedSlipForPayment] = useState(null);
-  const [selectedWorkerForStructure, setSelectedWorkerForStructure] = useState(null);
+  const [selectedEmployeeForStructure, setSelectedEmployeeForStructure] = useState(null);
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [genWorkingDays, setGenWorkingDays] = useState(26);
@@ -291,22 +291,20 @@ const AdminPayroll = () => {
       <div className="flex border-b border-slate-200">
         <button
           onClick={() => setActiveTab('payrolls')}
-          className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold border-b-2 transition-all ${
-            activeTab === 'payrolls'
+          className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold border-b-2 transition-all ${activeTab === 'payrolls'
               ? 'border-blue-600 text-blue-600'
               : 'border-transparent text-slate-500 hover:text-slate-800'
-          }`}
+            }`}
         >
           <Banknote className="w-4 h-4" />
           <span>Monthly Payroll Slips ({payrolls.length})</span>
         </button>
         <button
           onClick={() => setActiveTab('structures')}
-          className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold border-b-2 transition-all ${
-            activeTab === 'structures'
+          className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold border-b-2 transition-all ${activeTab === 'structures'
               ? 'border-blue-600 text-blue-600'
               : 'border-transparent text-slate-500 hover:text-slate-800'
-          }`}
+            }`}
         >
           <Users className="w-4 h-4" />
           <span>Employee Salary Packages</span>
@@ -383,7 +381,7 @@ const AdminPayroll = () => {
                 <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
                 <input
                   type="text"
-                  placeholder="Search worker by name / email..."
+                  placeholder="Search Employee by name / email..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-9 pr-3 py-1.5 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500"
@@ -448,7 +446,7 @@ const AdminPayroll = () => {
                         <Banknote className="w-10 h-10 mx-auto text-slate-300 mb-2" />
                         <p className="font-semibold text-slate-600 text-sm">No payroll records for this period</p>
                         <p className="text-xs mt-1">
-                          Click "Run {monthNames[selectedMonth - 1]} Payroll" to generate payslips for all active workers.
+                          Click "Run {monthNames[selectedMonth - 1]} Payroll" to generate payslips for all active Employees.
                         </p>
                       </td>
                     </tr>
@@ -462,7 +460,7 @@ const AdminPayroll = () => {
                               {slip.user?.name ? slip.user.name.charAt(0).toUpperCase() : 'U'}
                             </div>
                             <div>
-                              <p className="font-semibold text-slate-900">{slip.user?.name || 'Worker'}</p>
+                              <p className="font-semibold text-slate-900">{slip.user?.name || 'Employee'}</p>
                               <p className="text-[11px] text-slate-500">{slip.user?.title || slip.user?.email}</p>
                             </div>
                           </div>
@@ -612,7 +610,7 @@ const AdminPayroll = () => {
               <div>
                 <h4 className="text-sm font-semibold text-blue-900">Configured Compensation Architecture</h4>
                 <p className="text-xs text-blue-700">
-                  Define baseline salary, standard allowances (HRA/Medical), statutory deductions (PF/PT), and bank details for each worker.
+                  Define baseline salary, standard allowances (HRA/Medical), statutory deductions (PF/PT), and bank details for each Employee.
                 </p>
               </div>
             </div>
@@ -622,7 +620,7 @@ const AdminPayroll = () => {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold uppercase tracking-wider text-slate-600">
-                  <th className="py-3 px-4">Worker</th>
+                  <th className="py-3 px-4">Employee</th>
                   <th className="py-3 px-4">Base Salary</th>
                   <th className="py-3 px-4">Fixed Allowances</th>
                   <th className="py-3 px-4">Bank Account</th>
@@ -636,21 +634,21 @@ const AdminPayroll = () => {
                   const hasBank = struct?.bankDetails?.accountNumber;
                   const totalAllowances = struct
                     ? (struct.allowances?.hra || 0) +
-                      (struct.allowances?.conveyance || 0) +
-                      (struct.allowances?.specialAllowance || 0) +
-                      (struct.allowances?.medicalAllowance || 0)
+                    (struct.allowances?.conveyance || 0) +
+                    (struct.allowances?.specialAllowance || 0) +
+                    (struct.allowances?.medicalAllowance || 0)
                     : 0;
 
                   return (
-                    <tr key={item.worker._id} className="hover:bg-slate-50/70 transition-colors">
+                    <tr key={item.Employee._id} className="hover:bg-slate-50/70 transition-colors">
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-full bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs">
-                            {item.worker.name?.charAt(0).toUpperCase()}
+                            {item.Employee.name?.charAt(0).toUpperCase()}
                           </div>
                           <div>
-                            <p className="font-semibold text-slate-900">{item.worker.name}</p>
-                            <p className="text-[11px] text-slate-500">{item.worker.title || item.worker.email}</p>
+                            <p className="font-semibold text-slate-900">{item.Employee.name}</p>
+                            <p className="text-[11px] text-slate-500">{item.Employee.title || item.Employee.email}</p>
                           </div>
                         </div>
                       </td>
@@ -694,7 +692,7 @@ const AdminPayroll = () => {
 
                       <td className="py-3.5 px-4 text-right">
                         <button
-                          onClick={() => setSelectedWorkerForStructure(item.worker)}
+                          onClick={() => setSelectedEmployeeForStructure(item.Employee)}
                           className="px-3 py-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors border border-blue-200"
                         >
                           Configure Package
@@ -726,7 +724,7 @@ const AdminPayroll = () => {
             </div>
 
             <p className="text-xs text-slate-600 leading-relaxed mb-4">
-              This will automatically scan all active workers, sync their attendance and approved leaves for {monthNames[selectedMonth - 1]} {selectedYear}, apply base salaries, calculate LOP deductions, and generate editable draft payslips.
+              This will automatically scan all active Employees, sync their attendance and approved leaves for {monthNames[selectedMonth - 1]} {selectedYear}, apply base salaries, calculate LOP deductions, and generate editable draft payslips.
             </p>
 
             <div className="mb-5">
@@ -772,9 +770,9 @@ const AdminPayroll = () => {
 
       {/* Salary Structure Modal */}
       <SalaryStructureModal
-        isOpen={Boolean(selectedWorkerForStructure)}
-        onClose={() => setSelectedWorkerForStructure(null)}
-        worker={selectedWorkerForStructure}
+        isOpen={Boolean(selectedEmployeeForStructure)}
+        onClose={() => setSelectedEmployeeForStructure(null)}
+        Employee={selectedEmployeeForStructure}
         onSaved={fetchStructuresData}
       />
 

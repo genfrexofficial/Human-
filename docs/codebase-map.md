@@ -74,7 +74,7 @@ ClientFlow/
 │   │   │   │   ├── AdminTaskRequests.jsx # Client task request intake & approval queue
 │   │   │   │   ├── AdminTasks.jsx        # Global task oversight board
 │   │   │   │   ├── AdminUsers.jsx        # Enterprise user directory & password control
-│   │   │   │   └── AdminWorkers.jsx      # Engineering team & freelancer staff roster
+│   │   │   │   └── AdminEmployees.jsx      # Engineering team & freelancer staff roster
 │   │   │   ├── auth/                     # Authentication views
 │   │   │   │   ├── AdminSetup.jsx        # First-time primary Administrator onboarding
 │   │   │   │   ├── Login.jsx             # 1-click & credentialed sign-in screen
@@ -96,14 +96,14 @@ ClientFlow/
 │   │   │   │   ├── CreateAppointment.jsx # Form wizard to draft Trainee appointment
 │   │   │   │   ├── HRDashboard.jsx       # Recruitment KPIs, pipeline metrics, activity
 │   │   │   │   └── HRSettings.jsx        # Reference numbering & letter terms settings
-│   │   │   └── worker/                   # Worker / Team Portal views (7 pages)
-│   │   │       ├── WorkerActivity.jsx    # Worker task log and recent operations
-│   │   │       ├── WorkerDashboard.jsx   # Assigned tasks, progress counters, due dates
-│   │   │       ├── WorkerFiles.jsx       # Technical files & deliverable submissions
-│   │   │       ├── WorkerProfile.jsx     # Personal worker profile & skills
-│   │   │       ├── WorkerProjects.jsx    # Projects where worker is assigned
-│   │   │       ├── WorkerTaskDetails.jsx # Granular task execution, notes, file upload
-│   │   │       └── WorkerTasks.jsx       # Assigned task kanban / list with status shifts
+│   │   │   └── Employee/                   # Employee / Team Portal views (7 pages)
+│   │   │       ├── EmployeeActivity.jsx    # Employee task log and recent operations
+│   │   │       ├── EmployeeDashboard.jsx   # Assigned tasks, progress counters, due dates
+│   │   │       ├── EmployeeFiles.jsx       # Technical files & deliverable submissions
+│   │   │       ├── EmployeeProfile.jsx     # Personal Employee profile & skills
+│   │   │       ├── EmployeeProjects.jsx    # Projects where Employee is assigned
+│   │   │       ├── EmployeeTaskDetails.jsx # Granular task execution, notes, file upload
+│   │   │       └── EmployeeTasks.jsx       # Assigned task kanban / list with status shifts
 │   │   ├── services/                     # Frontend Axios API client abstractions
 │   │   │   ├── activityService.js        # /api/activities endpoints
 │   │   │   ├── aiService.js              # /api/ai endpoints
@@ -119,7 +119,7 @@ ClientFlow/
 │   │   │   ├── taskRequestService.js     # /api/task-requests endpoints
 │   │   │   ├── taskService.js            # /api/tasks endpoints
 │   │   │   ├── userService.js            # /api/users endpoints
-│   │   │   └── workerService.js          # /api/users/workers endpoints
+│   │   │   └── EmployeeService.js          # /api/users/Employees endpoints
 │   │   ├── utils/                        # Formatting helpers & constants
 │   │   │   ├── constants.js              # Enums, statuses, colors, categories
 │   │   │   └── formatters.js             # Currency, bytes, date formatters
@@ -235,7 +235,7 @@ ClientFlow/
 | `POST` | `/api/auth/reset-password` | `forgotPassword` | `authController.js:189` | Public | **Disabled (HTTP 403 Forbidden)** |
 | **User Administration** | | | | | |
 | `GET` | `/api/users` | `getAllUsers` | `userController.js` | `ADMIN` | List all users across all roles |
-| `POST` | `/api/users` | `createUser` | `userController.js` | `ADMIN` | Create user account (ADMIN, HR, WORKER, CLIENT) |
+| `POST` | `/api/users` | `createUser` | `userController.js` | `ADMIN` | Create user account (ADMIN, HR, Employee, CLIENT) |
 | `PATCH`| `/api/users/:id` | `updateUser` | `userController.js` | `ADMIN` | Update user details, role, or active status |
 | `DELETE`| `/api/users/:id` | `deleteUser` | `userController.js` | `ADMIN` | Soft or hard delete user account |
 | `PATCH`| `/api/users/:id/password` | `changeUserPassword` | `userController.js` | `ADMIN` | Admin resets a user's password |
@@ -243,8 +243,8 @@ ClientFlow/
 | `PATCH`| `/api/users/change-password` | `rejectNonAdminPasswordChange` | `userController.js` | Any | Explicitly rejected (HTTP 403) |
 | `GET` | `/api/users/clients` | `getClients` | `userController.js` | `ADMIN` | Legacy filtered clients list |
 | `POST` | `/api/users/clients` | `createClient` | `userController.js` | `ADMIN` | Legacy client account creation |
-| `GET` | `/api/users/workers` | `getWorkers` | `userController.js` | `ADMIN` | Legacy filtered workers list |
-| `POST` | `/api/users/workers` | `createWorker` | `userController.js` | `ADMIN` | Legacy worker account creation |
+| `GET` | `/api/users/Employees` | `getEmployees` | `userController.js` | `ADMIN` | Legacy filtered Employees list |
+| `POST` | `/api/users/Employees` | `createEmployee` | `userController.js` | `ADMIN` | Legacy Employee account creation |
 | `GET` | `/api/users/hr` | `getHRUsers` | `userController.js` | `ADMIN` | Legacy filtered HR staff list |
 | `POST` | `/api/users/hr` | `createHRUser` | `userController.js` | `ADMIN` | Legacy HR account creation |
 | **Projects** | | | | | |
@@ -257,15 +257,15 @@ ClientFlow/
 | `PUT` | `/api/projects/:id/stage` | `updateProjectStage` | `projectController.js` | `ADMIN` | Transition project stage (PLANNING -> DEPLOYMENT) |
 | `DELETE`| `/api/projects/:id` | `deleteProject` | `projectController.js` | `ADMIN` | Cascade delete project and associated tasks |
 | **Tasks** | | | | | |
-| `GET` | `/api/tasks/my-tasks` | `getMyTasks` | `taskController.js` | `WORKER`, `ADMIN` | Get tasks assigned to logged-in worker |
+| `GET` | `/api/tasks/my-tasks` | `getMyTasks` | `taskController.js` | `Employee`, `ADMIN` | Get tasks assigned to logged-in Employee |
 | `GET` | `/api/tasks/project/:projectId`| `getProjectTasks` | `taskController.js` | Authenticated | Get tasks for project (clientVisible enforced) |
 | `GET` | `/api/tasks/:id` | `getTaskById` | `taskController.js` | Authenticated | Single task details with attachments |
 | `POST` | `/api/tasks` | `createTask` | `taskController.js` | `ADMIN` | Create task (recalculates project progress) |
-| `PUT` | `/api/tasks/:id` | `updateTask` | `taskController.js` | `ADMIN`, `WORKER` | Update task details or status |
-| `POST` | `/api/tasks/:id/start` | `startTask` | `taskController.js` | `WORKER`, `ADMIN` | Move task to IN_PROGRESS & record startedAt |
-| `POST` | `/api/tasks/:id/progress` | `updateTaskProgress` | `taskController.js` | `WORKER`, `ADMIN` | Update percentage progress (0-100) |
-| `POST` | `/api/tasks/:id/submit-review`| `submitTaskForReview` | `taskController.js` | `WORKER`, `ADMIN` | Move task to IN_REVIEW |
-| `POST` | `/api/tasks/:id/block` | `blockTask` | `taskController.js` | `WORKER`, `ADMIN` | Flag task as BLOCKED (triggers health update) |
+| `PUT` | `/api/tasks/:id` | `updateTask` | `taskController.js` | `ADMIN`, `Employee` | Update task details or status |
+| `POST` | `/api/tasks/:id/start` | `startTask` | `taskController.js` | `Employee`, `ADMIN` | Move task to IN_PROGRESS & record startedAt |
+| `POST` | `/api/tasks/:id/progress` | `updateTaskProgress` | `taskController.js` | `Employee`, `ADMIN` | Update percentage progress (0-100) |
+| `POST` | `/api/tasks/:id/submit-review`| `submitTaskForReview` | `taskController.js` | `Employee`, `ADMIN` | Move task to IN_REVIEW |
+| `POST` | `/api/tasks/:id/block` | `blockTask` | `taskController.js` | `Employee`, `ADMIN` | Flag task as BLOCKED (triggers health update) |
 | `POST` | `/api/tasks/:id/complete` | `completeTask` | `taskController.js` | `ADMIN` | Mark task COMPLETED (triggers progress recalc) |
 | `DELETE`| `/api/tasks/:id` | `deleteTask` | `taskController.js` | `ADMIN` | Remove task and adjust project metrics |
 | **Client Task Requests** | | | | | |
@@ -338,13 +338,13 @@ ClientFlow/
 | Model Name | Source File | Collection | Key Fields | Strategic Indexes |
 |---|---|---|---|---|
 | **`User`** | `server/models/User.js` | `users` | `name`, `email`, `password`, `role`, `status`, `isActive`, `tokenVersion`, `candidateId`, `appointmentLetterId` | `{ role: 1 }`, `{ email: 1 }` (unique) |
-| **`Project`** | `server/models/Project.js` | `projects` | `name`, `client`, `createdBy`, `stage`, `health`, `assignedWorkers`, `progress`, `budget`, `startDate`, `endDate` | `{ client: 1 }`, `{ status: 1 }`, `{ stage: 1 }`, `{ health: 1 }`, `{ assignedWorkers: 1 }` |
+| **`Project`** | `server/models/Project.js` | `projects` | `name`, `client`, `createdBy`, `stage`, `health`, `assignedEmployees`, `progress`, `budget`, `startDate`, `endDate` | `{ client: 1 }`, `{ status: 1 }`, `{ stage: 1 }`, `{ health: 1 }`, `{ assignedEmployees: 1 }` |
 | **`Task`** | `server/models/Task.js` | `tasks` | `project`, `milestone`, `title`, `status`, `priority`, `progress`, `dueDate`, `assignedTo`, `taskRequest`, `clientVisible`, `attachments`, `startedAt`, `completedAt` | `{ project: 1, status: 1 }`, `{ assignedTo: 1, status: 1 }`, `{ dueDate: 1 }`, `{ clientVisible: 1 }` |
 | **`TaskRequest`** | `server/models/TaskRequest.js`| `taskrequests` | `title`, `description`, `project`, `requestedBy`, `priority`, `status`, `reviewedBy`, `createdTask` | `{ project: 1, status: 1 }`, `{ requestedBy: 1 }`, `{ status: 1 }` |
 | **`Milestone`** | `server/models/Milestone.js` | `milestones` | `project`, `title`, `description`, `dueDate`, `status`, `order` | `{ project: 1 }` |
 | **`File`** | `server/models/File.js` | `files` | `fileName`, `originalFileName`, `driveFileId`, `driveFolderId`, `storageProvider`, `storageKey`, `fileUrl`, `mimeType`, `fileSize`, `module`, `category`, `isConfidential`, `isDeliverable`, `approvalStatus`, `revisionNotes` | `{ driveFileId: 1 }`, `{ entityId: 1 }`, `{ uploadedBy: 1 }`, `{ module: 1 }`, `{ status: 1 }`, `{ project: 1, category: 1 }`, `{ task: 1 }`, `{ isConfidential: 1 }`, `{ createdAt: -1 }` |
 | **`AuditLog`** | `server/models/AuditLog.js` | `auditlogs` | `performedBy`, `performedByRole`, `action`, `targetUser`, `fileId`, `fileName`, `relatedModule`, `metadata`, `timestamp` | `{ performedBy: 1, timestamp: -1 }`, `{ targetUser: 1, timestamp: -1 }`, `{ fileId: 1, timestamp: -1 }`, `{ action: 1, timestamp: -1 }` |
-| **`Candidate`** | `server/models/Candidate.js` | `candidates` | `name`, `email`, `phone`, `designation`, `department`, `employmentType`, `candidateStatus`, `compensation`, `projectId`, `clientId`, `requirementId`, `assignedWorker` | `{ designation: 1 }`, `{ candidateStatus: 1 }`, `{ projectId: 1 }`, `{ clientId: 1 }` |
+| **`Candidate`** | `server/models/Candidate.js` | `candidates` | `name`, `email`, `phone`, `designation`, `department`, `employmentType`, `candidateStatus`, `compensation`, `projectId`, `clientId`, `requirementId`, `assignedEmployee` | `{ designation: 1 }`, `{ candidateStatus: 1 }`, `{ projectId: 1 }`, `{ clientId: 1 }` |
 | **`AppointmentLetter`**| `server/models/AppointmentLetter.js`| `appointmentletters`| `referenceNumber`, `candidateId`, `clientId`, `projectId`, `requirementId`, `appointmentType`, `designation`, `compensation`, `status`, `pdfFileId`, `pdfUrl`, `emailStatus`, `acceptanceStatus` | `{ candidateId: 1 }`, `{ projectId: 1 }`, `{ clientId: 1 }`, `{ status: 1 }`, `{ joiningDate: 1 }`, `{ referenceNumber: 1 }` (unique) |
 | **`LetterTemplate`** | `server/models/LetterTemplate.js`| `lettertemplates` | `title`, `designation`, `department`, `appointmentType`, `standardTerms`, `confidentialityTerms`, `responsibilities`, `isDefault` | `{ designation: 1 }`, `{ appointmentType: 1 }` |
 | **`HRSettings`** | `server/models/HRSettings.js` | `hrsettings` | `companyName`, `referencePrefix`, `referenceYear`, `currentSequence`, `companyAddress`, `authorizedSignatoryName`, `authorizedSignatoryTitle` | Single document collection |
@@ -363,7 +363,7 @@ All frontend routes are defined in `client/src/App.jsx` wrapped inside `AuthProv
 - **Public Routes**:
   - `/` -> Navigates to `/login`
   - `/landing` -> `LandingPage.jsx`
-  - `/login` -> `Login.jsx` (Includes instant 1-click login buttons for Admin, Client, Worker, and HR)
+  - `/login` -> `Login.jsx` (Includes instant 1-click login buttons for Admin, Client, Employee, and HR)
   - `/register` -> Redirects to `/login`
   - `/setup-admin` -> Redirects to `/login` (Initial setup only)
 
@@ -372,7 +372,7 @@ All frontend routes are defined in `client/src/App.jsx` wrapped inside `AuthProv
   - `projects` -> `AdminProjects.jsx`
   - `projects/:id` -> `AdminProjectDetails.jsx`
   - `task-requests` -> `AdminTaskRequests.jsx`
-  - `workers` -> `AdminWorkers.jsx`
+  - `Employees` -> `AdminEmployees.jsx`
   - `clients` -> `AdminClients.jsx`
   - `hr-team` -> `AdminHRTeam.jsx`
   - `users` -> `AdminUsers.jsx`
@@ -398,14 +398,14 @@ All frontend routes are defined in `client/src/App.jsx` wrapped inside `AuthProv
   - `appointments/:id` -> `AppointmentDetails.jsx`
   - `settings` -> `HRSettings.jsx`
 
-- **Worker Routes (`/worker/*`)** [Guard: `role === 'WORKER'`]:
-  - `dashboard` -> `WorkerDashboard.jsx`
-  - `tasks` -> `WorkerTasks.jsx`
-  - `tasks/:id` -> `WorkerTaskDetails.jsx`
-  - `projects` -> `WorkerProjects.jsx`
-  - `files` -> `WorkerFiles.jsx`
-  - `activity` -> `WorkerActivity.jsx`
-  - `profile` -> `WorkerProfile.jsx`
+- **Employee Routes (`/Employee/*`)** [Guard: `role === 'Employee'`]:
+  - `dashboard` -> `EmployeeDashboard.jsx`
+  - `tasks` -> `EmployeeTasks.jsx`
+  - `tasks/:id` -> `EmployeeTaskDetails.jsx`
+  - `projects` -> `EmployeeProjects.jsx`
+  - `files` -> `EmployeeFiles.jsx`
+  - `activity` -> `EmployeeActivity.jsx`
+  - `profile` -> `EmployeeProfile.jsx`
 
 - **Client Routes (`/client/*`)** [Guard: `role === 'CLIENT'`]:
   - `dashboard` -> `ClientDashboard.jsx`

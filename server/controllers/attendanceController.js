@@ -3,7 +3,7 @@ const User = require('../models/User');
 
 // @desc    Get current logged-in user's attendance records
 // @route   GET /api/attendance/my-attendance
-// @access  Private (WORKER, HR, ADMIN)
+// @access  Private (Employee, HR, ADMIN)
 const getMyAttendance = async (req, res, next) => {
   try {
     const { month, year } = req.query;
@@ -82,7 +82,7 @@ const getTodaySummary = async (req, res, next) => {
     const todayStr = new Date().toISOString().split('T')[0];
     const todayRecords = await Attendance.find({ date: todayStr }).populate('user', 'name email role avatar');
 
-    const totalEmployees = await User.countDocuments({ role: { $in: ['WORKER', 'HR'] }, isActive: true });
+    const totalEmployees = await User.countDocuments({ role: { $in: ['Employee', 'HR'] }, isActive: true });
     const presentCount = todayRecords.filter(r => ['PRESENT', 'HALF_DAY'].includes(r.status)).length;
     const currentlyActive = todayRecords.filter(r => {
       const lastSession = r.sessions && r.sessions[r.sessions.length - 1];

@@ -25,7 +25,7 @@ async function runAcceptanceTest() {
 
   let adminToken = null;
   let clientId = null;
-  let workerId = null;
+  let EmployeeId = null;
   let projectId = null;
 
   try {
@@ -59,27 +59,27 @@ async function runAcceptanceTest() {
     const clientToken = clientLogin.token;
     console.log(`✅ Client authenticated: ${clientLogin.user.name}`);
 
-    // Ensure test Worker exists
-    const workerEmail = 'arun.kumar@genfrex.internal';
-    const workerPass = 'Worker@123';
-    let workerLogin;
+    // Ensure test Employee exists
+    const EmployeeEmail = 'arun.kumar@genfrex.internal';
+    const EmployeePass = 'Employee@123';
+    let EmployeeLogin;
     try {
-      workerLogin = await req('POST', '/auth/login', { email: workerEmail, password: workerPass });
-      workerId = workerLogin.user.id || workerLogin.user._id;
+      EmployeeLogin = await req('POST', '/auth/login', { email: EmployeeEmail, password: EmployeePass });
+      EmployeeId = EmployeeLogin.user.id || EmployeeLogin.user._id;
     } catch {
-      const workerCreate = await req('POST', '/users', {
+      const EmployeeCreate = await req('POST', '/users', {
         name: 'Arun Kumar',
-        email: workerEmail,
-        role: 'WORKER',
+        email: EmployeeEmail,
+        role: 'Employee',
         title: 'Senior Full Stack Engineer',
         skills: ['React', 'Node.js', 'MongoDB'],
-        password: workerPass
+        password: EmployeePass
       }, adminToken);
-      workerId = workerCreate.user.id || workerCreate.user._id;
-      workerLogin = await req('POST', '/auth/login', { email: workerEmail, password: workerPass });
+      EmployeeId = EmployeeCreate.user.id || EmployeeCreate.user._id;
+      EmployeeLogin = await req('POST', '/auth/login', { email: EmployeeEmail, password: EmployeePass });
     }
-    const workerToken = workerLogin.token;
-    console.log(`✅ Worker authenticated: ${workerLogin.user.name}`);
+    const EmployeeToken = EmployeeLogin.token;
+    console.log(`✅ Employee authenticated: ${EmployeeLogin.user.name}`);
 
     // Ensure test Project exists for Client
     const clientProjects = await req('GET', '/projects', null, clientToken);
@@ -89,7 +89,7 @@ async function runAcceptanceTest() {
         name: 'Customer Portal Modernization',
         description: 'Enterprise client digital portal revamp',
         client: clientId,
-        assignedWorkers: [workerId],
+        assignedEmployees: [EmployeeId],
         budget: 100000
       }, adminToken);
       project = projCreate.project;
@@ -124,7 +124,7 @@ async function runAcceptanceTest() {
       'POST',
       `/task-requests/${taskRequest._id}/approve`,
       {
-        assignedTo: workerId,
+        assignedTo: EmployeeId,
         priority: 'HIGH',
         adminNotes: 'Assigned to Arun for immediate implementation.'
       },
@@ -140,28 +140,28 @@ async function runAcceptanceTest() {
     }
 
     // 5. Arun verifies task in my-tasks
-    console.log('\n[Step 5] Worker verifying task in queue...');
-    const myTasksRes = await req('GET', '/tasks/my-tasks', null, workerToken);
+    console.log('\n[Step 5] Employee verifying task in queue...');
+    const myTasksRes = await req('GET', '/tasks/my-tasks', null, EmployeeToken);
     const arunTask = myTasksRes.tasks.find((t) => t._id === assignedTask._id);
     if (!arunTask) throw new Error('Assigned task not found in Arun queue!');
     console.log(`✅ Arun sees assigned task in his queue: "${arunTask.title}"`);
 
     // 6. Arun starts task (ASSIGNED -> IN_PROGRESS)
     console.log('\n[Step 6] Arun starts the task...');
-    const startRes = await req('POST', `/tasks/${assignedTask._id}/start`, {}, workerToken);
+    const startRes = await req('POST', `/tasks/${assignedTask._id}/start`, {}, EmployeeToken);
     console.log(`✅ Task status after start: ${startRes.task.status} (Expected: IN_PROGRESS)`);
     if (startRes.task.status !== 'IN_PROGRESS') throw new Error('Task did not transition to IN_PROGRESS');
 
     // 7. Arun updates progress: 25 -> 50 -> 75 -> 100
     console.log('\n[Step 7] Arun updating progress (25% -> 50% -> 75% -> 100%)...');
     for (const p of [25, 50, 75, 100]) {
-      const pRes = await req('POST', `/tasks/${assignedTask._id}/progress`, { progress: p }, workerToken);
+      const pRes = await req('POST', `/tasks/${assignedTask._id}/progress`, { progress: p }, EmployeeToken);
       console.log(`   Progress updated to: ${pRes.progress}%`);
     }
 
     // 8. Arun submits for review (IN_PROGRESS -> IN_REVIEW)
     console.log('\n[Step 8] Arun submitting task for Admin review...');
-    const submitRes = await req('POST', `/tasks/${assignedTask._id}/submit-review`, {}, workerToken);
+    const submitRes = await req('POST', `/tasks/${assignedTask._id}/submit-review`, {}, EmployeeToken);
     console.log(`✅ Task status after submission: ${submitRes.task.status} (Expected: IN_REVIEW)`);
     if (submitRes.task.status !== 'IN_REVIEW') throw new Error('Task did not transition to IN_REVIEW');
 
@@ -189,17 +189,17 @@ async function runAcceptanceTest() {
     // 11. Test Role Isolation (Security Check)
     console.log('\n[Step 11] Security & Role Isolation Checks:');
     try {
-      await req('POST', `/task-requests/${taskRequest._id}/approve`, { assignedTo: workerId }, workerToken);
-      throw new Error('SECURITY VIOLATION: Worker was able to approve task requests!');
+      await req('POST', `/task-requests/${taskRequest._id}/approve`, { assignedTo: EmployeeId }, EmployeeToken);
+      throw new Error('SECURITY VIOLATION: Employee was able to approve task requests!');
     } catch (err) {
-      console.log(`✅ Worker blocked from Admin endpoint (HTTP ${err.status})`);
+      console.log(`✅ Employee blocked from Admin endpoint (HTTP ${err.status})`);
     }
 
     try {
-      await req('GET', '/users/workers', null, clientToken);
-      throw new Error('SECURITY VIOLATION: Client was able to access workers list!');
+      await req('GET', '/users/Employees', null, clientToken);
+      throw new Error('SECURITY VIOLATION: Client was able to access Employees list!');
     } catch (err) {
-      console.log(`✅ Client blocked from Workers endpoint (HTTP ${err.status})`);
+      console.log(`✅ Client blocked from Employees endpoint (HTTP ${err.status})`);
     }
 
     console.log('\n===========================================================');
@@ -214,9 +214,9 @@ async function runAcceptanceTest() {
   } finally {
     // Teardown temporary test entities
     if (adminToken) {
-      if (projectId) await req('DELETE', `/projects/${projectId}`, null, adminToken).catch(() => {});
-      if (clientId) await req('DELETE', `/users/${clientId}`, null, adminToken).catch(() => {});
-      if (workerId) await req('DELETE', `/users/${workerId}`, null, adminToken).catch(() => {});
+      if (projectId) await req('DELETE', `/projects/${projectId}`, null, adminToken).catch(() => { });
+      if (clientId) await req('DELETE', `/users/${clientId}`, null, adminToken).catch(() => { });
+      if (EmployeeId) await req('DELETE', `/users/${EmployeeId}`, null, adminToken).catch(() => { });
     }
   }
 }

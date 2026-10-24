@@ -11,7 +11,7 @@ const { authenticateToken, authorizeRoles } = require('../middleware/authMiddlew
 
 router.use(authenticateToken);
 
-// Employee / Worker routes
+// Employee / Employee routes
 router.post('/apply', applyLeave);
 router.get('/my-leaves', getMyLeaves);
 router.delete('/:id', cancelLeave);

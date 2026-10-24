@@ -313,7 +313,7 @@ const AdminSetup = () => {
 
             <div className="mt-4 pt-3 border-t border-white/10 text-center">
               <p className="text-[10px] text-slate-500">
-                After initialization, public Admin setup is automatically locked. Further accounts (HR, Workers, Clients) must be added through the Admin Workspace.
+                After initialization, public Admin setup is automatically locked. Further accounts (HR, Employees, Clients) must be added through the Admin Workspace.
               </p>
             </div>
           </div>

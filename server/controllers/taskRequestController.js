@@ -14,10 +14,10 @@ const getTaskRequests = async (req, res, next) => {
     let query = {};
     if (req.user.role === 'CLIENT') {
       query = { requestedBy: req.user._id };
-    } else if (req.user.role === 'WORKER') {
+    } else if (req.user.role === 'Employee') {
       return res.status(403).json({
         success: false,
-        message: 'Workers do not have access to task requests.'
+        message: 'Employees do not have access to task requests.'
       });
     }
 
@@ -163,12 +163,12 @@ const createTaskRequest = async (req, res, next) => {
   }
 };
 
-// @desc    Approve task request & assign worker to new task
+// @desc    Approve task request & assign Employee to new task
 // @route   POST /api/task-requests/:id/approve
 // @access  Private (Admin only)
 const approveTaskRequest = async (req, res, next) => {
   try {
-    const { assignedTo: workerId, priority, dueDate, adminNotes } = req.body;
+    const { assignedTo: EmployeeId, priority, dueDate, adminNotes } = req.body;
 
     const taskRequest = await TaskRequest.findById(req.params.id);
     if (!taskRequest) {
@@ -185,19 +185,19 @@ const approveTaskRequest = async (req, res, next) => {
       });
     }
 
-    if (!workerId) {
+    if (!EmployeeId) {
       return res.status(400).json({
         success: false,
-        message: 'A worker must be assigned when approving a task request.'
+        message: 'A Employee must be assigned when approving a task request.'
       });
     }
 
-    // Validate worker
-    const worker = await User.findOne({ _id: workerId, role: 'WORKER' });
-    if (!worker) {
+    // Validate Employee
+    const Employee = await User.findOne({ _id: EmployeeId, role: 'Employee' });
+    if (!Employee) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid worker selected. The user must exist and have the WORKER role.'
+        message: 'Invalid Employee selected. The user must exist and have the Employee role.'
       });
     }
 
@@ -217,7 +217,7 @@ const approveTaskRequest = async (req, res, next) => {
       createdBy: req.user._id,
       requestedBy: taskRequest.requestedBy,
       assignedBy: req.user._id,
-      assignedTo: worker._id,
+      assignedTo: Employee._id,
       taskRequest: taskRequest._id,
       priority: priority || taskRequest.priority || 'MEDIUM',
       dueDate: dueDate || taskRequest.requestedDeadline || null,
@@ -235,9 +235,9 @@ const approveTaskRequest = async (req, res, next) => {
     taskRequest.createdTask = newTask._id;
     await taskRequest.save();
 
-    // Ensure worker is registered in project.assignedWorkers
-    if (!project.assignedWorkers.some((w) => w.toString() === worker._id.toString())) {
-      project.assignedWorkers.push(worker._id);
+    // Ensure Employee is registered in project.assignedEmployees
+    if (!project.assignedEmployees.some((w) => w.toString() === Employee._id.toString())) {
+      project.assignedEmployees.push(Employee._id);
       await project.save();
     }
 
@@ -259,20 +259,20 @@ const approveTaskRequest = async (req, res, next) => {
       projectId: project._id,
       userId: req.user._id,
       action: 'TASK_ASSIGNED',
-      description: `Task "${newTask.title}" assigned to ${worker.name}.`,
+      description: `Task "${newTask.title}" assigned to ${Employee.name}.`,
       entityType: 'TASK',
       entityId: newTask._id,
       clientVisible: true
     });
 
-    // Notify Worker
+    // Notify Employee
     await sendNotification({
-      userId: worker._id,
+      userId: Employee._id,
       projectId: project._id,
       title: 'New Task Assigned',
       type: 'TASK',
       message: `You have been assigned to task "${newTask.title}" in project "${project.name}".`,
-      link: `/worker/tasks/${newTask._id}`
+      link: `/Employee/tasks/${newTask._id}`
     });
 
     // Notify Client
@@ -291,7 +291,7 @@ const approveTaskRequest = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      message: `Task request approved and assigned to ${worker.name}.`,
+      message: `Task request approved and assigned to ${Employee.name}.`,
       task: populatedTask,
       taskRequest
     });

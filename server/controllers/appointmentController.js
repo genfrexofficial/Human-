@@ -111,8 +111,8 @@ const getAppointments = async (req, res, next) => {
       .populate('project', 'name status stage client')
       .populate('requirementId', 'title description priority status')
       .populate('requirement', 'title description priority status')
-      .populate('workerId', 'name email avatar title skills')
-      .populate('assignedWorker', 'name email avatar title skills')
+      .populate('EmployeeId', 'name email avatar title skills')
+      .populate('assignedEmployee', 'name email avatar title skills')
       .populate('createdBy', 'name email role')
       .populate('approvedBy', 'name email role')
       .populate('sentBy', 'name email role')
@@ -147,8 +147,8 @@ const getAppointmentById = async (req, res, next) => {
       .populate('project', 'name status stage client')
       .populate('requirementId', 'title description priority status')
       .populate('requirement', 'title description priority status')
-      .populate('workerId', 'name email avatar title skills')
-      .populate('assignedWorker', 'name email avatar title skills')
+      .populate('EmployeeId', 'name email avatar title skills')
+      .populate('assignedEmployee', 'name email avatar title skills')
       .populate('createdBy', 'name email role')
       .populate('approvedBy', 'name email role')
       .populate('sentBy', 'name email role')
@@ -204,8 +204,8 @@ const createAppointment = async (req, res, next) => {
       projectId,
       requirement,
       requirementId,
-      assignedWorker,
-      workerId,
+      assignedEmployee,
+      EmployeeId,
       submitNow
     } = req.body;
 
@@ -222,7 +222,7 @@ const createAppointment = async (req, res, next) => {
           client: client || clientId || null,
           project: project || projectId || null,
           requirement: requirement || requirementId || null,
-          assignedWorker: assignedWorker || workerId || null,
+          assignedEmployee: assignedEmployee || EmployeeId || null,
           source: project || projectId ? 'Client Project' : 'Direct HR',
           createdBy: req.user._id
         });
@@ -264,8 +264,8 @@ const createAppointment = async (req, res, next) => {
       project: project || projectId || candidate.project || candidate.projectId || null,
       requirementId: requirementId || requirement || candidate.requirementId || candidate.requirement || null,
       requirement: requirement || requirementId || candidate.requirement || candidate.requirementId || null,
-      workerId: workerId || assignedWorker || candidate.workerId || candidate.assignedWorker || null,
-      assignedWorker: assignedWorker || workerId || candidate.assignedWorker || candidate.workerId || null,
+      EmployeeId: EmployeeId || assignedEmployee || candidate.EmployeeId || candidate.assignedEmployee || null,
+      assignedEmployee: assignedEmployee || EmployeeId || candidate.assignedEmployee || candidate.EmployeeId || null,
       employmentType: employmentType || appointmentType || 'Trainee',
       appointmentType: appointmentType || (employmentType === 'Full-time' ? 'FULL_TIME' : employmentType === 'Internship' ? 'INTERNSHIP' : 'TRAINEE'),
       title: title || activeTemplate.title || 'TRAINEE APPOINTMENT LETTER',
@@ -347,8 +347,8 @@ const createAppointment = async (req, res, next) => {
       .populate('project', 'name status stage client')
       .populate('requirementId', 'title description priority status')
       .populate('requirement', 'title description priority status')
-      .populate('workerId', 'name email avatar title skills')
-      .populate('assignedWorker', 'name email avatar title skills')
+      .populate('EmployeeId', 'name email avatar title skills')
+      .populate('assignedEmployee', 'name email avatar title skills')
       .populate('createdBy', 'name email role');
 
     res.status(201).json({
@@ -413,8 +413,8 @@ const updateAppointment = async (req, res, next) => {
       'project',
       'requirementId',
       'requirement',
-      'workerId',
-      'assignedWorker'
+      'EmployeeId',
+      'assignedEmployee'
     ];
 
     allowedFields.forEach((field) => {
@@ -464,8 +464,8 @@ const updateAppointment = async (req, res, next) => {
       .populate('project', 'name status stage client')
       .populate('requirementId', 'title description priority status')
       .populate('requirement', 'title description priority status')
-      .populate('workerId', 'name email avatar title skills')
-      .populate('assignedWorker', 'name email avatar title skills')
+      .populate('EmployeeId', 'name email avatar title skills')
+      .populate('assignedEmployee', 'name email avatar title skills')
       .populate('createdBy', 'name email role')
       .populate('approvedBy', 'name email role');
 

@@ -134,8 +134,8 @@ GENFREX/
 │   └── [Client Name]/
 │       ├── Documents/
 │       └── Projects/
-├── Workers/
-│   └── [Worker Name]/
+├── Employees/
+│   └── [Employee Name]/
 ├── HR/
 │   ├── Candidates/
 │   ├── Offer Letters/
@@ -178,7 +178,7 @@ GENFREX/
    - Verify the file opens/downloads directly through the backend proxy without revealing raw Google Drive URLs.
 
 5. **Test Role-Based Access Control**:
-   - Log in as a Worker or Client.
+   - Log in as a Employee or Client.
    - Attempt to access a confidential HR document by ID.
    - Verify the server returns **HTTP 403 Forbidden** and logs a `FILE_ACCESS_DENIED` entry in the Admin Storage Security Log.
 
@@ -193,6 +193,6 @@ GENFREX/
 ## Security Guarantees
 
 1. **Zero Public Links**: Google Drive files are kept private. Public links (`Anyone with the link can view`) are never created.
-2. **Backend Authentication Barrier**: Every request passes through `authenticateToken` and RBAC checks (`ADMIN`, `HR`, `WORKER`, `CLIENT`).
+2. **Backend Authentication Barrier**: Every request passes through `authenticateToken` and RBAC checks (`ADMIN`, `HR`, `Employee`, `CLIENT`).
 3. **No Binary in MongoDB**: MongoDB Atlas stores only file metadata and the Drive reference (`driveFileId`).
 4. **Audit Trail**: Every upload, view, download, replacement, deletion, and denial is logged with actor ID, role, and timestamp.

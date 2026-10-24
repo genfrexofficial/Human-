@@ -44,7 +44,7 @@ The **ClientFlow / GENFREX Platform** implements a **four-tier unified cloud sto
 
 | Storage Provider | Implementation Status | Primary Use Case | Backing Service / Config |
 |---|---|---|---|
-| **Google Drive API v3** | **Fully Implemented** | Primary enterprise cloud storage for all modules (Projects, Deliverables, HR Letters, Worker Files) | `server/services/googleDriveService.js`, `server/services/storageService.js` |
+| **Google Drive API v3** | **Fully Implemented** | Primary enterprise cloud storage for all modules (Projects, Deliverables, HR Letters, Employee Files) | `server/services/googleDriveService.js`, `server/services/storageService.js` |
 | **AWS S3 / S3-Compatible** | **Fully Implemented** | Secondary confidential document storage fallback (compatible with Cloudflare R2, MinIO, Wasabi) | `server/services/s3Service.js`, `server/config/s3.js` |
 | **Cloudinary** | **Fully Implemented** | Secondary public media, image, and avatar storage fallback | `server/config/cloudinary.js`, `server/services/storageService.js` |
 | **Secure Local Disk** | **Fully Implemented** | Local offline fallback and temporary multipart upload ingestion | `server/uploads/`, `server/middleware/uploadMiddleware.js`, `server/server.js:43-73` |
@@ -81,8 +81,8 @@ GENFREX (Root Folder: GOOGLE_DRIVE_ROOT_FOLDER_ID)
 │   └── [Client Name]/
 │       ├── Documents/
 │       └── Projects/
-├── Workers/
-│   └── [Worker Name]/
+├── Employees/
+│   └── [Employee Name]/
 ├── HR/
 │   ├── Candidates/
 │   ├── Offer Letters/
@@ -219,9 +219,9 @@ sequenceDiagram
    - Maximum upload size constrained to `MAX_FILE_SIZE_MB` (defaults to 25MB).
 
 3. **Tenant & Role-Based Download Barriers (`server/controllers/fileController.js:458-600`)**:
-   - **HR Confidential Barrier**: Files marked `isConfidential` or belonging to `HR` module trigger a `403 Forbidden` if requested by `CLIENT` or `WORKER`. An audit log entry `FILE_ACCESS_DENIED` is generated.
+   - **HR Confidential Barrier**: Files marked `isConfidential` or belonging to `HR` module trigger a `403 Forbidden` if requested by `CLIENT` or `Employee`. An audit log entry `FILE_ACCESS_DENIED` is generated.
    - **Client Tenant Barrier**: Clients attempting to access files from other client projects receive `403 Forbidden` (`CROSS_PROJECT_CLIENT_BARRIER`).
-   - **Worker Project Barrier**: Workers attempting to access files for unassigned projects receive `403 Forbidden` (`WORKER_UNASSIGNED_PROJECT`).
+   - **Employee Project Barrier**: Employees attempting to access files for unassigned projects receive `403 Forbidden` (`Employee_UNASSIGNED_PROJECT`).
    - **Internal Task Barrier**: Files attached to tasks where `clientVisible === false` are concealed from clients.
 
 4. **Static Directory Guard (`server/server.js:43-73`)**:

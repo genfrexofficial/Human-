@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 import Badge from '../../components/common/Badge';
 import ProgressBar from '../../components/common/ProgressBar';
 
-const WorkerProjects = () => {
+const EmployeeProjects = () => {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -97,7 +97,7 @@ const WorkerProjects = () => {
                 </div>
 
                 <Link
-                  to={`/worker/tasks?projectId=${project._id}`}
+                  to={`/Employee/tasks?projectId=${project._id}`}
                   className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
                 >
                   <span>My Tasks</span>
@@ -112,4 +112,4 @@ const WorkerProjects = () => {
   );
 };
 
-export default WorkerProjects;
+export default EmployeeProjects;

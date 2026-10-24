@@ -15,6 +15,7 @@ const {
 } = require('../services/storageService');
 const { logActivity } = require('../services/activityService');
 const { sendNotification } = require('../services/notificationService');
+const { cloudinary } = require('../config/cloudinary');
 
 /**
  * Log a storage audit event safely without secrets
@@ -71,8 +72,8 @@ const getProjectFiles = async (req, res, next) => {
       });
     }
 
-    if (req.user.role === 'WORKER') {
-      const isAssigned = project.assignedWorkers && project.assignedWorkers.some(
+    if (req.user.role === 'Employee') {
+      const isAssigned = project.assignedEmployees && project.assignedEmployees.some(
         (w) => w.toString() === req.user._id.toString()
       );
       const hasTask = await Task.exists({ project: project._id, assignedTo: req.user._id });
@@ -115,7 +116,7 @@ const getProjectFiles = async (req, res, next) => {
 
 // @desc    Upload project file / deliverable
 // @route   POST /api/files/upload
-// @access  Private (Admin, Worker, Client, HR)
+// @access  Private (Admin, Employee, Client, HR)
 const uploadProjectFile = async (req, res, next) => {
   try {
     if (!req.file) {
@@ -155,8 +156,8 @@ const uploadProjectFile = async (req, res, next) => {
         });
       }
 
-      if (req.user.role === 'WORKER') {
-        const isAssigned = project.assignedWorkers && project.assignedWorkers.some(
+      if (req.user.role === 'Employee') {
+        const isAssigned = project.assignedEmployees && project.assignedEmployees.some(
           (w) => w.toString() === req.user._id.toString()
         );
         const hasTask = await Task.exists({ project: project._id, assignedTo: req.user._id });
@@ -220,9 +221,11 @@ const uploadProjectFile = async (req, res, next) => {
       approvalStatus: isDeliverable ? 'PENDING_REVIEW' : 'APPROVED'
     });
 
-    // Set permanent URL referencing backend streaming endpoint
-    fileDoc.fileUrl = `/api/files/${fileDoc._id}/download`;
-    await fileDoc.save();
+    // Set permanent URL referencing backend streaming endpoint for local/drive, or retain CDN url for Cloudinary
+    if (fileDoc.storageProvider !== 'CLOUDINARY') {
+      fileDoc.fileUrl = `/api/files/${fileDoc._id}/download`;
+      await fileDoc.save();
+    }
 
     // Create Audit Log
     await recordStorageAudit({
@@ -253,7 +256,7 @@ const uploadProjectFile = async (req, res, next) => {
         clientVisible: !shouldBeConfidential
       });
 
-      // Notify client if deliverable is uploaded by admin or worker
+      // Notify client if deliverable is uploaded by admin or Employee
       if (isDeliverable && req.user.role !== 'CLIENT' && project.client) {
         await sendNotification({
           userId: project.client._id || project.client,
@@ -336,8 +339,10 @@ const uploadConfidentialHRFile = async (req, res, next) => {
       approvalStatus: 'APPROVED'
     });
 
-    fileDoc.fileUrl = `/api/files/${fileDoc._id}/download`;
-    await fileDoc.save();
+    if (fileDoc.storageProvider !== 'CLOUDINARY') {
+      fileDoc.fileUrl = `/api/files/${fileDoc._id}/download`;
+      await fileDoc.save();
+    }
 
     // Audit log
     await recordStorageAudit({
@@ -495,8 +500,8 @@ const downloadFile = async (req, res, next) => {
 
     // 2. CLIENT ACCESS ENFORCEMENT
     if (req.user.role === 'CLIENT') {
-      // Must not access worker, HR, or other modules
-      if (file.module === 'WORKER' || file.module === 'HR') {
+      // Must not access Employee, HR, or other modules
+      if (file.module === 'Employee' || file.module === 'HR') {
         await recordStorageAudit({
           performedBy: req.user._id,
           performedByRole: req.user.role,
@@ -557,19 +562,19 @@ const downloadFile = async (req, res, next) => {
       }
     }
 
-    // 3. WORKER ACCESS ENFORCEMENT
-    if (req.user.role === 'WORKER') {
+    // 3. Employee ACCESS ENFORCEMENT
+    if (req.user.role === 'Employee') {
       if (file.module === 'HR') {
         return res.status(403).json({
           success: false,
-          message: 'Access denied. Worker cannot access HR files.'
+          message: 'Access denied. Employee cannot access HR files.'
         });
       }
 
-      if (file.module === 'WORKER') {
-        const isWorkerOwner = (file.relatedEntityId && file.relatedEntityId.toString() === req.user._id.toString()) ||
+      if (file.module === 'Employee') {
+        const isEmployeeOwner = (file.relatedEntityId && file.relatedEntityId.toString() === req.user._id.toString()) ||
           (file.uploadedBy && file.uploadedBy.toString() === req.user._id.toString());
-        if (!isWorkerOwner) {
+        if (!isEmployeeOwner) {
           await recordStorageAudit({
             performedBy: req.user._id,
             performedByRole: req.user.role,
@@ -577,17 +582,17 @@ const downloadFile = async (req, res, next) => {
             fileName: file.fileName,
             relatedModule: file.module,
             action: 'FILE_ACCESS_DENIED',
-            metadata: { reason: 'CROSS_WORKER_BARRIER' }
+            metadata: { reason: 'CROSS_Employee_BARRIER' }
           });
           return res.status(403).json({
             success: false,
-            message: 'Access denied to other worker documents.'
+            message: 'Access denied to other Employee documents.'
           });
         }
       }
 
       if (file.project) {
-        const isAssigned = file.project.assignedWorkers && file.project.assignedWorkers.some(
+        const isAssigned = file.project.assignedEmployees && file.project.assignedEmployees.some(
           (w) => w.toString() === req.user._id.toString()
         );
         const isTaskAssigned = file.task && file.task.assignedTo && file.task.assignedTo.toString() === req.user._id.toString();
@@ -601,7 +606,7 @@ const downloadFile = async (req, res, next) => {
             fileName: file.fileName,
             relatedModule: file.module,
             action: 'FILE_ACCESS_DENIED',
-            metadata: { reason: 'WORKER_UNASSIGNED_PROJECT' }
+            metadata: { reason: 'Employee_UNASSIGNED_PROJECT' }
           });
           return res.status(403).json({
             success: false,
@@ -671,24 +676,31 @@ const downloadFile = async (req, res, next) => {
     }
 
     // 3. Cloudinary -> redirect to secure URL
-    if (file.storageProvider === 'CLOUDINARY' && file.fileUrl) {
-      return res.redirect(file.fileUrl);
+    if (file.storageProvider === 'CLOUDINARY') {
+      const targetUrl = (file.fileUrl && file.fileUrl.startsWith('http'))
+        ? file.fileUrl
+        : cloudinary.url(file.storageKey || file.publicId, { secure: true, resource_type: 'auto' });
+      return res.redirect(targetUrl);
     }
 
     // 4. Local disk file fallback
-    const filename = file.storageKey || path.basename(file.fileUrl);
-    const filePath = path.join(__dirname, '../uploads', filename);
+    const filename = file.storageKey || (file.fileUrl && file.fileUrl.startsWith('/uploads/') ? file.fileUrl.replace('/uploads/', '') : (file.fileUrl && !file.fileUrl.includes('/download') ? path.basename(file.fileUrl) : null));
+    if (filename) {
+      const filePath = path.join(__dirname, '../uploads', filename);
 
-    if (fs.existsSync(filePath)) {
-      if (isViewOnly) {
-        return res.sendFile(filePath);
+      if (fs.existsSync(filePath)) {
+        if (isViewOnly) {
+          return res.sendFile(filePath);
+        }
+        return res.download(filePath, file.fileName);
       }
-      return res.download(filePath, file.fileName);
     }
 
     return res.status(404).json({
       success: false,
-      message: 'File asset is currently unavailable in cloud storage.'
+      message: file.storageProvider === 'LOCAL'
+        ? 'File is no longer available in server storage (it may have been purged or deleted). Please re-upload the file.'
+        : 'File asset is currently unavailable in cloud storage.'
     });
   } catch (error) {
     next(error);
@@ -915,7 +927,7 @@ const getStorageStats = async (req, res, next) => {
 
 // @desc    Browse, search and filter storage files indexed in MongoDB (Admin & authorized users)
 // @route   GET /api/files/browse
-// @access  Private (Admin, HR, Worker, Client according to RBAC)
+// @access  Private (Admin, HR, Employee, Client according to RBAC)
 const browseFiles = async (req, res, next) => {
   try {
     const { search, module, fileType, uploadedBy, startDate, endDate, page = 1, limit = 20 } = req.query;
@@ -926,7 +938,7 @@ const browseFiles = async (req, res, next) => {
     if (req.user.role === 'CLIENT') {
       query.client = req.user._id;
       query.isConfidential = { $ne: true };
-    } else if (req.user.role === 'WORKER') {
+    } else if (req.user.role === 'Employee') {
       query.isConfidential = { $ne: true };
       query.module = { $ne: 'HR' };
     } else if (req.user.role === 'HR') {

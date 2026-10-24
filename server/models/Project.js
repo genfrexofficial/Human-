@@ -45,7 +45,7 @@ const projectSchema = new mongoose.Schema(
       enum: ['ON_TRACK', 'AT_RISK', 'OVERDUE_BLOCKED'],
       default: 'ON_TRACK'
     },
-    assignedWorkers: [
+    assignedEmployees: [
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
@@ -71,6 +71,6 @@ projectSchema.index({ client: 1 });
 projectSchema.index({ status: 1 });
 projectSchema.index({ stage: 1 });
 projectSchema.index({ health: 1 });
-projectSchema.index({ assignedWorkers: 1 });
+projectSchema.index({ assignedEmployees: 1 });
 
 module.exports = mongoose.model('Project', projectSchema);

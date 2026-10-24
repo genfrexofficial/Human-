@@ -97,24 +97,24 @@ async function runStorageTests() {
   const downloadData = await downloadRes.json();
   assert(downloadRes.status === 200 && downloadData.url, '6. Authenticated Admin receives valid secure download URL');
 
-  // 8. Test Role-Based Confidentiality Barrier: Create temporary Worker & Client accounts
-  const workerRes = await fetch(`${BASE_URL}/users`, {
+  // 8. Test Role-Based Confidentiality Barrier: Create temporary Employee & Client accounts
+  const EmployeeRes = await fetch(`${BASE_URL}/users`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
     body: JSON.stringify({
-      name: 'Storage Test Worker',
-      email: 'storageworker@genfrex.com',
-      role: 'WORKER',
-      password: 'Worker@123Pass!'
+      name: 'Storage Test Employee',
+      email: 'storageEmployee@genfrex.com',
+      role: 'Employee',
+      password: 'Employee@123Pass!'
     })
   });
-  const workerData = await workerRes.json();
-  const workerLogin = await fetch(`${BASE_URL}/auth/login`, {
+  const EmployeeData = await EmployeeRes.json();
+  const EmployeeLogin = await fetch(`${BASE_URL}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: 'storageworker@genfrex.com', password: 'Worker@123Pass!' })
+    body: JSON.stringify({ email: 'storageEmployee@genfrex.com', password: 'Employee@123Pass!' })
   });
-  const workerToken = (await workerLogin.json()).token;
+  const EmployeeToken = (await EmployeeLogin.json()).token;
 
   const clientRes = await fetch(`${BASE_URL}/users`, {
     method: 'POST',
@@ -134,11 +134,11 @@ async function runStorageTests() {
   });
   const clientToken = (await clientLogin.json()).token;
 
-  // Worker attempt to access confidential file
-  const workerAttempt = await fetch(`${BASE_URL}/files/${confidentialFileId}/download`, {
-    headers: { Authorization: `Bearer ${workerToken}` }
+  // Employee attempt to access confidential file
+  const EmployeeAttempt = await fetch(`${BASE_URL}/files/${confidentialFileId}/download`, {
+    headers: { Authorization: `Bearer ${EmployeeToken}` }
   });
-  assert(workerAttempt.status === 403, '7a. Worker is FORBIDDEN from downloading confidential HR files (403)');
+  assert(EmployeeAttempt.status === 403, '7a. Employee is FORBIDDEN from downloading confidential HR files (403)');
 
   // Client attempt to access confidential file
   const clientAttempt = await fetch(`${BASE_URL}/files/${confidentialFileId}/download`, {
@@ -160,12 +160,12 @@ async function runStorageTests() {
 
   const mongoUri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/clientportal';
   await mongoose.connect(mongoUri);
-  await User.deleteMany({ email: { $in: ['storageworker@genfrex.com', 'storageclient@test.com'] } });
+  await User.deleteMany({ email: { $in: ['storageEmployee@genfrex.com', 'storageclient@test.com'] } });
   await File.deleteMany({ _id: confidentialFileId });
 
-  const remainingTestUsers = await User.countDocuments({ email: { $in: ['storageworker@genfrex.com', 'storageclient@test.com'] } });
+  const remainingTestUsers = await User.countDocuments({ email: { $in: ['storageEmployee@genfrex.com', 'storageclient@test.com'] } });
   const remainingTestFiles = await File.countDocuments({ _id: confidentialFileId });
-  assert(remainingTestUsers === 0, '9. Test users cleaned up (test worker & client removed)');
+  assert(remainingTestUsers === 0, '9. Test users cleaned up (test Employee & client removed)');
   assert(remainingTestFiles === 0, '10. Test files cleaned up (confidential test file removed)');
 
   await mongoose.disconnect();

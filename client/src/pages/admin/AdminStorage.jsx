@@ -288,7 +288,7 @@ const AdminStorage = () => {
             Google Drive Storage Management
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Manage enterprise files, HR confidential offer letters, client deliverables, and worker assets stored in Google Drive.
+            Manage enterprise files, HR confidential offer letters, client deliverables, and Employee assets stored in Google Drive.
           </p>
         </div>
 
@@ -478,11 +478,10 @@ const AdminStorage = () => {
       <div className="flex border-b border-slate-200 gap-4 text-xs font-semibold">
         <button
           onClick={() => setActiveTab('files')}
-          className={`pb-2.5 border-b-2 flex items-center gap-1.5 transition-colors ${
-            activeTab === 'files'
+          className={`pb-2.5 border-b-2 flex items-center gap-1.5 transition-colors ${activeTab === 'files'
               ? 'border-emerald-600 text-emerald-700 font-bold'
               : 'border-transparent text-slate-500 hover:text-slate-800'
-          }`}
+            }`}
         >
           <Folder className="w-3.5 h-3.5" />
           <span>File Catalog & Search</span>
@@ -493,11 +492,10 @@ const AdminStorage = () => {
 
         <button
           onClick={() => setActiveTab('audit')}
-          className={`pb-2.5 border-b-2 flex items-center gap-1.5 transition-colors ${
-            activeTab === 'audit'
+          className={`pb-2.5 border-b-2 flex items-center gap-1.5 transition-colors ${activeTab === 'audit'
               ? 'border-emerald-600 text-emerald-700 font-bold'
               : 'border-transparent text-slate-500 hover:text-slate-800'
-          }`}
+            }`}
         >
           <History className="w-3.5 h-3.5" />
           <span>Recent Deletions</span>
@@ -508,11 +506,10 @@ const AdminStorage = () => {
 
         <button
           onClick={() => setActiveTab('errors')}
-          className={`pb-2.5 border-b-2 flex items-center gap-1.5 transition-colors ${
-            activeTab === 'errors'
+          className={`pb-2.5 border-b-2 flex items-center gap-1.5 transition-colors ${activeTab === 'errors'
               ? 'border-rose-600 text-rose-700 font-bold'
               : 'border-transparent text-slate-500 hover:text-slate-800'
-          }`}
+            }`}
         >
           <AlertCircle className="w-3.5 h-3.5 text-rose-500" />
           <span>Security / Denied Access Log</span>
@@ -548,7 +545,7 @@ const AdminStorage = () => {
                 <option value="HR">HR Documents</option>
                 <option value="PROJECT">Projects</option>
                 <option value="CLIENT">Clients</option>
-                <option value="WORKER">Workers</option>
+                <option value="Employee">Employees</option>
                 <option value="GENERAL">General</option>
               </select>
 
@@ -883,7 +880,7 @@ const AdminStorage = () => {
                 <option value="HR">HR & OfferFlow</option>
                 <option value="CLIENT">Client Documents</option>
                 <option value="PROJECT">Project Assets</option>
-                <option value="WORKER">Worker Documents</option>
+                <option value="Employee">Employee Documents</option>
               </select>
             </div>
 

@@ -147,8 +147,8 @@ const login = async (req, res, next) => {
       });
     }
 
-    // Automated Attendance Tracking on Login (For Employees/Workers/HR/Admin)
-    if (['WORKER', 'HR', 'ADMIN'].includes(user.role)) {
+    // Automated Attendance Tracking on Login (For Employees/Employees/HR/Admin)
+    if (['Employee', 'HR', 'ADMIN'].includes(user.role)) {
       try {
         const Attendance = require('../models/Attendance');
         const todayStr = new Date().toISOString().split('T')[0];

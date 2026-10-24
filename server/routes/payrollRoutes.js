@@ -18,8 +18,8 @@ const { authenticateToken, authorizeRoles } = require('../middleware/authMiddlew
 
 router.use(authenticateToken);
 
-// Worker routes
-router.get('/my-payrolls', authorizeRoles('WORKER'), getMyPayrolls);
+// Employee routes
+router.get('/my-payrolls', authorizeRoles('Employee'), getMyPayrolls);
 
 // Shared / Role-checked detail view & PDF download
 router.get('/slip/:id', getPayrollById);

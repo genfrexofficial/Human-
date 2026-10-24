@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { projectService } from '../../services/projectService';
-import { workerService } from '../../services/workerService';
+import { EmployeeService } from '../../services/EmployeeService';
 import {
   BarChart3,
   CheckCircle2,
@@ -28,7 +28,7 @@ import {
 
 const AdminReports = () => {
   const [analytics, setAnalytics] = useState(null);
-  const [workers, setWorkers] = useState([]);
+  const [Employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -37,11 +37,11 @@ const AdminReports = () => {
         setLoading(true);
         const [aRes, wRes] = await Promise.all([
           projectService.getAdminOverviewAnalytics(),
-          workerService.getWorkers()
+          EmployeeService.getEmployees()
         ]);
 
         if (aRes.success) setAnalytics(aRes.analytics);
-        if (wRes.success) setWorkers(wRes.workers || []);
+        if (wRes.success) setEmployees(wRes.Employees || []);
       } catch (err) {
         toast.error('Failed to load operational analytics.');
       } finally {
@@ -72,7 +72,7 @@ const AdminReports = () => {
     { name: 'Overdue / Blocked', value: analytics?.projects?.health?.overdueBlocked || 0, color: '#f43f5e' }
   ].filter((d) => d.value > 0);
 
-  const workerWorkloadData = workers.map((w) => ({
+  const EmployeeWorkloadData = Employees.map((w) => ({
     name: w.name.split(' ')[0],
     inProgress: w.workload?.inProgress || 0,
     assigned: w.workload?.assigned || 0,
@@ -135,7 +135,7 @@ const AdminReports = () => {
             <CheckCircle2 className="h-4 w-4 text-emerald-500" />
           </div>
           <p className="text-2xl font-bold text-slate-900 mt-2">
-            {analytics?.users?.workers || 0}
+            {analytics?.users?.Employees || 0}
           </p>
           <p className="text-[10px] text-slate-400 mt-0.5">
             Serving {analytics?.users?.clients || 0} client organizations
@@ -168,14 +168,14 @@ const AdminReports = () => {
           </div>
         </div>
 
-        {/* Worker Workload Capacity */}
+        {/* Employee Workload Capacity */}
         <div className="rounded-xl border border-slate-200/80 bg-white p-4 sm:p-6 shadow-sm min-w-0">
           <h2 className="text-sm font-bold text-slate-900 mb-1">Engineer Workload Distribution</h2>
           <p className="text-xs text-slate-500 mb-6">Active tasks allocated per team member</p>
 
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={workerWorkloadData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <BarChart data={EmployeeWorkloadData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} allowDecimals={false} />
                 <Tooltip

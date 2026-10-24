@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { taskRequestService } from '../../services/taskRequestService';
-import { workerService } from '../../services/workerService';
+import { EmployeeService } from '../../services/EmployeeService';
 import {
   Inbox,
   CheckCircle2,
@@ -22,7 +22,7 @@ import Modal from '../../components/common/Modal';
 
 const AdminTaskRequests = () => {
   const [requests, setRequests] = useState([]);
-  const [workers, setWorkers] = useState([]);
+  const [Employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
@@ -30,7 +30,7 @@ const AdminTaskRequests = () => {
   // Approve Modal State
   const [approveModalOpen, setApproveModalOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
-  const [assignedWorkerId, setAssignedWorkerId] = useState('');
+  const [assignedEmployeeId, setAssignedEmployeeId] = useState('');
   const [assignPriority, setAssignPriority] = useState('MEDIUM');
   const [assignDueDate, setAssignDueDate] = useState('');
   const [adminNotes, setAdminNotes] = useState('');
@@ -46,11 +46,11 @@ const AdminTaskRequests = () => {
       setLoading(true);
       const [rRes, wRes] = await Promise.all([
         taskRequestService.getTaskRequests(),
-        workerService.getWorkers()
+        EmployeeService.getEmployees()
       ]);
 
       if (rRes.success) setRequests(rRes.taskRequests || []);
-      if (wRes.success) setWorkers(wRes.workers || []);
+      if (wRes.success) setEmployees(wRes.Employees || []);
     } catch (err) {
       toast.error('Failed to load task requests.');
     } finally {
@@ -67,21 +67,21 @@ const AdminTaskRequests = () => {
     setAssignPriority(req.priority || 'MEDIUM');
     setAssignDueDate(req.requestedDeadline ? req.requestedDeadline.split('T')[0] : '');
     setAdminNotes('');
-    setAssignedWorkerId(workers.length > 0 ? workers[0]._id : '');
+    setAssignedEmployeeId(Employees.length > 0 ? Employees[0]._id : '');
     setApproveModalOpen(true);
   };
 
   const handleApprove = async (e) => {
     e.preventDefault();
-    if (!assignedWorkerId) {
-      toast.error('Please assign a worker to execute this task.');
+    if (!assignedEmployeeId) {
+      toast.error('Please assign a Employee to execute this task.');
       return;
     }
 
     try {
       setApproving(true);
       const res = await taskRequestService.approveTaskRequest(selectedRequest._id, {
-        assignedTo: assignedWorkerId,
+        assignedTo: assignedEmployeeId,
         priority: assignPriority,
         dueDate: assignDueDate || null,
         adminNotes: adminNotes.trim()
@@ -167,11 +167,10 @@ const AdminTaskRequests = () => {
               key={st}
               type="button"
               onClick={() => setStatusFilter(st)}
-              className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
-                statusFilter === st
+              className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${statusFilter === st
                   ? 'bg-indigo-600 text-white'
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
+                }`}
             >
               {st.replace('_', ' ')}
             </button>
@@ -194,96 +193,96 @@ const AdminTaskRequests = () => {
         <div className="rounded-xl border border-slate-200/80 bg-white overflow-hidden shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs min-w-[700px]">
-            <thead className="border-b border-slate-200 bg-slate-50 text-slate-500 uppercase tracking-wider font-semibold">
-              <tr>
-                <th className="px-5 py-3">Client</th>
-                <th className="px-4 py-3">Project</th>
-                <th className="px-5 py-3">Task Title & Details</th>
-                <th className="px-4 py-3">Priority</th>
-                <th className="px-4 py-3">Requested Date</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-5 py-3 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {filteredRequests.map((req) => (
-                <tr key={req._id} className="hover:bg-slate-50/70 transition-colors">
-                  <td className="px-5 py-3.5 whitespace-nowrap">
-                    <div className="font-semibold text-slate-900">{req.requestedBy?.name || 'Client'}</div>
-                    <span className="text-[10px] text-slate-400 block">{req.requestedBy?.companyName}</span>
-                  </td>
-
-                  <td className="px-4 py-3.5 whitespace-nowrap text-slate-700 font-medium">
-                    {req.project?.name || '—'}
-                  </td>
-
-                  <td className="px-5 py-3.5 max-w-sm">
-                    <span className="font-semibold text-slate-900 block">{req.title}</span>
-                    <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">{req.description}</p>
-                    {req.rejectionReason && (
-                      <span className="text-[10px] text-rose-600 block mt-1 font-medium">
-                        Rejection reason: {req.rejectionReason}
-                      </span>
-                    )}
-                    {req.createdTask?.assignedTo && (
-                      <span className="text-[10px] text-emerald-600 block mt-1 font-semibold">
-                        Assigned to: {req.createdTask.assignedTo.name}
-                      </span>
-                    )}
-                  </td>
-
-                  <td className="px-4 py-3.5 whitespace-nowrap">
-                    <Badge variant={req.priority?.toLowerCase() || 'default'}>
-                      {req.priority}
-                    </Badge>
-                  </td>
-
-                  <td className="px-4 py-3.5 whitespace-nowrap text-slate-500 text-[11px]">
-                    {new Date(req.createdAt).toLocaleDateString()}
-                  </td>
-
-                  <td className="px-4 py-3.5 whitespace-nowrap">
-                    <Badge variant={req.status?.toLowerCase() || 'default'}>
-                      {req.status?.replace('_', ' ')}
-                    </Badge>
-                  </td>
-
-                  <td className="px-5 py-3.5 text-right whitespace-nowrap">
-                    {req.status === 'PENDING_APPROVAL' ? (
-                      <div className="flex items-center justify-end gap-1.5">
-                        <Button
-                          size="xs"
-                          variant="primary"
-                          onClick={() => openApproveModal(req)}
-                        >
-                          <Check className="h-3 w-3 mr-1" />
-                          Approve & Assign
-                        </Button>
-                        <Button
-                          size="xs"
-                          variant="outline"
-                          className="text-rose-600 border-rose-200 hover:bg-rose-50"
-                          onClick={() => openRejectModal(req)}
-                        >
-                          <X className="h-3 w-3 mr-1" />
-                          Reject
-                        </Button>
-                      </div>
-                    ) : (
-                      <span className="text-[11px] text-slate-400 font-medium">
-                        Reviewed {req.reviewedAt ? new Date(req.reviewedAt).toLocaleDateString() : ''}
-                      </span>
-                    )}
-                  </td>
+              <thead className="border-b border-slate-200 bg-slate-50 text-slate-500 uppercase tracking-wider font-semibold">
+                <tr>
+                  <th className="px-5 py-3">Client</th>
+                  <th className="px-4 py-3">Project</th>
+                  <th className="px-5 py-3">Task Title & Details</th>
+                  <th className="px-4 py-3">Priority</th>
+                  <th className="px-4 py-3">Requested Date</th>
+                  <th className="px-4 py-3">Status</th>
+                  <th className="px-5 py-3 text-right">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filteredRequests.map((req) => (
+                  <tr key={req._id} className="hover:bg-slate-50/70 transition-colors">
+                    <td className="px-5 py-3.5 whitespace-nowrap">
+                      <div className="font-semibold text-slate-900">{req.requestedBy?.name || 'Client'}</div>
+                      <span className="text-[10px] text-slate-400 block">{req.requestedBy?.companyName}</span>
+                    </td>
+
+                    <td className="px-4 py-3.5 whitespace-nowrap text-slate-700 font-medium">
+                      {req.project?.name || '—'}
+                    </td>
+
+                    <td className="px-5 py-3.5 max-w-sm">
+                      <span className="font-semibold text-slate-900 block">{req.title}</span>
+                      <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">{req.description}</p>
+                      {req.rejectionReason && (
+                        <span className="text-[10px] text-rose-600 block mt-1 font-medium">
+                          Rejection reason: {req.rejectionReason}
+                        </span>
+                      )}
+                      {req.createdTask?.assignedTo && (
+                        <span className="text-[10px] text-emerald-600 block mt-1 font-semibold">
+                          Assigned to: {req.createdTask.assignedTo.name}
+                        </span>
+                      )}
+                    </td>
+
+                    <td className="px-4 py-3.5 whitespace-nowrap">
+                      <Badge variant={req.priority?.toLowerCase() || 'default'}>
+                        {req.priority}
+                      </Badge>
+                    </td>
+
+                    <td className="px-4 py-3.5 whitespace-nowrap text-slate-500 text-[11px]">
+                      {new Date(req.createdAt).toLocaleDateString()}
+                    </td>
+
+                    <td className="px-4 py-3.5 whitespace-nowrap">
+                      <Badge variant={req.status?.toLowerCase() || 'default'}>
+                        {req.status?.replace('_', ' ')}
+                      </Badge>
+                    </td>
+
+                    <td className="px-5 py-3.5 text-right whitespace-nowrap">
+                      {req.status === 'PENDING_APPROVAL' ? (
+                        <div className="flex items-center justify-end gap-1.5">
+                          <Button
+                            size="xs"
+                            variant="primary"
+                            onClick={() => openApproveModal(req)}
+                          >
+                            <Check className="h-3 w-3 mr-1" />
+                            Approve & Assign
+                          </Button>
+                          <Button
+                            size="xs"
+                            variant="outline"
+                            className="text-rose-600 border-rose-200 hover:bg-rose-50"
+                            onClick={() => openRejectModal(req)}
+                          >
+                            <X className="h-3 w-3 mr-1" />
+                            Reject
+                          </Button>
+                        </div>
+                      ) : (
+                        <span className="text-[11px] text-slate-400 font-medium">
+                          Reviewed {req.reviewedAt ? new Date(req.reviewedAt).toLocaleDateString() : ''}
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
 
-      {/* Approve & Assign Worker Modal */}
+      {/* Approve & Assign Employee Modal */}
       <Modal
         isOpen={approveModalOpen}
         onClose={() => setApproveModalOpen(false)}
@@ -301,14 +300,14 @@ const AdminTaskRequests = () => {
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-800 mb-1">Assign Engineer / Worker *</label>
+              <label className="block font-semibold text-slate-800 mb-1">Assign Engineer / Employee *</label>
               <select
                 required
-                value={assignedWorkerId}
-                onChange={(e) => setAssignedWorkerId(e.target.value)}
+                value={assignedEmployeeId}
+                onChange={(e) => setAssignedEmployeeId(e.target.value)}
                 className="w-full rounded-lg border border-slate-200 p-2 text-xs text-slate-800 focus:border-indigo-500 focus:outline-none"
               >
-                {workers.map((w) => (
+                {Employees.map((w) => (
                   <option key={w._id} value={w._id}>
                     {w.name} — {w.title || 'Engineer'} ({w.workload?.totalActive || 0} active tasks)
                   </option>
@@ -346,7 +345,7 @@ const AdminTaskRequests = () => {
               <label className="block font-semibold text-slate-800 mb-1">Admin Notes (Optional)</label>
               <textarea
                 rows={2}
-                placeholder="Internal notes or special instructions for the assigned worker..."
+                placeholder="Internal notes or special instructions for the assigned Employee..."
                 value={adminNotes}
                 onChange={(e) => setAdminNotes(e.target.value)}
                 className="w-full rounded-lg border border-slate-200 p-2 text-xs text-slate-800 placeholder-slate-400 focus:border-indigo-500 focus:outline-none"
@@ -357,7 +356,7 @@ const AdminTaskRequests = () => {
               <Button size="sm" variant="secondary" type="button" onClick={() => setApproveModalOpen(false)}>
                 Cancel
               </Button>
-              <Button size="sm" type="submit" disabled={approving || !assignedWorkerId}>
+              <Button size="sm" type="submit" disabled={approving || !assignedEmployeeId}>
                 {approving ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Check className="h-3 w-3 mr-1" />}
                 Approve & Assign Task
               </Button>

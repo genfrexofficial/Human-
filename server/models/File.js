@@ -30,7 +30,7 @@ const fileSchema = new mongoose.Schema(
     },
     uploadedByRole: {
       type: String,
-      enum: ['ADMIN', 'HR', 'WORKER', 'CLIENT'],
+      enum: ['ADMIN', 'HR', 'Employee', 'CLIENT'],
       default: 'ADMIN'
     },
 
@@ -99,12 +99,12 @@ const fileSchema = new mongoose.Schema(
     // Module & Entity mapping
     module: {
       type: String,
-      enum: ['CLIENT', 'PROJECT', 'TASK', 'HR', 'WORKER', 'GENERAL'],
+      enum: ['CLIENT', 'PROJECT', 'TASK', 'HR', 'Employee', 'GENERAL'],
       default: 'PROJECT'
     },
     relatedModule: {
       type: String,
-      enum: ['CLIENT', 'PROJECT', 'TASK', 'HR', 'WORKER', 'GENERAL'],
+      enum: ['CLIENT', 'PROJECT', 'TASK', 'HR', 'Employee', 'GENERAL'],
       default: 'PROJECT'
     },
     entityType: {

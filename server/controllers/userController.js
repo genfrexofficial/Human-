@@ -39,7 +39,7 @@ const getAllUsers = async (req, res, next) => {
   }
 };
 
-// @desc    Admin creates HR, Worker, or Client (Strictly NO Admin creation)
+// @desc    Admin creates HR, Employee, or Client (Strictly NO Admin creation)
 // @route   POST /api/users
 // @access  Private (Admin only)
 const createUser = async (req, res, next) => {
@@ -63,10 +63,10 @@ const createUser = async (req, res, next) => {
       });
     }
 
-    if (!['HR', 'WORKER', 'CLIENT'].includes(targetRole)) {
+    if (!['HR', 'Employee', 'CLIENT'].includes(targetRole)) {
       return res.status(400).json({
         success: false,
-        message: `Invalid role '${targetRole}'. Allowed roles are HR, WORKER, or CLIENT.`
+        message: `Invalid role '${targetRole}'. Allowed roles are HR, Employee, or CLIENT.`
       });
     }
 
@@ -96,7 +96,7 @@ const createUser = async (req, res, next) => {
       phone: phone ? phone.trim() : '',
       role: targetRole,
       password: tempPassword, // Hashed by User pre-save bcrypt hook
-      title: title ? title.trim() : targetRole === 'HR' ? 'HR Talent Lead' : targetRole === 'WORKER' ? 'Software Engineer' : 'Client Representative',
+      title: title ? title.trim() : targetRole === 'HR' ? 'HR Talent Lead' : targetRole === 'Employee' ? 'Software Engineer' : 'Client Representative',
       companyName: companyName ? companyName.trim() : targetRole === 'CLIENT' ? 'Client Organization' : 'GENFREX',
       skills: Array.isArray(skills) ? skills : skills ? skills.split(',').map((s) => s.trim()) : [],
       status: userStatus,
@@ -108,7 +108,7 @@ const createUser = async (req, res, next) => {
     let linkedCandidate = null;
     if (req.body.candidateId) {
       linkedCandidate = await Candidate.findById(req.body.candidateId);
-    } else if (targetRole === 'WORKER') {
+    } else if (targetRole === 'Employee') {
       linkedCandidate = await Candidate.findOne({ email: normalizedEmail });
     }
 
@@ -116,8 +116,8 @@ const createUser = async (req, res, next) => {
       newUser.candidateId = linkedCandidate._id;
       newUser.hiredFromCandidate = true;
 
-      linkedCandidate.workerId = newUser._id;
-      linkedCandidate.assignedWorker = newUser._id;
+      linkedCandidate.EmployeeId = newUser._id;
+      linkedCandidate.assignedEmployee = newUser._id;
       linkedCandidate.candidateStatus = 'ONBOARDED';
       await linkedCandidate.save();
 
@@ -127,8 +127,8 @@ const createUser = async (req, res, next) => {
 
       const appointment = await AppointmentLetter.findOne(appQuery);
       if (appointment) {
-        appointment.workerId = newUser._id;
-        appointment.assignedWorker = newUser._id;
+        appointment.EmployeeId = newUser._id;
+        appointment.assignedEmployee = newUser._id;
         await appointment.save();
         newUser.appointmentLetterId = appointment._id;
       }
@@ -139,7 +139,7 @@ const createUser = async (req, res, next) => {
     // Create Audit Log (Never log passwords)
     let actionType = 'CREATE_CLIENT';
     if (targetRole === 'HR') actionType = 'CREATE_HR';
-    else if (targetRole === 'WORKER') actionType = 'CREATE_WORKER';
+    else if (targetRole === 'Employee') actionType = 'CREATE_Employee';
 
     await AuditLog.create({
       performedBy: req.user._id,
@@ -175,7 +175,7 @@ const createUser = async (req, res, next) => {
       message: `${targetRole} account created successfully.`,
       temporaryPassword: tempPassword,
       user: userPayload,
-      worker: userPayload,
+      Employee: userPayload,
       client: userPayload,
       hr: userPayload
     });
@@ -444,7 +444,7 @@ const deleteUser = async (req, res, next) => {
 };
 
 // @desc    Strict Rejection for Non-Admin Password Changes
-// @access  Forbidden for HR, WORKER, CLIENT
+// @access  Forbidden for HR, Employee, CLIENT
 const rejectNonAdminPasswordChange = (req, res) => {
   return res.status(403).json({
     success: false,
@@ -495,36 +495,36 @@ const createClient = async (req, res, next) => {
   return createUser(req, res, next);
 };
 
-const getWorkers = async (req, res, next) => {
+const getEmployees = async (req, res, next) => {
   try {
-    const workers = await User.find({ role: 'WORKER' }).select('-password').sort({ createdAt: -1 });
+    const Employees = await User.find({ role: 'Employee' }).select('-password').sort({ createdAt: -1 });
     const now = new Date();
 
-    const workersWithWorkload = await Promise.all(
-      workers.map(async (worker) => {
-        const workerObj = worker.toObject();
+    const EmployeesWithWorkload = await Promise.all(
+      Employees.map(async (Employee) => {
+        const EmployeeObj = Employee.toObject();
         const [assigned, inProgress, awaitingReview, completed, blocked, overdue] = await Promise.all([
-          Task.countDocuments({ assignedTo: worker._id, status: { $in: ['ASSIGNED', 'TODO'] } }),
-          Task.countDocuments({ assignedTo: worker._id, status: 'IN_PROGRESS' }),
-          Task.countDocuments({ assignedTo: worker._id, status: 'IN_REVIEW' }),
-          Task.countDocuments({ assignedTo: worker._id, status: 'COMPLETED' }),
-          Task.countDocuments({ assignedTo: worker._id, status: 'BLOCKED' }),
+          Task.countDocuments({ assignedTo: Employee._id, status: { $in: ['ASSIGNED', 'TODO'] } }),
+          Task.countDocuments({ assignedTo: Employee._id, status: 'IN_PROGRESS' }),
+          Task.countDocuments({ assignedTo: Employee._id, status: 'IN_REVIEW' }),
+          Task.countDocuments({ assignedTo: Employee._id, status: 'COMPLETED' }),
+          Task.countDocuments({ assignedTo: Employee._id, status: 'BLOCKED' }),
           Task.countDocuments({
-            assignedTo: worker._id,
+            assignedTo: Employee._id,
             status: { $ne: 'COMPLETED' },
             dueDate: { $lt: now, $ne: null }
           })
         ]);
 
         const totalActive = assigned + inProgress + awaitingReview + blocked;
-        workerObj.workload = { assigned, inProgress, awaitingReview, completed, blocked, overdue, totalActive };
-        return workerObj;
+        EmployeeObj.workload = { assigned, inProgress, awaitingReview, completed, blocked, overdue, totalActive };
+        return EmployeeObj;
       })
     );
 
-    // Find candidates whose appointment has been approved, sent, or accepted, but who do not have an active worker account
-    const existingWorkerEmails = new Set(workers.map((w) => w.email.toLowerCase()));
-    const existingWorkerIds = new Set(workers.map((w) => w._id.toString()));
+    // Find candidates whose appointment has been approved, sent, or accepted, but who do not have an active Employee account
+    const existingEmployeeEmails = new Set(Employees.map((w) => w.email.toLowerCase()));
+    const existingEmployeeIds = new Set(Employees.map((w) => w._id.toString()));
 
     const approvedAppointments = await AppointmentLetter.find({
       status: { $in: ['APPROVED', 'SENT', 'ACCEPTED'] }
@@ -542,11 +542,11 @@ const getWorkers = async (req, res, next) => {
       if (!cand) continue;
       if (seenCandidateIds.has(cand._id.toString())) continue;
 
-      const hasWorkerId = (cand.workerId && existingWorkerIds.has(cand.workerId.toString())) ||
-                          (app.workerId && existingWorkerIds.has(app.workerId.toString()));
-      const hasWorkerEmail = cand.email && existingWorkerEmails.has(cand.email.toLowerCase());
+      const hasEmployeeId = (cand.EmployeeId && existingEmployeeIds.has(cand.EmployeeId.toString())) ||
+        (app.EmployeeId && existingEmployeeIds.has(app.EmployeeId.toString()));
+      const hasEmployeeEmail = cand.email && existingEmployeeEmails.has(cand.email.toLowerCase());
 
-      if (!hasWorkerId && !hasWorkerEmail) {
+      if (!hasEmployeeId && !hasEmployeeEmail) {
         seenCandidateIds.add(cand._id.toString());
         pendingSetupCandidates.push({
           candidateId: cand._id,
@@ -571,8 +571,8 @@ const getWorkers = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      count: workersWithWorkload.length,
-      workers: workersWithWorkload,
+      count: EmployeesWithWorkload.length,
+      Employees: EmployeesWithWorkload,
       pendingSetupCandidates
     });
   } catch (error) {
@@ -580,21 +580,21 @@ const getWorkers = async (req, res, next) => {
   }
 };
 
-const getWorkerById = async (req, res, next) => {
+const getEmployeeById = async (req, res, next) => {
   try {
-    const worker = await User.findOne({ _id: req.params.id, role: 'WORKER' }).select('-password');
-    if (!worker) {
-      return res.status(404).json({ success: false, message: 'Worker not found.' });
+    const Employee = await User.findOne({ _id: req.params.id, role: 'Employee' }).select('-password');
+    if (!Employee) {
+      return res.status(404).json({ success: false, message: 'Employee not found.' });
     }
-    const tasks = await Task.find({ assignedTo: worker._id }).populate('project', 'name status stage client').sort({ createdAt: -1 });
-    res.status(200).json({ success: true, worker, tasks });
+    const tasks = await Task.find({ assignedTo: Employee._id }).populate('project', 'name status stage client').sort({ createdAt: -1 });
+    res.status(200).json({ success: true, Employee, tasks });
   } catch (error) {
     next(error);
   }
 };
 
-const createWorker = async (req, res, next) => {
-  req.body.role = 'WORKER';
+const createEmployee = async (req, res, next) => {
+  req.body.role = 'Employee';
   return createUser(req, res, next);
 };
 
@@ -627,9 +627,9 @@ module.exports = {
   getClients,
   getClientById,
   createClient,
-  getWorkers,
-  getWorkerById,
-  createWorker,
+  getEmployees,
+  getEmployeeById,
+  createEmployee,
   getHRUsers,
   createHRUser,
   deleteHRUser

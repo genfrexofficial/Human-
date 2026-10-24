@@ -3,12 +3,12 @@ const User = require('../models/User');
 const AppointmentLetter = require('../models/AppointmentLetter');
 
 /**
- * Get all active workers with their salary structures (Admin & HR)
+ * Get all active Employees with their salary structures (Admin & HR)
  */
 const getAllSalaryStructures = async (req, res, next) => {
   try {
-    const workers = await User.find({
-      role: { $in: ['WORKER'] },
+    const Employees = await User.find({
+      role: { $in: ['Employee'] },
       isActive: true
     }).select('name email phone title companyName role status candidateId appointmentLetterId');
 
@@ -21,22 +21,22 @@ const getAllSalaryStructures = async (req, res, next) => {
     // Also look up accepted/approved appointment letters to extract initial compensation if not configured
     const letters = await AppointmentLetter.find({
       status: { $in: ['ACCEPTED', 'APPROVED', 'SENT'] }
-    }).select('workerId candidateId compensation compensationFrequency designation');
+    }).select('EmployeeId candidateId compensation compensationFrequency designation');
 
     const letterMap = {};
     letters.forEach((letDoc) => {
-      if (letDoc.workerId) {
-        letterMap[letDoc.workerId.toString()] = letDoc;
+      if (letDoc.EmployeeId) {
+        letterMap[letDoc.EmployeeId.toString()] = letDoc;
       }
     });
 
-    const result = workers.map((worker) => {
-      const wId = worker._id.toString();
+    const result = Employees.map((Employee) => {
+      const wId = Employee._id.toString();
       const existingStructure = structureMap[wId];
       const appointment = letterMap[wId];
 
       return {
-        worker,
+        Employee,
         salaryStructure: existingStructure || null,
         suggestedBaseSalary: appointment ? appointment.compensation : 0,
         appointmentDetails: appointment || null
@@ -64,7 +64,7 @@ const getSalaryStructureByUser = async (req, res, next) => {
     if (!structure) {
       // Check appointment letter to provide default proposal
       const letter = await AppointmentLetter.findOne({
-        workerId: userId,
+        EmployeeId: userId,
         status: { $in: ['ACCEPTED', 'APPROVED', 'SENT'] }
       });
 
@@ -108,8 +108,8 @@ const upsertSalaryStructure = async (req, res, next) => {
       });
     }
 
-    const worker = await User.findById(userId);
-    if (!worker) {
+    const Employee = await User.findById(userId);
+    if (!Employee) {
       return res.status(404).json({
         success: false,
         message: 'Employee not found.'
@@ -141,7 +141,7 @@ const upsertSalaryStructure = async (req, res, next) => {
           otherDeduction: Number(deductions.otherDeduction) || 0
         },
         bankDetails: {
-          accountHolderName: bankDetails.accountHolderName || worker.name,
+          accountHolderName: bankDetails.accountHolderName || Employee.name,
           accountNumber: bankDetails.accountNumber || '',
           bankName: bankDetails.bankName || '',
           ifscCode: bankDetails.ifscCode || '',
@@ -166,7 +166,7 @@ const upsertSalaryStructure = async (req, res, next) => {
 };
 
 /**
- * Worker's view of their own salary structure
+ * Employee's view of their own salary structure
  */
 const getMySalaryStructure = async (req, res, next) => {
   try {

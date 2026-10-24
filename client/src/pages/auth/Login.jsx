@@ -158,7 +158,7 @@ const Login = () => {
       if (!target) {
         if (user.role === 'ADMIN') target = '/admin/dashboard';
         else if (user.role === 'HR') target = '/hr/dashboard';
-        else if (user.role === 'WORKER') target = '/worker/dashboard';
+        else if (user.role === 'Employee') target = '/Employee/dashboard';
         else target = '/client/dashboard';
       }
       navigate(target, { replace: true });
@@ -175,7 +175,7 @@ const Login = () => {
       if (!target) {
         if (user.role === 'ADMIN') target = '/admin/dashboard';
         else if (user.role === 'HR') target = '/hr/dashboard';
-        else if (user.role === 'WORKER') target = '/worker/dashboard';
+        else if (user.role === 'Employee') target = '/Employee/dashboard';
         else target = '/client/dashboard';
       }
       navigate(target, { replace: true });

@@ -11,9 +11,9 @@ const {
   getClients,
   getClientById,
   createClient,
-  getWorkers,
-  getWorkerById,
-  createWorker,
+  getEmployees,
+  getEmployeeById,
+  createEmployee,
   getHRUsers,
   createHRUser,
   deleteHRUser
@@ -45,9 +45,9 @@ router.get('/clients', authorizeRoles('ADMIN'), getClients);
 router.post('/clients', authorizeRoles('ADMIN'), createClient);
 router.get('/clients/:id', authorizeRoles('ADMIN'), getClientById);
 
-router.get('/workers', authorizeRoles('ADMIN'), getWorkers);
-router.post('/workers', authorizeRoles('ADMIN'), createWorker);
-router.get('/workers/:id', authorizeRoles('ADMIN'), getWorkerById);
+router.get('/Employees', authorizeRoles('ADMIN'), getEmployees);
+router.post('/Employees', authorizeRoles('ADMIN'), createEmployee);
+router.get('/Employees/:id', authorizeRoles('ADMIN'), getEmployeeById);
 
 router.get('/hr', authorizeRoles('ADMIN'), getHRUsers);
 router.post('/hr', authorizeRoles('ADMIN'), createHRUser);

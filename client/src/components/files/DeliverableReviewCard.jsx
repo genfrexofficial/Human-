@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { APPROVAL_STATUS } from '../../utils/constants';
 import { formatDate, formatFileSize } from '../../utils/formatters';
+import { fileService } from '../../services/fileService';
 import Button from '../common/Button';
+import toast from 'react-hot-toast';
 import {
   Download,
   ExternalLink,
@@ -13,7 +15,8 @@ import {
   Archive,
   FileCheck,
   User,
-  Trash2
+  Trash2,
+  Loader2
 } from 'lucide-react';
 
 const DeliverableReviewCard = ({
@@ -27,6 +30,8 @@ const DeliverableReviewCard = ({
 }) => {
   const currentFile = file || deliverable;
   if (!currentFile) return null;
+
+  const [downloading, setDownloading] = useState(false);
 
   const approvalCfg = APPROVAL_STATUS[currentFile.approvalStatus] || {
     label: currentFile.approvalStatus || 'PENDING_REVIEW',
@@ -42,10 +47,19 @@ const DeliverableReviewCard = ({
     return <FileText className="w-5 h-5 text-blue-500" />;
   };
 
-  // Build safe download / preview URL
-  const fileDownloadUrl = currentFile.fileUrl?.startsWith('http')
-    ? currentFile.fileUrl
-    : `http://localhost:5000${currentFile.fileUrl}`;
+  const handleDownload = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (downloading) return;
+    try {
+      setDownloading(true);
+      await fileService.downloadBlob(currentFile._id, currentFile.fileName);
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || 'Failed to download file.');
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   return (
     <div className="bg-white rounded-xl border border-slate-200/80 p-5 shadow-card hover:shadow-md transition-all flex flex-col justify-between">
@@ -105,16 +119,20 @@ const DeliverableReviewCard = ({
       {/* Action Footer */}
       <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
         {/* View / Download */}
-        <a
-          href={fileDownloadUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          download={currentFile.fileName}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors"
+        <button
+          type="button"
+          onClick={handleDownload}
+          disabled={downloading}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+          title={`Download ${currentFile.fileName}`}
         >
-          <Download className="w-3.5 h-3.5" />
-          <span>Download</span>
-        </a>
+          {downloading ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-500" />
+          ) : (
+            <Download className="w-3.5 h-3.5" />
+          )}
+          <span>{downloading ? 'Downloading...' : 'Download'}</span>
+        </button>
 
         {/* Client Review Actions */}
         <div className="flex items-center gap-1.5">

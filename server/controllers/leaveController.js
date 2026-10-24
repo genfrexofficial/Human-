@@ -3,7 +3,7 @@ const Attendance = require('../models/Attendance');
 
 // @desc    Apply for a leave
 // @route   POST /api/leaves/apply
-// @access  Private (WORKER, HR, ADMIN)
+// @access  Private (Employee, HR, ADMIN)
 const applyLeave = async (req, res, next) => {
   try {
     const { leaveType, startDate, endDate, totalDays, reason } = req.body;
@@ -41,7 +41,7 @@ const applyLeave = async (req, res, next) => {
 
 // @desc    Get my leave requests & balance summary
 // @route   GET /api/leaves/my-leaves
-// @access  Private (WORKER, HR, ADMIN)
+// @access  Private (Employee, HR, ADMIN)
 const getMyLeaves = async (req, res, next) => {
   try {
     const leaves = await LeaveRequest.find({ user: req.user._id }).sort({ createdAt: -1 });

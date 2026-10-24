@@ -11,7 +11,7 @@ const { determineProjectHealth, recalculateProjectProgress } = require('../servi
 const { logActivity } = require('../services/activityService');
 const { sendNotification } = require('../services/notificationService');
 
-// @desc    Get all projects (admin: all, worker: assigned, client: assigned)
+// @desc    Get all projects (admin: all, Employee: assigned, client: assigned)
 // @route   GET /api/projects
 // @access  Private
 const getProjects = async (req, res, next) => {
@@ -19,12 +19,12 @@ const getProjects = async (req, res, next) => {
     let query = {};
     if (req.user.role === 'CLIENT') {
       query = { client: req.user._id };
-    } else if (req.user.role === 'WORKER') {
-      // Find projects where worker is assigned directly or has assigned tasks
+    } else if (req.user.role === 'Employee') {
+      // Find projects where Employee is assigned directly or has assigned tasks
       const taskProjectIds = await Task.distinct('project', { assignedTo: req.user._id });
       query = {
         $or: [
-          { assignedWorkers: req.user._id },
+          { assignedEmployees: req.user._id },
           { _id: { $in: taskProjectIds } }
         ]
       };
@@ -33,7 +33,7 @@ const getProjects = async (req, res, next) => {
     const projects = await Project.find(query)
       .populate('client', 'name email companyName avatar')
       .populate('createdBy', 'name email')
-      .populate('assignedWorkers', 'name email avatar title')
+      .populate('assignedEmployees', 'name email avatar title')
       .sort({ updatedAt: -1 });
 
     // Attach real live stats and health to each project
@@ -98,7 +98,7 @@ const getProjectById = async (req, res, next) => {
     const project = await Project.findById(req.params.id)
       .populate('client', 'name email companyName phone avatar')
       .populate('createdBy', 'name email')
-      .populate('assignedWorkers', 'name email avatar title phone skills');
+      .populate('assignedEmployees', 'name email avatar title phone skills');
 
     if (!project) {
       return res.status(404).json({
@@ -115,9 +115,9 @@ const getProjectById = async (req, res, next) => {
       });
     }
 
-    // Role check: worker must be assigned
-    if (req.user.role === 'WORKER') {
-      const isAssigned = project.assignedWorkers && project.assignedWorkers.some(
+    // Role check: Employee must be assigned
+    if (req.user.role === 'Employee') {
+      const isAssigned = project.assignedEmployees && project.assignedEmployees.some(
         (w) => w._id.toString() === req.user._id.toString()
       );
       const hasTask = await Task.exists({ project: project._id, assignedTo: req.user._id });
@@ -188,7 +188,7 @@ const getProjectById = async (req, res, next) => {
 // @access  Private (Admin only)
 const createProject = async (req, res, next) => {
   try {
-    const { name, description, client, startDate, endDate, budget, status, stage, assignedWorkers } = req.body;
+    const { name, description, client, startDate, endDate, budget, status, stage, assignedEmployees } = req.body;
 
     if (!name || !client) {
       return res.status(400).json({
@@ -208,14 +208,14 @@ const createProject = async (req, res, next) => {
       status: status || 'PLANNING',
       stage: stage || 'PLANNING',
       health: 'ON_TRACK',
-      assignedWorkers: Array.isArray(assignedWorkers) ? assignedWorkers : [],
+      assignedEmployees: Array.isArray(assignedEmployees) ? assignedEmployees : [],
       progress: 0
     });
 
     const populatedProject = await Project.findById(project._id)
       .populate('client', 'name email companyName avatar')
       .populate('createdBy', 'name email')
-      .populate('assignedWorkers', 'name email avatar title');
+      .populate('assignedEmployees', 'name email avatar title');
 
     // Log activity
     await logActivity({
@@ -261,7 +261,7 @@ const updateProject = async (req, res, next) => {
       });
     }
 
-    const { name, description, client, startDate, endDate, budget, status, stage, assignedWorkers } = req.body;
+    const { name, description, client, startDate, endDate, budget, status, stage, assignedEmployees } = req.body;
 
     if (name) project.name = name.trim();
     if (description !== undefined) project.description = description;
@@ -271,7 +271,7 @@ const updateProject = async (req, res, next) => {
     if (budget !== undefined) project.budget = budget;
     if (status) project.status = status;
     if (stage) project.stage = stage;
-    if (assignedWorkers) project.assignedWorkers = assignedWorkers;
+    if (assignedEmployees) project.assignedEmployees = assignedEmployees;
 
     await project.save();
 
@@ -280,7 +280,7 @@ const updateProject = async (req, res, next) => {
     const updated = await Project.findById(project._id)
       .populate('client', 'name email companyName avatar')
       .populate('createdBy', 'name email')
-      .populate('assignedWorkers', 'name email avatar title');
+      .populate('assignedEmployees', 'name email avatar title');
 
     await logActivity({
       projectId: project._id,
@@ -416,7 +416,7 @@ const getAdminOverviewAnalytics = async (req, res, next) => {
       activeProjects,
       completedProjects,
       totalClients,
-      totalWorkers,
+      totalEmployees,
       pendingRequests,
       tasksInProgress,
       tasksAwaitingReview,
@@ -430,7 +430,7 @@ const getAdminOverviewAnalytics = async (req, res, next) => {
       Project.countDocuments({ status: { $ne: 'COMPLETED' } }),
       Project.countDocuments({ status: 'COMPLETED' }),
       User.countDocuments({ role: 'CLIENT' }),
-      User.countDocuments({ role: 'WORKER' }),
+      User.countDocuments({ role: 'Employee' }),
       TaskRequest.countDocuments({ status: 'PENDING_APPROVAL' }),
       Task.countDocuments({ status: 'IN_PROGRESS' }),
       Task.countDocuments({ status: 'IN_REVIEW' }),
@@ -469,7 +469,7 @@ const getAdminOverviewAnalytics = async (req, res, next) => {
         },
         users: {
           clients: totalClients,
-          workers: totalWorkers
+          Employees: totalEmployees
         },
         tasks: {
           total: totalTasks,

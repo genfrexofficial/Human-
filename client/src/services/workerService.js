@@ -1,18 +1,18 @@
 import api from './api';
 
-export const workerService = {
-  getWorkers: async () => {
-    const res = await api.get('/users/workers');
+export const EmployeeService = {
+  getEmployees: async () => {
+    const res = await api.get('/users/Employees');
     return res.data;
   },
 
-  getWorkerById: async (id) => {
-    const res = await api.get(`/users/workers/${id}`);
+  getEmployeeById: async (id) => {
+    const res = await api.get(`/users/Employees/${id}`);
     return res.data;
   },
 
-  createWorker: async (workerData) => {
-    const res = await api.post('/users/workers', workerData);
+  createEmployee: async (EmployeeData) => {
+    const res = await api.post('/users/Employees', EmployeeData);
     return res.data;
   }
 };

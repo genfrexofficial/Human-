@@ -9,7 +9,7 @@ const auditLogSchema = new mongoose.Schema(
     },
     performedByRole: {
       type: String,
-      enum: ['ADMIN', 'HR', 'WORKER', 'CLIENT', 'SYSTEM', ''],
+      enum: ['ADMIN', 'HR', 'Employee', 'CLIENT', 'SYSTEM', ''],
       default: ''
     },
     action: {
@@ -18,7 +18,7 @@ const auditLogSchema = new mongoose.Schema(
       enum: [
         // User Administration
         'CREATE_HR',
-        'CREATE_WORKER',
+        'CREATE_Employee',
         'CREATE_CLIENT',
         'CHANGE_USER_PASSWORD',
         'CHANGE_ADMIN_PASSWORD',
@@ -42,7 +42,7 @@ const auditLogSchema = new mongoose.Schema(
     },
     targetRole: {
       type: String,
-      enum: ['ADMIN', 'HR', 'WORKER', 'CLIENT', '']
+      enum: ['ADMIN', 'HR', 'Employee', 'CLIENT', '']
     },
     targetEmail: {
       type: String,

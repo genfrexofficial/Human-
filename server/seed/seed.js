@@ -2,7 +2,7 @@
  * GENFREX Unified Business Management Platform - Seed Script
  * 
  * NOTICE: Automatic demo seeding is permanently DISABLED per system policy.
- * All accounts (Admin, HR, Worker, Client), projects, tasks, and appointment
+ * All accounts (Admin, HR, Employee, Client), projects, tasks, and appointment
  * letters must be manually created through the application interface.
  * 
  * First-Time Setup:

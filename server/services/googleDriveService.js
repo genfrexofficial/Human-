@@ -54,7 +54,11 @@ const getDriveClient = () => {
   // 2. Service Account Strategy
   let auth;
   if (process.env.GOOGLE_SERVICE_ACCOUNT_KEY_PATH) {
-    const keyPath = path.resolve(process.cwd(), process.env.GOOGLE_SERVICE_ACCOUNT_KEY_PATH);
+    let keyPath = path.resolve(process.cwd(), process.env.GOOGLE_SERVICE_ACCOUNT_KEY_PATH);
+    if (!fs.existsSync(keyPath)) {
+      const altPath = path.resolve(__dirname, '..', process.env.GOOGLE_SERVICE_ACCOUNT_KEY_PATH);
+      if (fs.existsSync(altPath)) keyPath = altPath;
+    }
     auth = new google.auth.GoogleAuth({
       keyFile: keyPath,
       scopes: ['https://www.googleapis.com/auth/drive']

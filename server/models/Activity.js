@@ -19,7 +19,7 @@ const activitySchema = new mongoose.Schema(
         'PROJECT_CREATED',
         'PROJECT_UPDATED',
         'CLIENT_CREATED',
-        'WORKER_CREATED',
+        'Employee_CREATED',
         'TASK_REQUEST_CREATED',
         'TASK_REQUEST_APPROVED',
         'TASK_REQUEST_REJECTED',

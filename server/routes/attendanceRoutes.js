@@ -9,7 +9,7 @@ const { authenticateToken, authorizeRoles } = require('../middleware/authMiddlew
 
 router.use(authenticateToken);
 
-// Employee / Worker route
+// Employee / Employee route
 router.get('/my-attendance', getMyAttendance);
 
 // HR & Admin routes

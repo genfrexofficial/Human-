@@ -17,7 +17,7 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminProjects from './pages/admin/AdminProjects';
 import AdminProjectDetails from './pages/admin/AdminProjectDetails';
 import AdminTaskRequests from './pages/admin/AdminTaskRequests';
-import AdminWorkers from './pages/admin/AdminWorkers';
+import AdminEmployees from './pages/admin/AdminEmployees';
 import AdminClients from './pages/admin/AdminClients';
 import AdminHRTeam from './pages/admin/AdminHRTeam';
 import AdminUsers from './pages/admin/AdminUsers';
@@ -42,16 +42,16 @@ import AppointmentsList from './pages/hr/AppointmentsList';
 import HRSettings from './pages/hr/HRSettings';
 import HRAttendanceLeaves from './pages/hr/HRAttendanceLeaves';
 
-// Worker Pages
-import WorkerDashboard from './pages/worker/WorkerDashboard';
-import WorkerTasks from './pages/worker/WorkerTasks';
-import WorkerTaskDetails from './pages/worker/WorkerTaskDetails';
-import WorkerProjects from './pages/worker/WorkerProjects';
-import WorkerFiles from './pages/worker/WorkerFiles';
-import WorkerActivity from './pages/worker/WorkerActivity';
-import WorkerProfile from './pages/worker/WorkerProfile';
-import WorkerAttendance from './pages/worker/WorkerAttendance';
-import WorkerPayroll from './pages/worker/WorkerPayroll';
+// Employee Pages
+import EmployeeDashboard from './pages/worker/WorkerDashboard';
+import EmployeeTasks from './pages/worker/WorkerTasks';
+import EmployeeTaskDetails from './pages/worker/WorkerTaskDetails';
+import EmployeeProjects from './pages/worker/WorkerProjects';
+import EmployeeFiles from './pages/worker/WorkerFiles';
+import EmployeeActivity from './pages/worker/WorkerActivity';
+import EmployeeProfile from './pages/worker/WorkerProfile';
+import EmployeeAttendance from './pages/worker/WorkerAttendance';
+import EmployeePayroll from './pages/worker/WorkerPayroll';
 
 // Client Pages
 import ClientDashboard from './pages/client/ClientDashboard';
@@ -119,7 +119,7 @@ function App() {
             <Route path="projects" element={<AdminProjects />} />
             <Route path="projects/:id" element={<AdminProjectDetails />} />
             <Route path="task-requests" element={<AdminTaskRequests />} />
-            <Route path="workers" element={<AdminWorkers />} />
+            <Route path="Employees" element={<AdminEmployees />} />
             <Route path="clients" element={<AdminClients />} />
             <Route path="hr-team" element={<AdminHRTeam />} />
             <Route path="users" element={<AdminUsers />} />
@@ -169,25 +169,25 @@ function App() {
             <Route path="settings" element={<HRSettings />} />
           </Route>
 
-          {/* Worker Routes (Role: WORKER) */}
+          {/* Employee Routes (Role: Employee) */}
           <Route
-            path="/worker"
+            path="/Employee"
             element={
-              <ProtectedRoute allowedRoles={['WORKER']}>
+              <ProtectedRoute allowedRoles={['Employee']}>
                 <AppLayout />
               </ProtectedRoute>
             }
           >
-            <Route index element={<Navigate to="/worker/dashboard" replace />} />
-            <Route path="dashboard" element={<WorkerDashboard />} />
-            <Route path="attendance" element={<WorkerAttendance />} />
-            <Route path="payroll" element={<WorkerPayroll />} />
-            <Route path="tasks" element={<WorkerTasks />} />
-            <Route path="tasks/:id" element={<WorkerTaskDetails />} />
-            <Route path="projects" element={<WorkerProjects />} />
-            <Route path="files" element={<WorkerFiles />} />
-            <Route path="activity" element={<WorkerActivity />} />
-            <Route path="profile" element={<WorkerProfile />} />
+            <Route index element={<Navigate to="/Employee/dashboard" replace />} />
+            <Route path="dashboard" element={<EmployeeDashboard />} />
+            <Route path="attendance" element={<EmployeeAttendance />} />
+            <Route path="payroll" element={<EmployeePayroll />} />
+            <Route path="tasks" element={<EmployeeTasks />} />
+            <Route path="tasks/:id" element={<EmployeeTaskDetails />} />
+            <Route path="projects" element={<EmployeeProjects />} />
+            <Route path="files" element={<EmployeeFiles />} />
+            <Route path="activity" element={<EmployeeActivity />} />
+            <Route path="profile" element={<EmployeeProfile />} />
           </Route>
 
           {/* Client Routes (Role: CLIENT) */}

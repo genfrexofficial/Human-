@@ -4,13 +4,13 @@ import Button from '../common/Button';
 import { projectService } from '../../services/projectService';
 import { clientService } from '../../services/clientService';
 import { taskRequestService } from '../../services/taskRequestService';
-import { workerService } from '../../services/workerService';
+import { EmployeeService } from '../../services/EmployeeService';
 
 const CandidateModal = ({ isOpen, onClose, candidate, onSave, loading }) => {
   const [projects, setProjects] = useState([]);
   const [clients, setClients] = useState([]);
   const [requirements, setRequirements] = useState([]);
-  const [workers, setWorkers] = useState([]);
+  const [Employees, setEmployees] = useState([]);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -31,7 +31,7 @@ const CandidateModal = ({ isOpen, onClose, candidate, onSave, loading }) => {
     clientId: '',
     projectId: '',
     requirementId: '',
-    workerId: ''
+    EmployeeId: ''
   });
 
   useEffect(() => {
@@ -46,12 +46,12 @@ const CandidateModal = ({ isOpen, onClose, candidate, onSave, loading }) => {
         projectService.getProjects().catch(() => ({ success: false })),
         clientService.getClients().catch(() => ({ success: false })),
         taskRequestService.getTaskRequests().catch(() => ({ success: false })),
-        workerService.getWorkers().catch(() => ({ success: false }))
+        EmployeeService.getEmployees().catch(() => ({ success: false }))
       ]);
       if (projRes.success) setProjects(projRes.projects || []);
       if (clientRes.success) setClients(clientRes.clients || []);
       if (reqRes.success) setRequirements(reqRes.taskRequests || reqRes.requests || []);
-      if (workRes.success) setWorkers(workRes.workers || []);
+      if (workRes.success) setEmployees(workRes.Employees || []);
     } catch (err) {
       // Non-critical
     }
@@ -78,7 +78,7 @@ const CandidateModal = ({ isOpen, onClose, candidate, onSave, loading }) => {
         clientId: candidate.clientId || candidate.client?._id || candidate.client || '',
         projectId: candidate.projectId || candidate.project?._id || candidate.project || '',
         requirementId: candidate.requirementId || candidate.requirement?._id || candidate.requirement || '',
-        workerId: candidate.workerId || candidate.assignedWorker?._id || candidate.assignedWorker || ''
+        EmployeeId: candidate.EmployeeId || candidate.assignedEmployee?._id || candidate.assignedEmployee || ''
       });
     } else {
       setFormData({
@@ -100,7 +100,7 @@ const CandidateModal = ({ isOpen, onClose, candidate, onSave, loading }) => {
         clientId: '',
         projectId: '',
         requirementId: '',
-        workerId: ''
+        EmployeeId: ''
       });
     }
   }, [candidate, isOpen]);
@@ -130,7 +130,7 @@ const CandidateModal = ({ isOpen, onClose, candidate, onSave, loading }) => {
       client: formData.clientId || null,
       project: formData.projectId || null,
       requirement: formData.requirementId || null,
-      assignedWorker: formData.workerId || null
+      assignedEmployee: formData.EmployeeId || null
     });
   };
 
@@ -288,15 +288,15 @@ const CandidateModal = ({ isOpen, onClose, candidate, onSave, loading }) => {
                   </div>
 
                   <div>
-                    <label className="block font-semibold text-slate-700 mb-1">Assigned Worker / Mentor</label>
+                    <label className="block font-semibold text-slate-700 mb-1">Assigned Employee / Mentor</label>
                     <select
-                      name="workerId"
-                      value={formData.workerId}
+                      name="EmployeeId"
+                      value={formData.EmployeeId}
                       onChange={handleChange}
                       className="w-full p-2 rounded-lg border border-slate-300 bg-white"
                     >
                       <option value="">-- None --</option>
-                      {workers.map((w) => (
+                      {Employees.map((w) => (
                         <option key={w._id} value={w._id}>
                           {w.name} ({w.title || 'Engineer'})
                         </option>

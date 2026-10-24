@@ -7,7 +7,7 @@ const AppointmentLetter = require('../models/AppointmentLetter');
 const { sendNotification } = require('../services/notificationService');
 
 /**
- * Generate or recalculate monthly payroll batch for active workers
+ * Generate or recalculate monthly payroll batch for active Employees
  */
 const generateMonthlyPayroll = async (req, res, next) => {
   try {
@@ -27,22 +27,22 @@ const generateMonthlyPayroll = async (req, res, next) => {
     const daysInMonth = new Date(y, m, 0).getDate();
     const workingDays = Number(defaultWorkingDays) || 26;
 
-    // Get all active workers
-    const workers = await User.find({
-      role: 'WORKER',
+    // Get all active Employees
+    const Employees = await User.find({
+      role: 'Employee',
       isActive: true
     });
 
-    if (!workers.length) {
+    if (!Employees.length) {
       return res.status(404).json({
         success: false,
-        message: 'No active workers found to generate payroll.'
+        message: 'No active Employees found to generate payroll.'
       });
     }
 
     // Prefetch salary structures and appointment letters
     const structures = await SalaryStructure.find({
-      user: { $in: workers.map((w) => w._id) }
+      user: { $in: Employees.map((w) => w._id) }
     });
     const structureMap = {};
     structures.forEach((st) => {
@@ -50,20 +50,20 @@ const generateMonthlyPayroll = async (req, res, next) => {
     });
 
     const appointmentLetters = await AppointmentLetter.find({
-      workerId: { $in: workers.map((w) => w._id) },
+      EmployeeId: { $in: Employees.map((w) => w._id) },
       status: { $in: ['ACCEPTED', 'APPROVED', 'SENT'] }
     });
     const letterMap = {};
     appointmentLetters.forEach((lt) => {
-      if (lt.workerId) letterMap[lt.workerId.toString()] = lt;
+      if (lt.EmployeeId) letterMap[lt.EmployeeId.toString()] = lt;
     });
 
     const datePattern = new RegExp(`^${y}-${String(m).padStart(2, '0')}`);
 
     const generatedPayrolls = [];
 
-    for (const worker of workers) {
-      const wId = worker._id.toString();
+    for (const Employee of Employees) {
+      const wId = Employee._id.toString();
       let struct = structureMap[wId];
 
       // Auto-bootstrap salary structure if missing using appointment letter or sensible base
@@ -76,7 +76,7 @@ const generateMonthlyPayroll = async (req, res, next) => {
         const pt = 200;
 
         struct = await SalaryStructure.create({
-          user: worker._id,
+          user: Employee._id,
           salaryType: letter?.compensationFrequency === 'STIPEND_MONTHLY' ? 'STIPEND' : 'MONTHLY',
           baseSalary: base,
           allowances: {
@@ -94,19 +94,19 @@ const generateMonthlyPayroll = async (req, res, next) => {
             otherDeduction: 0
           },
           bankDetails: {
-            accountHolderName: worker.name,
+            accountHolderName: Employee.name,
             accountNumber: 'XXXX' + Math.floor(1000 + Math.random() * 9000),
             bankName: 'HDFC Bank',
             ifscCode: 'HDFC0001234',
             panNumber: 'ABCDE' + Math.floor(1000 + Math.random() * 9000) + 'F',
-            upiId: `${worker.email.split('@')[0]}@okhdfcbank`
+            upiId: `${Employee.email.split('@')[0]}@okhdfcbank`
           }
         });
       }
 
       // Fetch attendance in target month
       const attendanceList = await Attendance.find({
-        user: worker._id,
+        user: Employee._id,
         date: { $regex: datePattern }
       });
 
@@ -123,7 +123,7 @@ const generateMonthlyPayroll = async (req, res, next) => {
       const monthEnd = new Date(y, m, 0, 23, 59, 59);
 
       const approvedLeaves = await LeaveRequest.find({
-        user: worker._id,
+        user: Employee._id,
         status: 'APPROVED',
         startDate: { $lte: monthEnd },
         endDate: { $gte: monthStart }
@@ -177,7 +177,7 @@ const generateMonthlyPayroll = async (req, res, next) => {
 
       // Check if existing record already has custom bonuses or deductions
       const existingRecord = await Payroll.findOne({
-        user: worker._id,
+        user: Employee._id,
         month: m,
         year: y
       });
@@ -195,7 +195,7 @@ const generateMonthlyPayroll = async (req, res, next) => {
       const monthAbbr = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
       const payPeriod = `01 ${monthAbbr[m - 1]} ${y} – ${daysInMonth} ${monthAbbr[m - 1]} ${y}`;
       const voucherDate = new Date(y, m - 1, Math.min(28, daysInMonth));
-      const voucherNumber = `GFX-PV-${y}-${String(m).padStart(2, '0')}-${worker._id.toString().slice(-4).toUpperCase()}`;
+      const voucherNumber = `GFX-PV-${y}-${String(m).padStart(2, '0')}-${Employee._id.toString().slice(-4).toUpperCase()}`;
 
       // Extract absent dates from attendance if available
       const leaveDates = [];
@@ -218,7 +218,7 @@ const generateMonthlyPayroll = async (req, res, next) => {
       }
 
       const payrollData = {
-        user: worker._id,
+        user: Employee._id,
         salaryStructure: struct._id,
         month: m,
         year: y,
@@ -229,7 +229,7 @@ const generateMonthlyPayroll = async (req, res, next) => {
         engagementType: existingRecord?.engagementType || struct.engagementType || 'Freelance – Monthly Retainer',
         workingMode: existingRecord?.workingMode || struct.workingMode || 'Remote (Freelance)',
         paymentCycleNote: existingRecord?.paymentCycleNote || struct.paymentCycleNote || 'Released after 30 days of placement as per engagement terms.',
-        dateOfJoining: struct.dateOfJoining || letterMap[wId]?.joiningDate || worker.createdAt || new Date(),
+        dateOfJoining: struct.dateOfJoining || letterMap[wId]?.joiningDate || Employee.createdAt || new Date(),
         leaveDates,
         leaveDeductionNote: existingRecord?.leaveDeductionNote || leaveDeductionNote,
 
@@ -260,7 +260,7 @@ const generateMonthlyPayroll = async (req, res, next) => {
         netSalary,
 
         bankDetails: {
-          accountHolderName: struct.bankDetails?.accountHolderName || worker.name,
+          accountHolderName: struct.bankDetails?.accountHolderName || Employee.name,
           accountNumber: struct.bankDetails?.accountNumber || '',
           bankName: struct.bankDetails?.bankName || '',
           ifscCode: struct.bankDetails?.ifscCode || '',
@@ -272,7 +272,7 @@ const generateMonthlyPayroll = async (req, res, next) => {
       };
 
       const updatedRecord = await Payroll.findOneAndUpdate(
-        { user: worker._id, month: m, year: y },
+        { user: Employee._id, month: m, year: y },
         payrollData,
         { upsert: true, new: true, runValidators: true }
       ).populate('user', 'name email role title avatar');
@@ -282,7 +282,7 @@ const generateMonthlyPayroll = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      message: `Payroll cycle ${payrollCycle} generated successfully for ${generatedPayrolls.length} workers.`,
+      message: `Payroll cycle ${payrollCycle} generated successfully for ${generatedPayrolls.length} Employees.`,
       count: generatedPayrolls.length,
       data: generatedPayrolls
     });
@@ -416,8 +416,8 @@ const getPayrollById = async (req, res, next) => {
       });
     }
 
-    // Role check: Worker can only access their own slip
-    if (req.user.role === 'WORKER' && slip.user._id.toString() !== req.user._id.toString()) {
+    // Role check: Employee can only access their own slip
+    if (req.user.role === 'Employee' && slip.user._id.toString() !== req.user._id.toString()) {
       return res.status(403).json({
         success: false,
         message: 'Access denied to this payslip.'
@@ -610,7 +610,7 @@ const recordPayment = async (req, res, next) => {
       title: 'Salary Disbursed',
       message: `Your salary of ₹${slip.netSalary.toLocaleString('en-IN')} for ${monthName} ${slip.year} has been credited. View your payslip now.`,
       type: 'GENERAL',
-      link: '/worker/payroll'
+      link: '/Employee/payroll'
     });
 
     res.status(200).json({
@@ -654,7 +654,7 @@ const bulkRecordPayment = async (req, res, next) => {
         title: 'Salary Disbursed',
         message: `Your salary of ₹${slip.netSalary.toLocaleString('en-IN')} has been disbursed.`,
         type: 'GENERAL',
-        link: '/worker/payroll'
+        link: '/Employee/payroll'
       });
     }
 
@@ -668,13 +668,13 @@ const bulkRecordPayment = async (req, res, next) => {
 };
 
 /**
- * Worker's view of their own payslips
+ * Employee's view of their own payslips
  */
 const getMyPayrolls = async (req, res, next) => {
   try {
     const records = await Payroll.find({
       user: req.user._id,
-      status: { $in: ['APPROVED', 'PAID'] } // Workers only see approved or paid slips
+      status: { $in: ['APPROVED', 'PAID'] } // Employees only see approved or paid slips
     })
       .sort({ year: -1, month: -1 })
       .populate('user', 'name email role title');
@@ -731,7 +731,7 @@ const downloadPaymentVoucher = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Payroll record not found.' });
     }
 
-    if (req.user.role === 'WORKER' && slip.user._id.toString() !== req.user._id.toString()) {
+    if (req.user.role === 'Employee' && slip.user._id.toString() !== req.user._id.toString()) {
       return res.status(403).json({ success: false, message: 'Access denied to this voucher.' });
     }
 

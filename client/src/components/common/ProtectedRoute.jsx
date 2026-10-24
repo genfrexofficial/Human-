@@ -27,7 +27,7 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
     let redirectPath = '/client/dashboard';
     if (user?.role === 'ADMIN') redirectPath = '/admin/dashboard';
     else if (user?.role === 'HR') redirectPath = '/hr/dashboard';
-    else if (user?.role === 'WORKER') redirectPath = '/worker/dashboard';
+    else if (user?.role === 'Employee') redirectPath = '/Employee/dashboard';
     return <Navigate to={redirectPath} replace />;
   }
 

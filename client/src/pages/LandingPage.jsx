@@ -34,9 +34,9 @@ const LandingPage = () => {
       } else if (role === 'HR') {
         await login('hr@genfrex.com', 'Hr@123');
         navigate('/hr/dashboard');
-      } else if (role === 'WORKER') {
-        await login('arun@clientportal.com', 'Worker@123');
-        navigate('/worker/dashboard');
+      } else if (role === 'Employee') {
+        await login('arun@clientportal.com', 'Employee@123');
+        navigate('/Employee/dashboard');
       } else {
         await login('client@clientportal.com', 'Client@123');
         navigate('/client/dashboard');
@@ -50,10 +50,10 @@ const LandingPage = () => {
     user?.role === 'ADMIN'
       ? '/admin/dashboard'
       : user?.role === 'HR'
-      ? '/hr/dashboard'
-      : user?.role === 'WORKER'
-      ? '/worker/dashboard'
-      : '/client/dashboard';
+        ? '/hr/dashboard'
+        : user?.role === 'Employee'
+          ? '/Employee/dashboard'
+          : '/client/dashboard';
 
   return (
     <div className="min-h-screen bg-[#080B14] text-slate-100 flex flex-col font-sans relative overflow-hidden">
@@ -149,13 +149,13 @@ const LandingPage = () => {
 
             <button
               type="button"
-              onClick={() => handleQuickDemo('WORKER')}
+              onClick={() => handleQuickDemo('Employee')}
               className="flex flex-col items-center p-3 rounded-xl border border-amber-500/30 bg-amber-950/30 hover:bg-amber-900/50 transition-all text-center group"
             >
               <div className="p-1.5 rounded-lg bg-amber-600 text-white mb-1.5 shadow-sm">
                 <HardHat className="w-4 h-4" />
               </div>
-              <span className="text-xs font-bold text-white">Worker</span>
+              <span className="text-xs font-bold text-white">Employee</span>
               <span className="text-[10px] text-slate-400 mt-0.5">Arun Kumar</span>
               <span className="text-[9px] text-amber-400 font-semibold mt-1">Task Delivery</span>
             </button>

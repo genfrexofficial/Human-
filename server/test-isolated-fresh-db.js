@@ -5,7 +5,7 @@
  * 1. Verifies fresh database state (0 users, needsSetup: true)
  * 2. Creates the First-Time Administrator securely (bcrypt hashed)
  * 3. Verifies public Admin creation is blocked once setup is complete
- * 4. Admin manually creates HR, Worker, and Client accounts
+ * 4. Admin manually creates HR, Employee, and Client accounts
  * 5. Admin creates project and requirements
  * 6. HR creates candidate, links project, drafts appointment letter, submits for approval
  * 7. Admin approves appointment letter
@@ -175,7 +175,7 @@ async function runTests() {
       }
     }
 
-    // [Test 4] Admin manually provisions HR, Worker, and Client accounts
+    // [Test 4] Admin manually provisions HR, Employee, and Client accounts
     console.log('\n[Test 4] Admin Manually Provisioning Team Accounts...');
 
     // Create HR Officer
@@ -187,16 +187,16 @@ async function runTests() {
     }, adminToken);
     console.log(`✅ HR Account created: ${hrCreateRes.user.name} (${hrCreateRes.user.email})`);
 
-    // Create Worker / Engineer
-    const workerCreateRes = await req('POST', '/users/workers', {
+    // Create Employee / Engineer
+    const EmployeeCreateRes = await req('POST', '/users/Employees', {
       name: 'Rohan Engineer',
       email: 'rohan.eng@genfrex.internal',
       title: 'Senior Full Stack Engineer',
       skills: ['React', 'Node.js', 'MongoDB'],
-      password: 'WorkerPassword@2026'
+      password: 'EmployeePassword@2026'
     }, adminToken);
-    const workerId = workerCreateRes.worker.id;
-    console.log(`✅ Worker Account created: ${workerCreateRes.worker.name} (${workerCreateRes.worker.email})`);
+    const EmployeeId = EmployeeCreateRes.Employee.id;
+    console.log(`✅ Employee Account created: ${EmployeeCreateRes.Employee.name} (${EmployeeCreateRes.Employee.email})`);
 
     // Create Client
     const clientCreateRes = await req('POST', '/users/clients', {
@@ -208,7 +208,7 @@ async function runTests() {
     const clientId = clientCreateRes.client.id;
     console.log(`✅ Client Account created: ${clientCreateRes.client.name} (${clientCreateRes.client.companyName})`);
 
-    // [Test 5] Authenticate HR and Worker accounts
+    // [Test 5] Authenticate HR and Employee accounts
     console.log('\n[Test 5] Verifying Credentials for Provisioned Accounts...');
     const hrLogin = await req('POST', '/auth/login', {
       email: 'divya.hr@genfrex.internal',
@@ -231,7 +231,7 @@ async function runTests() {
       description: 'Unified enterprise digital ecosystem',
       stage: 'PLANNING',
       health: 'ON_TRACK',
-      assignedWorkers: [workerId]
+      assignedEmployees: [EmployeeId]
     }, adminToken);
     const projectId = projectRes.project._id;
     console.log(`✅ Project created: "${projectRes.project.name}" (ID: ${projectId})`);
@@ -259,7 +259,7 @@ async function runTests() {
       projectId,
       clientId,
       requirementId,
-      assignedWorkerId: workerId
+      assignedEmployeeId: EmployeeId
     }, hrToken);
     const candidateId = candRes.candidate._id;
     console.log(`✅ Candidate created with linked project context: ${candRes.candidate.name} (Source: ${candRes.candidate.source})`);
@@ -275,7 +275,7 @@ async function runTests() {
       projectId,
       clientId,
       requirementId,
-      assignedWorkerId: workerId,
+      assignedEmployeeId: EmployeeId,
       joiningDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
       acceptanceDeadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
       compensation: 85000,

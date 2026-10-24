@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Modal from '../common/Modal';
 import Input from '../common/Input';
 import Button from '../common/Button';
-import { workerService } from '../../services/workerService';
+import { EmployeeService } from '../../services/EmployeeService';
 import toast from 'react-hot-toast';
 
 const TaskModal = ({ isOpen, onClose, task = null, projectId, onSaved }) => {
@@ -16,14 +16,14 @@ const TaskModal = ({ isOpen, onClose, task = null, projectId, onSaved }) => {
     estimatedHours: 0,
     clientVisible: true
   });
-  const [workers, setWorkers] = useState([]);
+  const [Employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
-      // Fetch workers
-      workerService.getWorkers().then((res) => {
-        if (res.success) setWorkers(res.workers || []);
+      // Fetch Employees
+      EmployeeService.getEmployees().then((res) => {
+        if (res.success) setEmployees(res.Employees || []);
       }).catch(console.error);
 
       if (task) {
@@ -110,7 +110,7 @@ const TaskModal = ({ isOpen, onClose, task = null, projectId, onSaved }) => {
 
         <div>
           <label className="block font-semibold text-slate-800 mb-1">
-            Assign Worker / Engineer
+            Assign Employee / Engineer
           </label>
           <select
             name="assignedTo"
@@ -119,7 +119,7 @@ const TaskModal = ({ isOpen, onClose, task = null, projectId, onSaved }) => {
             className="w-full rounded-lg border border-slate-200 p-2 text-xs text-slate-800 focus:border-indigo-500 focus:outline-none"
           >
             <option value="">-- Unassigned (TODO) --</option>
-            {workers.map((w) => (
+            {Employees.map((w) => (
               <option key={w._id} value={w._id}>
                 {w.name} — {w.title || 'Engineer'} ({w.workload?.totalActive || 0} active)
               </option>

@@ -7,7 +7,7 @@ import Badge from '../../components/common/Badge';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
 
-const WorkerFiles = () => {
+const EmployeeFiles = () => {
   const [projects, setProjects] = useState([]);
   const [selectedProjectId, setSelectedProjectId] = useState('');
   const [files, setFiles] = useState([]);
@@ -18,6 +18,18 @@ const WorkerFiles = () => {
   const [uploadFileObj, setUploadFileObj] = useState(null);
   const [uploadCategory, setUploadCategory] = useState('DELIVERABLE');
   const [uploading, setUploading] = useState(false);
+  const [downloadingId, setDownloadingId] = useState(null);
+
+  const handleDownload = async (fileId, fileName) => {
+    try {
+      setDownloadingId(fileId);
+      await fileService.downloadBlob(fileId, fileName);
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || 'Failed to download file.');
+    } finally {
+      setDownloadingId(null);
+    }
+  };
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -134,70 +146,75 @@ const WorkerFiles = () => {
         <div className="rounded-xl border border-slate-200/80 bg-white overflow-hidden shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs min-w-[650px]">
-            <thead className="border-b border-slate-200 bg-slate-50 text-slate-500 uppercase tracking-wider font-semibold">
-              <tr>
-                <th className="px-5 py-3">File Name</th>
-                <th className="px-4 py-3">Category</th>
-                <th className="px-4 py-3">Approval Status</th>
-                <th className="px-4 py-3">Uploaded By</th>
-                <th className="px-4 py-3">Date</th>
-                <th className="px-5 py-3 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {files.map((file) => (
-                <tr key={file._id} className="hover:bg-slate-50/70 transition-colors">
-                  <td className="px-5 py-3.5 max-w-xs">
-                    <div className="flex items-center gap-2.5">
-                      <FileText className="h-4 w-4 text-indigo-500 shrink-0" />
-                      <div className="min-w-0">
-                        <span className="font-semibold text-slate-900 block truncate">{file.fileName}</span>
-                        {file.revisionNotes && (
-                          <span className="text-[10px] text-rose-600 block mt-0.5 truncate font-medium">
-                            Revision note: {file.revisionNotes}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </td>
-
-                  <td className="px-4 py-3.5 whitespace-nowrap">
-                    <span className="text-slate-600 font-medium text-[11px]">{file.category}</span>
-                  </td>
-
-                  <td className="px-4 py-3.5 whitespace-nowrap">
-                    {file.isDeliverable ? (
-                      <Badge variant={file.approvalStatus?.toLowerCase() || 'default'}>
-                        {file.approvalStatus?.replace('_', ' ')}
-                      </Badge>
-                    ) : (
-                      <span className="text-slate-400 text-[11px]">N/A</span>
-                    )}
-                  </td>
-
-                  <td className="px-4 py-3.5 whitespace-nowrap text-slate-600">
-                    {file.uploadedBy?.name || 'User'}
-                  </td>
-
-                  <td className="px-4 py-3.5 whitespace-nowrap text-slate-400 text-[11px]">
-                    {new Date(file.createdAt).toLocaleDateString()}
-                  </td>
-
-                  <td className="px-5 py-3.5 text-right whitespace-nowrap">
-                    <a
-                      href={file.fileUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="px-2.5 py-1 rounded bg-slate-100 text-slate-700 hover:bg-slate-200 font-medium text-[11px] inline-flex items-center gap-1"
-                    >
-                      <Download className="h-3 w-3" />
-                      <span>Download</span>
-                    </a>
-                  </td>
+              <thead className="border-b border-slate-200 bg-slate-50 text-slate-500 uppercase tracking-wider font-semibold">
+                <tr>
+                  <th className="px-5 py-3">File Name</th>
+                  <th className="px-4 py-3">Category</th>
+                  <th className="px-4 py-3">Approval Status</th>
+                  <th className="px-4 py-3">Uploaded By</th>
+                  <th className="px-4 py-3">Date</th>
+                  <th className="px-5 py-3 text-right">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {files.map((file) => (
+                  <tr key={file._id} className="hover:bg-slate-50/70 transition-colors">
+                    <td className="px-5 py-3.5 max-w-xs">
+                      <div className="flex items-center gap-2.5">
+                        <FileText className="h-4 w-4 text-indigo-500 shrink-0" />
+                        <div className="min-w-0">
+                          <span className="font-semibold text-slate-900 block truncate">{file.fileName}</span>
+                          {file.revisionNotes && (
+                            <span className="text-[10px] text-rose-600 block mt-0.5 truncate font-medium">
+                              Revision note: {file.revisionNotes}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+
+                    <td className="px-4 py-3.5 whitespace-nowrap">
+                      <span className="text-slate-600 font-medium text-[11px]">{file.category}</span>
+                    </td>
+
+                    <td className="px-4 py-3.5 whitespace-nowrap">
+                      {file.isDeliverable ? (
+                        <Badge variant={file.approvalStatus?.toLowerCase() || 'default'}>
+                          {file.approvalStatus?.replace('_', ' ')}
+                        </Badge>
+                      ) : (
+                        <span className="text-slate-400 text-[11px]">N/A</span>
+                      )}
+                    </td>
+
+                    <td className="px-4 py-3.5 whitespace-nowrap text-slate-600">
+                      {file.uploadedBy?.name || 'User'}
+                    </td>
+
+                    <td className="px-4 py-3.5 whitespace-nowrap text-slate-400 text-[11px]">
+                      {new Date(file.createdAt).toLocaleDateString()}
+                    </td>
+
+                    <td className="px-5 py-3.5 text-right whitespace-nowrap">
+                      <button
+                        type="button"
+                        onClick={() => handleDownload(file._id, file.fileName)}
+                        disabled={downloadingId === file._id}
+                        className="px-2.5 py-1 rounded bg-slate-100 text-slate-700 hover:bg-slate-200 font-medium text-[11px] inline-flex items-center gap-1 disabled:opacity-50"
+                        title={`Download ${file.fileName}`}
+                      >
+                        {downloadingId === file._id ? (
+                          <Loader2 className="h-3 w-3 animate-spin text-slate-500" />
+                        ) : (
+                          <Download className="h-3 w-3" />
+                        )}
+                        <span>Download</span>
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
@@ -263,4 +280,4 @@ const WorkerFiles = () => {
   );
 };
 
-export default WorkerFiles;
+export default EmployeeFiles;

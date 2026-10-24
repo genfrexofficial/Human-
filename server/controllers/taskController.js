@@ -6,7 +6,7 @@ const { logActivity } = require('../services/activityService');
 const { sendNotification } = require('../services/notificationService');
 
 // Allowed status transitions mapping
-const WORKER_ALLOWED_TRANSITIONS = {
+const Employee_ALLOWED_TRANSITIONS = {
   ASSIGNED: ['IN_PROGRESS'],
   IN_PROGRESS: ['BLOCKED', 'IN_REVIEW'],
   BLOCKED: ['IN_PROGRESS'],
@@ -26,7 +26,7 @@ const ADMIN_ALLOWED_TRANSITIONS = {
 
 // @desc    Get all tasks for a project
 // @route   GET /api/tasks/project/:projectId
-// @access  Private (Admin, Worker assigned, Client of project)
+// @access  Private (Admin, Employee assigned, Client of project)
 const getProjectTasks = async (req, res, next) => {
   try {
     const { projectId } = req.params;
@@ -50,9 +50,9 @@ const getProjectTasks = async (req, res, next) => {
         });
       }
       query.clientVisible = true; // Client only sees clientVisible tasks
-    } else if (req.user.role === 'WORKER') {
-      // Worker can see all project tasks if assigned to project, or just assigned tasks
-      const isAssigned = project.assignedWorkers && project.assignedWorkers.some(
+    } else if (req.user.role === 'Employee') {
+      // Employee can see all project tasks if assigned to project, or just assigned tasks
+      const isAssigned = project.assignedEmployees && project.assignedEmployees.some(
         (w) => w.toString() === req.user._id.toString()
       );
       if (!isAssigned) {
@@ -80,9 +80,9 @@ const getProjectTasks = async (req, res, next) => {
   }
 };
 
-// @desc    Get my assigned tasks (Worker portal)
+// @desc    Get my assigned tasks (Employee portal)
 // @route   GET /api/tasks/my-tasks
-// @access  Private (Worker)
+// @access  Private (Employee)
 const getMyTasks = async (req, res, next) => {
   try {
     let query = { assignedTo: req.user._id };
@@ -112,7 +112,7 @@ const getMyTasks = async (req, res, next) => {
 
 // @desc    Get single task by ID
 // @route   GET /api/tasks/:id
-// @access  Private (Admin, Assigned Worker, Client if visible)
+// @access  Private (Admin, Assigned Employee, Client if visible)
 const getTaskById = async (req, res, next) => {
   try {
     const task = await Task.findById(req.params.id)
@@ -138,7 +138,7 @@ const getTaskById = async (req, res, next) => {
           message: 'Access denied. You cannot view this task.'
         });
       }
-    } else if (req.user.role === 'WORKER') {
+    } else if (req.user.role === 'Employee') {
       const isAssigned = task.assignedTo && task.assignedTo._id.toString() === req.user._id.toString();
       if (!isAssigned) {
         return res.status(403).json({
@@ -190,12 +190,12 @@ const createTask = async (req, res, next) => {
       });
     }
 
-    let assignedWorker = null;
+    let assignedEmployee = null;
     if (assignedTo) {
-      assignedWorker = await User.findById(assignedTo);
-      if (assignedWorker && assignedWorker.role === 'WORKER') {
-        if (!project.assignedWorkers.some((w) => w.toString() === assignedWorker._id.toString())) {
-          project.assignedWorkers.push(assignedWorker._id);
+      assignedEmployee = await User.findById(assignedTo);
+      if (assignedEmployee && assignedEmployee.role === 'Employee') {
+        if (!project.assignedEmployees.some((w) => w.toString() === assignedEmployee._id.toString())) {
+          project.assignedEmployees.push(assignedEmployee._id);
           await project.save();
         }
       }
@@ -235,15 +235,15 @@ const createTask = async (req, res, next) => {
       clientVisible: task.clientVisible
     });
 
-    // Notify assigned worker
-    if (assignedWorker) {
+    // Notify assigned Employee
+    if (assignedEmployee) {
       await sendNotification({
-        userId: assignedWorker._id,
+        userId: assignedEmployee._id,
         projectId,
         title: 'New Task Assigned',
         type: 'TASK',
         message: `You were assigned to task "${task.title}".`,
-        link: `/worker/tasks/${task._id}`
+        link: `/Employee/tasks/${task._id}`
       });
     }
 
@@ -259,7 +259,7 @@ const createTask = async (req, res, next) => {
 
 // @desc    Update task details / status
 // @route   PUT /api/tasks/:id
-// @access  Private (Admin or assigned Worker)
+// @access  Private (Admin or assigned Employee)
 const updateTask = async (req, res, next) => {
   try {
     const task = await Task.findById(req.params.id);
@@ -287,8 +287,8 @@ const updateTask = async (req, res, next) => {
     const oldStatus = task.status;
     const oldProgress = task.progress;
 
-    // WORKER ACCESS CHECK & STATE MACHINE VALIDATION
-    if (req.user.role === 'WORKER') {
+    // Employee ACCESS CHECK & STATE MACHINE VALIDATION
+    if (req.user.role === 'Employee') {
       if (!task.assignedTo || task.assignedTo.toString() !== req.user._id.toString()) {
         return res.status(403).json({
           success: false,
@@ -298,11 +298,11 @@ const updateTask = async (req, res, next) => {
 
       // If updating status, validate state machine
       if (status && status !== oldStatus) {
-        const allowedNext = WORKER_ALLOWED_TRANSITIONS[oldStatus] || [];
+        const allowedNext = Employee_ALLOWED_TRANSITIONS[oldStatus] || [];
         if (!allowedNext.includes(status)) {
           return res.status(400).json({
             success: false,
-            message: `Invalid state transition from '${oldStatus}' to '${status}' for role WORKER. Allowed transitions: ${allowedNext.join(', ') || 'None'}.`
+            message: `Invalid state transition from '${oldStatus}' to '${status}' for role Employee. Allowed transitions: ${allowedNext.join(', ') || 'None'}.`
           });
         }
         task.status = status;
@@ -311,7 +311,7 @@ const updateTask = async (req, res, next) => {
         }
       }
 
-      // Worker can update progress
+      // Employee can update progress
       if (progress !== undefined) {
         const pNum = Number(progress);
         if (isNaN(pNum) || pNum < 0 || pNum > 100) {
@@ -405,8 +405,8 @@ const updateTask = async (req, res, next) => {
         clientVisible: task.clientVisible
       });
 
-      // If worker submitted for review, notify Admin
-      if (task.status === 'IN_REVIEW' && req.user.role === 'WORKER') {
+      // If Employee submitted for review, notify Admin
+      if (task.status === 'IN_REVIEW' && req.user.role === 'Employee') {
         const project = await Project.findById(task.project);
         if (project && project.createdBy) {
           await sendNotification({
@@ -414,13 +414,13 @@ const updateTask = async (req, res, next) => {
             projectId: project._id,
             title: 'Task Awaiting Review',
             type: 'TASK',
-            message: `Worker ${req.user.name} submitted task "${task.title}" for review.`,
+            message: `Employee ${req.user.name} submitted task "${task.title}" for review.`,
             link: `/admin/tasks`
           });
         }
       }
 
-      // If admin completed task, notify worker and client
+      // If admin completed task, notify Employee and client
       if (task.status === 'COMPLETED' && req.user.role === 'ADMIN') {
         if (task.assignedTo) {
           await sendNotification({
@@ -429,7 +429,7 @@ const updateTask = async (req, res, next) => {
             title: 'Task Approved & Completed',
             type: 'TASK',
             message: `Admin approved and completed your task "${task.title}".`,
-            link: `/worker/tasks/${task._id}`
+            link: `/Employee/tasks/${task._id}`
           });
         }
         const project = await Project.findById(task.project);
@@ -467,9 +467,9 @@ const updateTask = async (req, res, next) => {
   }
 };
 
-// @desc    Worker starts assigned task (ASSIGNED -> IN_PROGRESS)
+// @desc    Employee starts assigned task (ASSIGNED -> IN_PROGRESS)
 // @route   POST /api/tasks/:id/start
-// @access  Private (Worker)
+// @access  Private (Employee)
 const startTask = async (req, res, next) => {
   try {
     const task = await Task.findById(req.params.id);
@@ -478,7 +478,7 @@ const startTask = async (req, res, next) => {
     }
 
     if (!task.assignedTo || task.assignedTo.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ success: false, message: 'Only the assigned worker can start this task.' });
+      return res.status(403).json({ success: false, message: 'Only the assigned Employee can start this task.' });
     }
 
     if (!['ASSIGNED', 'TODO', 'BLOCKED', 'CHANGES_REQUESTED'].includes(task.status)) {
@@ -512,9 +512,9 @@ const startTask = async (req, res, next) => {
   }
 };
 
-// @desc    Worker updates progress
+// @desc    Employee updates progress
 // @route   POST /api/tasks/:id/progress
-// @access  Private (Worker or Admin)
+// @access  Private (Employee or Admin)
 const updateTaskProgress = async (req, res, next) => {
   try {
     const { progress } = req.body;
@@ -532,9 +532,9 @@ const updateTaskProgress = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Task not found.' });
     }
 
-    if (req.user.role === 'WORKER') {
+    if (req.user.role === 'Employee') {
       if (!task.assignedTo || task.assignedTo.toString() !== req.user._id.toString()) {
-        return res.status(403).json({ success: false, message: 'Only the assigned worker can update progress.' });
+        return res.status(403).json({ success: false, message: 'Only the assigned Employee can update progress.' });
       }
     }
 
@@ -564,9 +564,9 @@ const updateTaskProgress = async (req, res, next) => {
   }
 };
 
-// @desc    Worker submits task for review (IN_PROGRESS -> IN_REVIEW)
+// @desc    Employee submits task for review (IN_PROGRESS -> IN_REVIEW)
 // @route   POST /api/tasks/:id/submit-review
-// @access  Private (Worker)
+// @access  Private (Employee)
 const submitTaskForReview = async (req, res, next) => {
   try {
     const task = await Task.findById(req.params.id);
@@ -575,7 +575,7 @@ const submitTaskForReview = async (req, res, next) => {
     }
 
     if (!task.assignedTo || task.assignedTo.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ success: false, message: 'Only assigned worker can submit this task for review.' });
+      return res.status(403).json({ success: false, message: 'Only assigned Employee can submit this task for review.' });
     }
 
     if (!['IN_PROGRESS', 'CHANGES_REQUESTED'].includes(task.status)) {
@@ -593,7 +593,7 @@ const submitTaskForReview = async (req, res, next) => {
       projectId: task.project,
       userId: req.user._id,
       action: 'TASK_SUBMITTED_FOR_REVIEW',
-      description: `Worker ${req.user.name} submitted task "${task.title}" for admin review.`,
+      description: `Employee ${req.user.name} submitted task "${task.title}" for admin review.`,
       entityType: 'TASK',
       entityId: task._id,
       clientVisible: false
@@ -606,7 +606,7 @@ const submitTaskForReview = async (req, res, next) => {
         projectId: project._id,
         title: 'Task Submitted for Review',
         type: 'TASK',
-        message: `Worker ${req.user.name} completed and submitted task "${task.title}" for review.`,
+        message: `Employee ${req.user.name} completed and submitted task "${task.title}" for review.`,
         link: `/admin/tasks`
       });
     }
@@ -655,7 +655,7 @@ const completeTask = async (req, res, next) => {
         title: 'Task Approved',
         type: 'TASK',
         message: `Your task "${task.title}" has been approved and marked as completed!`,
-        link: `/worker/tasks/${task._id}`
+        link: `/Employee/tasks/${task._id}`
       });
     }
 
@@ -682,9 +682,9 @@ const completeTask = async (req, res, next) => {
   }
 };
 
-// @desc    Worker marks task as blocked
+// @desc    Employee marks task as blocked
 // @route   POST /api/tasks/:id/block
-// @access  Private (Worker)
+// @access  Private (Employee)
 const blockTask = async (req, res, next) => {
   try {
     const { reason } = req.body;
@@ -694,7 +694,7 @@ const blockTask = async (req, res, next) => {
     }
 
     if (!task.assignedTo || task.assignedTo.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ success: false, message: 'Only assigned worker can report a blocker.' });
+      return res.status(403).json({ success: false, message: 'Only assigned Employee can report a blocker.' });
     }
 
     task.status = 'BLOCKED';
@@ -706,7 +706,7 @@ const blockTask = async (req, res, next) => {
       projectId: task.project,
       userId: req.user._id,
       action: 'TASK_BLOCKED',
-      description: `Worker ${req.user.name} marked task "${task.title}" as blocked: ${reason || 'Technical obstacle'}`,
+      description: `Employee ${req.user.name} marked task "${task.title}" as blocked: ${reason || 'Technical obstacle'}`,
       entityType: 'TASK',
       entityId: task._id,
       clientVisible: false
@@ -719,7 +719,7 @@ const blockTask = async (req, res, next) => {
         projectId: project._id,
         title: 'Task Blocked Alert',
         type: 'TASK',
-        message: `Worker ${req.user.name} reported task "${task.title}" is BLOCKED: ${reason || 'Immediate attention needed.'}`,
+        message: `Employee ${req.user.name} reported task "${task.title}" is BLOCKED: ${reason || 'Immediate attention needed.'}`,
         link: `/admin/tasks`
       });
     }

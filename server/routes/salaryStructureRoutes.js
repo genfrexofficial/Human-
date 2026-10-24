@@ -10,7 +10,7 @@ const { authenticateToken, authorizeRoles } = require('../middleware/authMiddlew
 
 router.use(authenticateToken);
 
-// Worker views their own salary structure & bank details
+// Employee views their own salary structure & bank details
 router.get('/my-structure', getMySalaryStructure);
 
 // Admin & HR management

@@ -129,7 +129,7 @@ const createComment = async (req, res, next) => {
           link: `/admin/projects/${project._id}`
         });
       } else if (!isClient && project.client) {
-        // If admin or worker posted a client-visible comment, notify client
+        // If admin or Employee posted a client-visible comment, notify client
         await sendNotification({
           userId: project.client,
           projectId,

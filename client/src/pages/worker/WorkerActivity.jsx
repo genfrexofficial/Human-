@@ -3,7 +3,7 @@ import { activityService } from '../../services/activityService';
 import { History, Loader2, Sparkles } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-const WorkerActivity = () => {
+const EmployeeActivity = () => {
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -79,4 +79,4 @@ const WorkerActivity = () => {
   );
 };
 
-export default WorkerActivity;
+export default EmployeeActivity;

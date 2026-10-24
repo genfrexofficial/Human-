@@ -4,7 +4,7 @@ import { hrService } from '../../services/hrService';
 import { projectService } from '../../services/projectService';
 import { clientService } from '../../services/clientService';
 import { taskRequestService } from '../../services/taskRequestService';
-import { workerService } from '../../services/workerService';
+import { EmployeeService } from '../../services/EmployeeService';
 import {
   FileText,
   User,
@@ -34,7 +34,7 @@ const CreateAppointment = () => {
   const preselectedProjectId = searchParams.get('projectId');
   const preselectedClientId = searchParams.get('clientId');
   const preselectedReqId = searchParams.get('requirementId');
-  const preselectedWorkerId = searchParams.get('workerId');
+  const preselectedEmployeeId = searchParams.get('EmployeeId');
   const preselectedDesignation = searchParams.get('designation');
 
   const navigate = useNavigate();
@@ -44,7 +44,7 @@ const CreateAppointment = () => {
   const [projects, setProjects] = useState([]);
   const [clients, setClients] = useState([]);
   const [requirements, setRequirements] = useState([]);
-  const [workers, setWorkers] = useState([]);
+  const [Employees, setEmployees] = useState([]);
 
   const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [template, setTemplate] = useState(null);
@@ -77,7 +77,7 @@ const CreateAppointment = () => {
     clientId: preselectedClientId || '',
     projectId: preselectedProjectId || '',
     requirementId: preselectedReqId || '',
-    workerId: preselectedWorkerId || ''
+    EmployeeId: preselectedEmployeeId || ''
   });
 
   useEffect(() => {
@@ -113,7 +113,7 @@ const CreateAppointment = () => {
         projectService.getProjects().catch(() => ({ success: false })),
         clientService.getClients().catch(() => ({ success: false })),
         taskRequestService.getTaskRequests().catch(() => ({ success: false })),
-        workerService.getWorkers().catch(() => ({ success: false }))
+        EmployeeService.getEmployees().catch(() => ({ success: false }))
       ]);
 
       let availableTemplates = [];
@@ -145,7 +145,7 @@ const CreateAppointment = () => {
       if (projRes.success) setProjects(projRes.projects || []);
       if (clientRes.success) setClients(clientRes.clients || []);
       if (reqRes.success) setRequirements(reqRes.taskRequests || reqRes.requests || []);
-      if (workRes.success) setWorkers(workRes.workers || []);
+      if (workRes.success) setEmployees(workRes.Employees || []);
 
       // If preselected project passed, auto-set client if project has one
       if (preselectedProjectId && projRes.success) {
@@ -172,7 +172,7 @@ const CreateAppointment = () => {
     // Intelligently find matching role template for this candidate
     const des = (cand.designation || '').toLowerCase();
     const track = cand.employmentType?.toUpperCase() === 'FULL-TIME' ? 'FULL_TIME' :
-                  cand.employmentType?.toUpperCase() === 'INTERNSHIP' ? 'INTERNSHIP' : 'TRAINEE';
+      cand.employmentType?.toUpperCase() === 'INTERNSHIP' ? 'INTERNSHIP' : 'TRAINEE';
 
     let matchedTmpl = (templateList || []).find((t) => {
       if (des.includes('devops') || des.includes('cloud') || des.includes('infra')) return t.roleCategory === 'DEVOPS';
@@ -212,7 +212,7 @@ const CreateAppointment = () => {
       projectId: prev.projectId || cand.projectId || cand.project?._id || cand.project || '',
       clientId: prev.clientId || cand.clientId || cand.client?._id || cand.client || '',
       requirementId: prev.requirementId || cand.requirementId || cand.requirement?._id || cand.requirement || '',
-      workerId: prev.workerId || cand.workerId || cand.assignedWorker?._id || cand.assignedWorker || ''
+      EmployeeId: prev.EmployeeId || cand.EmployeeId || cand.assignedEmployee?._id || cand.assignedEmployee || ''
     }));
   };
 
@@ -278,7 +278,7 @@ const CreateAppointment = () => {
         client: formData.clientId || null,
         project: formData.projectId || null,
         requirement: formData.requirementId || null,
-        assignedWorker: formData.workerId || null,
+        assignedEmployee: formData.EmployeeId || null,
         submitNow
       });
 
@@ -309,7 +309,7 @@ const CreateAppointment = () => {
   const selectedProjectObj = projects.find((p) => p._id === formData.projectId);
   const selectedClientObj = clients.find((c) => c._id === formData.clientId);
   const selectedReqObj = requirements.find((r) => r._id === formData.requirementId);
-  const selectedWorkerObj = workers.find((w) => w._id === formData.workerId);
+  const selectedEmployeeObj = Employees.find((w) => w._id === formData.EmployeeId);
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
@@ -344,18 +344,16 @@ const CreateAppointment = () => {
               key={item.num}
               type="button"
               onClick={() => setStep(item.num)}
-              className={`flex items-center justify-center sm:justify-start gap-1.5 py-2 px-2.5 rounded-xl font-semibold transition-all ${
-                isActive
+              className={`flex items-center justify-center sm:justify-start gap-1.5 py-2 px-2.5 rounded-xl font-semibold transition-all ${isActive
                   ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/30'
                   : isDone
-                  ? 'bg-blue-50 text-blue-700'
-                  : 'text-slate-500 hover:bg-slate-50'
-              }`}
+                    ? 'bg-blue-50 text-blue-700'
+                    : 'text-slate-500 hover:bg-slate-50'
+                }`}
             >
               <div
-                className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold ${
-                  isActive ? 'bg-white text-blue-600' : isDone ? 'bg-blue-200 text-blue-800' : 'bg-slate-200 text-slate-600'
-                }`}
+                className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold ${isActive ? 'bg-white text-blue-600' : isDone ? 'bg-blue-200 text-blue-800' : 'bg-slate-200 text-slate-600'
+                  }`}
               >
                 {isDone ? '✓' : item.num}
               </div>
@@ -386,11 +384,10 @@ const CreateAppointment = () => {
                   <div
                     key={cand._id}
                     onClick={() => selectCandidate(cand)}
-                    className={`p-3.5 rounded-xl border cursor-pointer transition-all ${
-                      isSelected
+                    className={`p-3.5 rounded-xl border cursor-pointer transition-all ${isSelected
                         ? 'border-blue-600 bg-blue-50/60 shadow-sm ring-2 ring-blue-500/20'
                         : 'border-slate-200 hover:border-slate-300 bg-white'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center justify-between">
                       <p className="font-bold text-slate-900 text-xs">{cand.name}</p>
@@ -667,7 +664,7 @@ const CreateAppointment = () => {
                 </span>
               </h2>
               <p className="text-xs text-slate-500 mt-0.5">
-                Link this appointment letter to a ClientFlow Client, Project, Requirement, or Assigned Worker.
+                Link this appointment letter to a ClientFlow Client, Project, Requirement, or Assigned Employee.
                 Leave blank for internal GENFREX appointments.
               </p>
             </div>
@@ -683,7 +680,7 @@ const CreateAppointment = () => {
             </div>
             <p className="text-[11px] text-slate-500 leading-relaxed">
               These references are retained internally for delivery tracking, talent utilization, and HR records.
-              Clients and workers will never see salary, compensation amounts, internal notes, or appointment letter contents.
+              Clients and Employees will never see salary, compensation amounts, internal notes, or appointment letter contents.
             </p>
           </div>
 
@@ -749,16 +746,16 @@ const CreateAppointment = () => {
 
             <div>
               <label className="block font-semibold text-slate-700 mb-1">
-                Assigned Worker / Mentor (Optional):
+                Assigned Employee / Mentor (Optional):
               </label>
               <select
-                name="workerId"
-                value={formData.workerId}
+                name="EmployeeId"
+                value={formData.EmployeeId}
                 onChange={handleInputChange}
                 className="w-full p-2.5 rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:border-blue-500"
               >
                 <option value="">-- None (Direct Manager Assignment) --</option>
-                {workers.map((w) => (
+                {Employees.map((w) => (
                   <option key={w._id} value={w._id}>
                     {w.name} {w.title ? `(${w.title})` : ''}
                   </option>

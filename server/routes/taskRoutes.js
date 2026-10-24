@@ -17,8 +17,8 @@ const { authenticateToken, authorizeRoles } = require('../middleware/authMiddlew
 
 router.use(authenticateToken);
 
-// Worker: Get my tasks
-router.get('/my-tasks', authorizeRoles('WORKER', 'ADMIN'), getMyTasks);
+// Employee: Get my tasks
+router.get('/my-tasks', authorizeRoles('Employee', 'ADMIN'), getMyTasks);
 
 // Get tasks for a project
 router.get('/project/:projectId', getProjectTasks);
@@ -29,14 +29,14 @@ router.get('/:id', getTaskById);
 // Admin task creation
 router.post('/', authorizeRoles('ADMIN'), createTask);
 
-// Update task (Admin or Worker with transition validation)
-router.put('/:id', authorizeRoles('ADMIN', 'WORKER'), updateTask);
+// Update task (Admin or Employee with transition validation)
+router.put('/:id', authorizeRoles('ADMIN', 'Employee'), updateTask);
 
 // Dedicated action endpoints
-router.post('/:id/start', authorizeRoles('WORKER', 'ADMIN'), startTask);
-router.post('/:id/progress', authorizeRoles('WORKER', 'ADMIN'), updateTaskProgress);
-router.post('/:id/submit-review', authorizeRoles('WORKER', 'ADMIN'), submitTaskForReview);
-router.post('/:id/block', authorizeRoles('WORKER', 'ADMIN'), blockTask);
+router.post('/:id/start', authorizeRoles('Employee', 'ADMIN'), startTask);
+router.post('/:id/progress', authorizeRoles('Employee', 'ADMIN'), updateTaskProgress);
+router.post('/:id/submit-review', authorizeRoles('Employee', 'ADMIN'), submitTaskForReview);
+router.post('/:id/block', authorizeRoles('Employee', 'ADMIN'), blockTask);
 router.post('/:id/complete', authorizeRoles('ADMIN'), completeTask);
 
 // Delete task (Admin only)

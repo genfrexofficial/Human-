@@ -32,7 +32,7 @@ import {
 } from 'lucide-react';
 
 const Sidebar = ({ isOpen, onClose }) => {
-  const { user, isAdmin, isHR, isWorker, isClient, logout } = useAuth();
+  const { user, isAdmin, isHR, isEmployee, isClient, logout } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -64,7 +64,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         { label: 'User Management', path: '/admin/users', icon: Users },
         { label: 'Attendance & Leaves', path: '/admin/attendance-leaves', icon: Clock },
         { label: 'Payroll & Salaries', path: '/admin/payroll', icon: Banknote },
-        { label: 'Workers', path: '/admin/workers', icon: HardHat },
+        { label: 'Employees', path: '/admin/Employees', icon: HardHat },
         { label: 'Clients', path: '/admin/clients', icon: Users },
         { label: 'HR Team', path: '/admin/hr-team', icon: UserCheck }
       ]
@@ -114,19 +114,19 @@ const Sidebar = ({ isOpen, onClose }) => {
     }
   ];
 
-  // Worker navigation
-  const workerSections = [
+  // Employee navigation
+  const EmployeeSections = [
     {
       group: 'ENGINEERING',
       items: [
-        { label: 'Dashboard', path: '/worker/dashboard', icon: LayoutDashboard },
-        { label: 'Attendance & Leaves', path: '/worker/attendance', icon: Clock },
-        { label: 'My Payslips', path: '/worker/payroll', icon: Banknote },
-        { label: 'My Tasks', path: '/worker/tasks', icon: CheckSquare },
-        { label: 'Assigned Projects', path: '/worker/projects', icon: FolderKanban },
-        { label: 'Deliverables & Files', path: '/worker/files', icon: Files },
-        { label: 'Activity Feed', path: '/worker/activity', icon: History },
-        { label: 'My Profile', path: '/worker/profile', icon: User }
+        { label: 'Dashboard', path: '/Employee/dashboard', icon: LayoutDashboard },
+        { label: 'Attendance & Leaves', path: '/Employee/attendance', icon: Clock },
+        { label: 'My Payslips', path: '/Employee/payroll', icon: Banknote },
+        { label: 'My Tasks', path: '/Employee/tasks', icon: CheckSquare },
+        { label: 'Assigned Projects', path: '/Employee/projects', icon: FolderKanban },
+        { label: 'Deliverables & Files', path: '/Employee/files', icon: Files },
+        { label: 'Activity Feed', path: '/Employee/activity', icon: History },
+        { label: 'My Profile', path: '/Employee/profile', icon: User }
       ]
     }
   ];
@@ -164,8 +164,8 @@ const Sidebar = ({ isOpen, onClose }) => {
     sections = hrSections;
     workspaceLabel = 'HR Talent Operations';
     badgeColor = 'bg-cyan-500';
-  } else if (isWorker) {
-    sections = workerSections;
+  } else if (isEmployee) {
+    sections = EmployeeSections;
     workspaceLabel = 'Engineering Workspace';
     badgeColor = 'bg-amber-500';
   }
@@ -182,9 +182,8 @@ const Sidebar = ({ isOpen, onClose }) => {
 
       {/* Sidebar container */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-64 h-[100dvh] lg:h-full flex-col justify-between border-r border-slate-200/80 bg-white transition-transform duration-200 ease-in-out lg:static lg:translate-x-0 ${
-          isOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
+        className={`fixed inset-y-0 left-0 z-50 flex w-64 h-[100dvh] lg:h-full flex-col justify-between border-r border-slate-200/80 bg-white transition-transform duration-200 ease-in-out lg:static lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'
+          }`}
       >
         {/* Top brand header */}
         <div className="flex flex-col flex-1 min-h-0">
@@ -227,10 +226,9 @@ const Sidebar = ({ isOpen, onClose }) => {
                       to={item.path}
                       onClick={() => onClose && onClose()}
                       className={({ isActive }) =>
-                        `flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                          isActive
-                            ? 'bg-blue-50 text-blue-700 font-semibold border-r-2 border-blue-600'
-                            : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                        `flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${isActive
+                          ? 'bg-blue-50 text-blue-700 font-semibold border-r-2 border-blue-600'
+                          : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                         }`
                       }
                     >

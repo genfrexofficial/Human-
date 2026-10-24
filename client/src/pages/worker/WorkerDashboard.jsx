@@ -21,7 +21,7 @@ import Badge from '../../components/common/Badge';
 import ProgressBar from '../../components/common/ProgressBar';
 import Button from '../../components/common/Button';
 
-const WorkerDashboard = () => {
+const EmployeeDashboard = () => {
   const { user } = useAuth();
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -115,12 +115,12 @@ const WorkerDashboard = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          <Link to="/worker/tasks">
+          <Link to="/Employee/tasks">
             <Button size="sm" variant="secondary">
               View All Tasks ({tasks.length})
             </Button>
           </Link>
-          <Link to="/worker/files">
+          <Link to="/Employee/files">
             <Button size="sm">
               Upload Work File
             </Button>
@@ -194,7 +194,7 @@ const WorkerDashboard = () => {
               Tasks assigned to you requiring active implementation or review
             </p>
           </div>
-          <Link to="/worker/tasks" className="text-xs font-medium text-indigo-600 hover:text-indigo-700 flex items-center gap-1">
+          <Link to="/Employee/tasks" className="text-xs font-medium text-indigo-600 hover:text-indigo-700 flex items-center gap-1">
             <span>View All</span>
             <ArrowRight className="h-3.5 w-3.5" />
           </Link>
@@ -235,7 +235,7 @@ const WorkerDashboard = () => {
 
                     {/* Task Title */}
                     <Link
-                      to={`/worker/tasks/${task._id}`}
+                      to={`/Employee/tasks/${task._id}`}
                       className="text-sm font-semibold text-slate-900 hover:text-indigo-600 transition-colors line-clamp-1"
                     >
                       {task.title}
@@ -292,7 +292,7 @@ const WorkerDashboard = () => {
                         </Button>
                       )}
 
-                      <Link to={`/worker/tasks/${task._id}`}>
+                      <Link to={`/Employee/tasks/${task._id}`}>
                         <Button size="xs" variant="secondary">
                           Details
                         </Button>
@@ -309,4 +309,4 @@ const WorkerDashboard = () => {
   );
 };
 
-export default WorkerDashboard;
+export default EmployeeDashboard;

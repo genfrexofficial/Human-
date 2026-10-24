@@ -53,8 +53,8 @@ app.use('/uploads', authenticateToken, async (req, res, next) => {
         if (file.task && file.task.clientVisible === false) {
           return res.status(403).json({ success: false, message: 'Access denied. Internal file.' });
         }
-      } else if (req.user.role === 'WORKER') {
-        const isAssigned = file.project?.assignedWorkers?.some(
+      } else if (req.user.role === 'Employee') {
+        const isAssigned = file.project?.assignedEmployees?.some(
           (w) => w.toString() === req.user._id.toString()
         );
         const hasTask = await Task.exists({ project: file.project?._id, assignedTo: req.user._id });

@@ -30,7 +30,7 @@ async function runCrossModuleIntegrationTests() {
 
   try {
     // Authenticate all 4 actors
-    console.log('[Setup] Authenticating test actors (Admin, HR, Worker, Client)...');
+    console.log('[Setup] Authenticating test actors (Admin, HR, Employee, Client)...');
     const adminLogin = await req('POST', '/auth/login', {
       email: 'admin@genfrex.com',
       password: 'Admin@123'
@@ -52,13 +52,13 @@ async function runCrossModuleIntegrationTests() {
     }
 
     const hrLogin = await ensureUser('hr@genfrex.com', 'Hr@123', 'HR', 'HR Talent Lead');
-    const workerLogin = await ensureUser('worker.cross@genfrex.com', 'Worker@123', 'WORKER', 'Arun Kumar', { title: 'Full Stack Engineer' });
+    const EmployeeLogin = await ensureUser('Employee.cross@genfrex.com', 'Employee@123', 'Employee', 'Arun Kumar', { title: 'Full Stack Engineer' });
     const clientLogin = await ensureUser('client.cross@clientcorp.com', 'Client@123', 'CLIENT', 'Sarah Jenkins', { companyName: 'ClientCorp' });
     console.log('✅ All 4 actors authenticated successfully.');
 
     // Retrieve or create an active project belonging to clientLogin
     const clientUserId = (clientLogin.user.id || clientLogin.user._id).toString();
-    const workerUserId = (workerLogin.user.id || workerLogin.user._id).toString();
+    const EmployeeUserId = (EmployeeLogin.user.id || EmployeeLogin.user._id).toString();
     const projectsRes = await req('GET', '/projects', null, adminLogin.token);
     let targetProject = (projectsRes.projects || []).find(p => (p.client?._id || p.client)?.toString() === clientUserId);
     if (!targetProject) {
@@ -66,7 +66,7 @@ async function runCrossModuleIntegrationTests() {
         name: 'E-Commerce Website Revamp',
         description: 'Client engagement for full-stack ecommerce marketplace',
         client: clientUserId,
-        assignedWorkers: [workerUserId],
+        assignedEmployees: [EmployeeUserId],
         budget: 150000
       }, adminLogin.token);
       targetProject = newProj.project;
@@ -119,7 +119,7 @@ async function runCrossModuleIntegrationTests() {
       projectId: targetProject._id,
       clientId: targetProject.client?._id || targetProject.client,
       requirementId: targetRequirementId,
-      assignedWorkerId: workerLogin.user.id || workerLogin.user._id,
+      assignedEmployeeId: EmployeeLogin.user.id || EmployeeLogin.user._id,
       role: 'React Developer'
     }, adminLogin.token);
 
@@ -187,16 +187,16 @@ async function runCrossModuleIntegrationTests() {
     console.log('✅ Scenario 4 Passed: Client project payload verified clean with 0 confidential HR/compensation leaks.');
 
     // -------------------------------------------------------------
-    // Scenario 5: Worker cannot access HR appointment
+    // Scenario 5: Employee cannot access HR appointment
     // -------------------------------------------------------------
     console.log('\n------------------------------------------------------------');
-    console.log('[Scenario 5] Worker cannot access HR appointment...');
+    console.log('[Scenario 5] Employee cannot access HR appointment...');
     try {
-      await req('GET', '/hr/appointments', null, workerLogin.token);
-      throw new Error('SECURITY BREACH: Worker was able to access /api/hr/appointments!');
+      await req('GET', '/hr/appointments', null, EmployeeLogin.token);
+      throw new Error('SECURITY BREACH: Employee was able to access /api/hr/appointments!');
     } catch (err) {
       if (err.status === 403) {
-        console.log('✅ Scenario 5 Passed: Worker denied access to HR appointments (403 Forbidden).');
+        console.log('✅ Scenario 5 Passed: Employee denied access to HR appointments (403 Forbidden).');
       } else {
         throw err;
       }
@@ -212,7 +212,7 @@ async function runCrossModuleIntegrationTests() {
       projectId: targetProject._id,
       clientId: targetProject.client?._id || targetProject.client,
       requirementId: targetRequirementId,
-      assignedWorker: workerLogin.user.id || workerLogin.user._id,
+      assignedEmployee: EmployeeLogin.user.id || EmployeeLogin.user._id,
       appointmentType: 'TRAINEE',
       designation: 'React Developer',
       department: 'Engineering',
@@ -307,16 +307,16 @@ async function runCrossModuleIntegrationTests() {
     // -------------------------------------------------------------
     console.log('\n------------------------------------------------------------');
     console.log('[Scenario 11] Validating existing ClientFlow workflow...');
-    
+
     // Client checks projects
     const clientProjects = await req('GET', '/projects', null, clientLogin.token);
     if (!clientProjects.success) throw new Error('Client cannot fetch projects');
     console.log(`✅ 11.1 Client projects functional (${clientProjects.count} accessible)`);
 
-    // Worker checks tasks
-    const workerTasks = await req('GET', '/tasks/my-tasks', null, workerLogin.token);
-    if (!workerTasks.success) throw new Error('Worker cannot fetch tasks');
-    console.log(`✅ 11.2 Worker tasks functional (${workerTasks.count} assigned tasks)`);
+    // Employee checks tasks
+    const EmployeeTasks = await req('GET', '/tasks/my-tasks', null, EmployeeLogin.token);
+    if (!EmployeeTasks.success) throw new Error('Employee cannot fetch tasks');
+    console.log(`✅ 11.2 Employee tasks functional (${EmployeeTasks.count} assigned tasks)`);
 
     // Client checks task requests
     const clientRequests = await req('GET', '/task-requests', null, clientLogin.token);

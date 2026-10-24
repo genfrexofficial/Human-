@@ -107,11 +107,11 @@ const candidateSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'TaskRequest'
     },
-    workerId: {
+    EmployeeId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User'
     },
-    assignedWorker: {
+    assignedEmployee: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User'
     },
@@ -137,8 +137,8 @@ candidateSchema.pre('save', function (next) {
   if (this.requirement && !this.requirementId) this.requirementId = this.requirement;
   if (this.requirementId && !this.requirement) this.requirement = this.requirementId;
 
-  if (this.assignedWorker && !this.workerId) this.workerId = this.assignedWorker;
-  if (this.workerId && !this.assignedWorker) this.assignedWorker = this.workerId;
+  if (this.assignedEmployee && !this.EmployeeId) this.EmployeeId = this.assignedEmployee;
+  if (this.EmployeeId && !this.assignedEmployee) this.assignedEmployee = this.EmployeeId;
 
   next();
 });

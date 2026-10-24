@@ -3,7 +3,7 @@ import { X, Save, IndianRupee, Landmark, ShieldAlert, Sparkles } from 'lucide-re
 import toast from 'react-hot-toast';
 import { payrollService } from '../../services/payrollService';
 
-const SalaryStructureModal = ({ isOpen, onClose, worker, onSaved }) => {
+const SalaryStructureModal = ({ isOpen, onClose, Employee, onSaved }) => {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     salaryType: 'MONTHLY',
@@ -38,15 +38,15 @@ const SalaryStructureModal = ({ isOpen, onClose, worker, onSaved }) => {
   });
 
   useEffect(() => {
-    if (worker) {
+    if (Employee) {
       loadStructure();
     }
-  }, [worker]);
+  }, [Employee]);
 
   const loadStructure = async () => {
     try {
       setLoading(true);
-      const res = await payrollService.getSalaryStructureByUser(worker._id);
+      const res = await payrollService.getSalaryStructureByUser(Employee._id);
       if (res.data) {
         setFormData({
           salaryType: res.data.salaryType || 'MONTHLY',
@@ -70,7 +70,7 @@ const SalaryStructureModal = ({ isOpen, onClose, worker, onSaved }) => {
             otherDeduction: res.data.deductions?.otherDeduction || 0
           },
           bankDetails: {
-            accountHolderName: res.data.bankDetails?.accountHolderName || worker.name,
+            accountHolderName: res.data.bankDetails?.accountHolderName || Employee.name,
             accountNumber: res.data.bankDetails?.accountNumber || '',
             bankName: res.data.bankDetails?.bankName || '',
             ifscCode: res.data.bankDetails?.ifscCode || '',
@@ -95,7 +95,7 @@ const SalaryStructureModal = ({ isOpen, onClose, worker, onSaved }) => {
           },
           bankDetails: {
             ...prev.bankDetails,
-            accountHolderName: worker.name
+            accountHolderName: Employee.name
           }
         }));
       }
@@ -106,7 +106,7 @@ const SalaryStructureModal = ({ isOpen, onClose, worker, onSaved }) => {
     }
   };
 
-  if (!isOpen || !worker) return null;
+  if (!isOpen || !Employee) return null;
 
   // Real-time calculations
   const base = Number(formData.baseSalary) || 0;
@@ -132,8 +132,8 @@ const SalaryStructureModal = ({ isOpen, onClose, worker, onSaved }) => {
     e.preventDefault();
     try {
       setLoading(true);
-      await payrollService.upsertSalaryStructure(worker._id, formData);
-      toast.success(`Salary structure updated for ${worker.name}!`);
+      await payrollService.upsertSalaryStructure(Employee._id, formData);
+      toast.success(`Salary structure updated for ${Employee.name}!`);
       if (onSaved) onSaved();
       onClose();
     } catch (err) {
@@ -179,7 +179,7 @@ const SalaryStructureModal = ({ isOpen, onClose, worker, onSaved }) => {
             <div>
               <h3 className="font-semibold text-base">Configure Compensation & Bank</h3>
               <p className="text-xs text-slate-400">
-                {worker.name} • {worker.title || 'Worker'} • {worker.email}
+                {Employee.name} • {Employee.title || 'Employee'} • {Employee.email}
               </p>
             </div>
           </div>

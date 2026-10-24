@@ -26,33 +26,33 @@ async function runConstraintsTest() {
   const adminToken = adminLogin.data.token;
   console.log('✅ Admin authenticated:', adminLogin.data.user.name);
 
-  // Ensure test worker exists
-  const workerEmail = 'constraints.worker@genfrex.com';
-  const workerPass = 'Worker@123';
-  let workerLogin = await api('/auth/login', {
+  // Ensure test Employee exists
+  const EmployeeEmail = 'constraints.Employee@genfrex.com';
+  const EmployeePass = 'Employee@123';
+  let EmployeeLogin = await api('/auth/login', {
     method: 'POST',
-    body: JSON.stringify({ email: workerEmail, password: workerPass })
+    body: JSON.stringify({ email: EmployeeEmail, password: EmployeePass })
   });
-  if (workerLogin.status !== 200) {
+  if (EmployeeLogin.status !== 200) {
     await api('/users', {
       method: 'POST',
       headers: { Authorization: `Bearer ${adminToken}` },
       body: JSON.stringify({
         name: 'Arun Kumar',
-        email: workerEmail,
-        role: 'WORKER',
+        email: EmployeeEmail,
+        role: 'Employee',
         title: 'Full Stack Engineer',
-        password: workerPass
+        password: EmployeePass
       })
     });
-    workerLogin = await api('/auth/login', {
+    EmployeeLogin = await api('/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ email: workerEmail, password: workerPass })
+      body: JSON.stringify({ email: EmployeeEmail, password: EmployeePass })
     });
   }
-  const workerToken = workerLogin.data.token;
-  const workerId = workerLogin.data.user.id || workerLogin.data.user._id;
-  console.log('✅ Worker authenticated:', workerLogin.data.user.name);
+  const EmployeeToken = EmployeeLogin.data.token;
+  const EmployeeId = EmployeeLogin.data.user.id || EmployeeLogin.data.user._id;
+  console.log('✅ Employee authenticated:', EmployeeLogin.data.user.name);
 
   // Ensure test client exists
   const clientEmail = 'constraints.client@clientportal.com';
@@ -97,7 +97,7 @@ async function runConstraintsTest() {
         name: 'Enterprise Constraints Test Project',
         description: 'Project created for constraints verification',
         client: clientId,
-        assignedWorkers: [workerId],
+        assignedEmployees: [EmployeeId],
         budget: 50000
       })
     });
@@ -152,67 +152,67 @@ async function runConstraintsTest() {
     body: JSON.stringify({
       project: clientProject._id,
       title: 'State Machine Strictness Test Task',
-      assignedTo: workerId,
+      assignedTo: EmployeeId,
       status: 'ASSIGNED'
     })
   });
   const testTaskId = newTaskRes.data.task._id;
   console.log('✅ Created task in ASSIGNED state');
 
-  // Worker tries to jump directly to COMPLETED (Illegal transition)
+  // Employee tries to jump directly to COMPLETED (Illegal transition)
   const illegalJumpRes = await api(`/tasks/${testTaskId}`, {
     method: 'PUT',
-    headers: { Authorization: `Bearer ${workerToken}` },
+    headers: { Authorization: `Bearer ${EmployeeToken}` },
     body: JSON.stringify({ status: 'COMPLETED' })
   });
   if (illegalJumpRes.status === 400) {
-    console.log('✅ BLOCKED: Worker cannot illegally jump from ASSIGNED -> COMPLETED (HTTP 400 returned)');
+    console.log('✅ BLOCKED: Employee cannot illegally jump from ASSIGNED -> COMPLETED (HTTP 400 returned)');
   } else {
     console.error('❌ FAILURE: State machine allowed illegal transition from ASSIGNED to COMPLETED!');
     process.exit(1);
   }
 
-  // Worker tries to jump directly to IN_REVIEW without starting (Illegal transition)
+  // Employee tries to jump directly to IN_REVIEW without starting (Illegal transition)
   const illegalReviewRes = await api(`/tasks/${testTaskId}`, {
     method: 'PUT',
-    headers: { Authorization: `Bearer ${workerToken}` },
+    headers: { Authorization: `Bearer ${EmployeeToken}` },
     body: JSON.stringify({ status: 'IN_REVIEW' })
   });
   if (illegalReviewRes.status === 400) {
-    console.log('✅ BLOCKED: Worker cannot jump from ASSIGNED -> IN_REVIEW directly (HTTP 400 returned)');
+    console.log('✅ BLOCKED: Employee cannot jump from ASSIGNED -> IN_REVIEW directly (HTTP 400 returned)');
   } else {
     console.error('❌ FAILURE: State machine allowed illegal transition to IN_REVIEW!');
     process.exit(1);
   }
 
-  // Worker transitions to IN_PROGRESS (Valid)
+  // Employee transitions to IN_PROGRESS (Valid)
   const startRes = await api(`/tasks/${testTaskId}/start`, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${workerToken}` }
+    headers: { Authorization: `Bearer ${EmployeeToken}` }
   });
-  console.log('✅ Valid transition: Worker started task ->', startRes.data.task.status);
+  console.log('✅ Valid transition: Employee started task ->', startRes.data.task.status);
 
-  // Worker reports BLOCKED (Valid)
+  // Employee reports BLOCKED (Valid)
   const blockRes = await api(`/tasks/${testTaskId}/block`, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${workerToken}` },
+    headers: { Authorization: `Bearer ${EmployeeToken}` },
     body: JSON.stringify({ reason: 'Waiting for API credentials' })
   });
-  console.log('✅ Valid transition: Worker reported blocker ->', blockRes.data.task.status);
+  console.log('✅ Valid transition: Employee reported blocker ->', blockRes.data.task.status);
 
-  // Worker unblocks back to IN_PROGRESS (Valid)
+  // Employee unblocks back to IN_PROGRESS (Valid)
   const unblockRes = await api(`/tasks/${testTaskId}/start`, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${workerToken}` }
+    headers: { Authorization: `Bearer ${EmployeeToken}` }
   });
-  console.log('✅ Valid transition: Worker resumed task ->', unblockRes.data.task.status);
+  console.log('✅ Valid transition: Employee resumed task ->', unblockRes.data.task.status);
 
-  // Worker submits for review (Valid: IN_PROGRESS -> IN_REVIEW)
+  // Employee submits for review (Valid: IN_PROGRESS -> IN_REVIEW)
   const submitReviewRes = await api(`/tasks/${testTaskId}/submit-review`, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${workerToken}` }
+    headers: { Authorization: `Bearer ${EmployeeToken}` }
   });
-  console.log('✅ Valid transition: Worker submitted for review ->', submitReviewRes.data.task.status);
+  console.log('✅ Valid transition: Employee submitted for review ->', submitReviewRes.data.task.status);
 
   // Admin marks COMPLETED (Valid: IN_REVIEW -> COMPLETED)
   const completeRes = await api(`/tasks/${testTaskId}/complete`, {
@@ -231,13 +231,13 @@ async function runConstraintsTest() {
   console.log(`Live Progress: ${projectData.progress}%`);
   console.log(`Calculated Health: ${projectData.health}`);
 
-  // 5. Test WORKER WORKLOAD CALCULATION
-  console.log('\n[Constraint 4: Dynamic Worker Workload Metrics]');
-  const workersRes = await api('/users/workers', {
+  // 5. Test Employee WORKLOAD CALCULATION
+  console.log('\n[Constraint 4: Dynamic Employee Workload Metrics]');
+  const EmployeesRes = await api('/users/Employees', {
     headers: { Authorization: `Bearer ${adminToken}` }
   });
-  const arun = workersRes.data.workers.find(w => w._id.toString() === workerId.toString());
-  console.log(`Worker ${arun.name} Live Workload:`);
+  const arun = EmployeesRes.data.Employees.find(w => w._id.toString() === EmployeeId.toString());
+  console.log(`Employee ${arun.name} Live Workload:`);
   console.log(`- Assigned: ${arun.workload.assigned}`);
   console.log(`- In Progress: ${arun.workload.inProgress}`);
   console.log(`- Awaiting Review: ${arun.workload.awaitingReview}`);

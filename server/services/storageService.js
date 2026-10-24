@@ -48,10 +48,10 @@ const resolveFolderPath = (options = {}) => {
     return ['Clients', clientFolder, 'Documents'];
   }
 
-  // 3. Worker Folder Hierarchy
-  if (module === 'WORKER' || options.workerName) {
-    const workerFolder = options.workerName || 'General Worker';
-    return ['Workers', workerFolder];
+  // 3. Employee Folder Hierarchy
+  if (module === 'Employee' || options.EmployeeName) {
+    const EmployeeFolder = options.EmployeeName || 'General Employee';
+    return ['Employees', EmployeeFolder];
   }
 
   // 4. Project Folder Hierarchy
@@ -149,12 +149,14 @@ const uploadFile = async (file, options = {}) => {
     }
   }
 
-  // 3. Cloudinary for public media (Fallback)
-  if (isCloudinaryConfigured && (isImageOrMedia || options.forceCloudinary)) {
+  // 3. Cloudinary for enterprise cloud storage
+  if (isCloudinaryConfigured) {
     try {
       const result = await cloudinary.uploader.upload(file.path, {
         resource_type: 'auto',
-        folder: 'genfrex_media'
+        folder: 'clientflow_deliverables',
+        use_filename: true,
+        unique_filename: true
       });
 
       try {
@@ -170,7 +172,7 @@ const uploadFile = async (file, options = {}) => {
         fileUrl: result.secure_url,
         fileSize: file.size,
         mimeType: file.mimetype,
-        isConfidential: false
+        isConfidential: Boolean(isConfidential)
       };
     } catch (cloudinaryError) {
       console.warn(`[Storage] Cloudinary upload failed: ${cloudinaryError.message}. Falling back.`);

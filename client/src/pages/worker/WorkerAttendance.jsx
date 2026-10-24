@@ -17,7 +17,7 @@ import {
   LogOut
 } from 'lucide-react';
 
-const WorkerAttendance = () => {
+const EmployeeAttendance = () => {
   const [loading, setLoading] = useState(true);
   const [attendanceRecords, setAttendanceRecords] = useState([]);
   const [summary, setSummary] = useState({ presentDays: 0, totalHours: 0 });
@@ -204,21 +204,19 @@ const WorkerAttendance = () => {
       <div className="flex border-b border-slate-200">
         <button
           onClick={() => setActiveTab('attendance')}
-          className={`pb-3 px-4 text-xs font-semibold border-b-2 transition ${
-            activeTab === 'attendance'
+          className={`pb-3 px-4 text-xs font-semibold border-b-2 transition ${activeTab === 'attendance'
               ? 'border-blue-600 text-blue-600'
               : 'border-transparent text-slate-500 hover:text-slate-800'
-          }`}
+            }`}
         >
           Attendance History
         </button>
         <button
           onClick={() => setActiveTab('leaves')}
-          className={`pb-3 px-4 text-xs font-semibold border-b-2 transition ${
-            activeTab === 'leaves'
+          className={`pb-3 px-4 text-xs font-semibold border-b-2 transition ${activeTab === 'leaves'
               ? 'border-blue-600 text-blue-600'
               : 'border-transparent text-slate-500 hover:text-slate-800'
-          }`}
+            }`}
         >
           Leave Applications ({leaves.length})
         </button>
@@ -267,23 +265,22 @@ const WorkerAttendance = () => {
                         {record.lastLogout
                           ? new Date(record.lastLogout).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                           : record.date === new Date().toISOString().split('T')[0]
-                          ? <span className="text-emerald-600 font-medium">Session Active</span>
-                          : 'Auto-closed'}
+                            ? <span className="text-emerald-600 font-medium">Session Active</span>
+                            : 'Auto-closed'}
                       </td>
                       <td className="py-3 px-4 font-semibold text-slate-900">
                         {record.totalHours} hrs
                       </td>
                       <td className="py-3 px-4">
                         <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                            record.status === 'PRESENT'
+                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${record.status === 'PRESENT'
                               ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                               : record.status === 'HALF_DAY'
-                              ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                              : record.status === 'ON_LEAVE'
-                              ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                              : 'bg-rose-50 text-rose-700 border border-rose-200'
-                          }`}
+                                ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                                : record.status === 'ON_LEAVE'
+                                  ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                                  : 'bg-rose-50 text-rose-700 border border-rose-200'
+                            }`}
                         >
                           {record.status}
                         </span>
@@ -348,13 +345,12 @@ const WorkerAttendance = () => {
                       </td>
                       <td className="py-3 px-4">
                         <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                            leave.status === 'APPROVED'
+                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${leave.status === 'APPROVED'
                               ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                               : leave.status === 'REJECTED'
-                              ? 'bg-rose-50 text-rose-700 border border-rose-200'
-                              : 'bg-amber-50 text-amber-700 border border-amber-200'
-                          }`}
+                                ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                                : 'bg-amber-50 text-amber-700 border border-amber-200'
+                            }`}
                         >
                           {leave.status}
                         </span>
@@ -471,4 +467,4 @@ const WorkerAttendance = () => {
   );
 };
 
-export default WorkerAttendance;
+export default EmployeeAttendance;

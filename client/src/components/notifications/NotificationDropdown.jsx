@@ -8,7 +8,7 @@ import { formatRelativeTime } from '../../utils/formatters';
 const NotificationDropdown = () => {
   const [isOpen, setIsOpen] = useState(false);
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
-  const { isAdmin, isWorker } = useAuth();
+  const { isAdmin, isEmployee } = useAuth();
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
 
@@ -52,8 +52,8 @@ const NotificationDropdown = () => {
     if (notification.project?._id) {
       if (isAdmin) {
         navigate(`/admin/projects/${notification.project._id}`);
-      } else if (isWorker) {
-        navigate('/worker/tasks');
+      } else if (isEmployee) {
+        navigate('/Employee/tasks');
       } else {
         navigate(`/client/projects/${notification.project._id}`);
       }
@@ -111,9 +111,8 @@ const NotificationDropdown = () => {
                 <div
                   key={notification._id}
                   onClick={() => handleNotificationClick(notification)}
-                  className={`flex items-start gap-3 p-3.5 text-left cursor-pointer transition-colors ${
-                    notification.isRead ? 'bg-white hover:bg-slate-50' : 'bg-indigo-50/40 hover:bg-indigo-50/70'
-                  }`}
+                  className={`flex items-start gap-3 p-3.5 text-left cursor-pointer transition-colors ${notification.isRead ? 'bg-white hover:bg-slate-50' : 'bg-indigo-50/40 hover:bg-indigo-50/70'
+                    }`}
                 >
                   <div className="mt-0.5 p-1.5 rounded-lg bg-white shadow-subtle border border-slate-200/60 shrink-0">
                     {getIcon(notification.type)}

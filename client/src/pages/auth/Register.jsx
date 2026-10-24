@@ -57,7 +57,7 @@ const Register = () => {
           </h2>
 
           <p className="text-xs text-slate-300 leading-relaxed">
-            Self-registration is disabled for enterprise security. All accounts for HR Officers, Workers, and Clients are provisioned directly by the Platform Administrator.
+            Self-registration is disabled for enterprise security. All accounts for HR Officers, Employees, and Clients are provisioned directly by the Platform Administrator.
           </p>
 
           <div className="pt-2">

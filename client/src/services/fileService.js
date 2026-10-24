@@ -44,18 +44,32 @@ export const fileService = {
   },
 
   downloadBlob: async (id, fileName) => {
-    const response = await api.get(`/files/${id}/download`, {
-      responseType: 'blob'
-    });
-    const url = window.URL.createObjectURL(new Blob([response.data]));
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', fileName || 'file');
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    setTimeout(() => window.URL.revokeObjectURL(url), 1000);
-    return true;
+    try {
+      const response = await api.get(`/files/${id}/download`, {
+        responseType: 'blob'
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', fileName || 'file');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+      return true;
+    } catch (err) {
+      if (err.response?.data instanceof Blob) {
+        try {
+          const text = await err.response.data.text();
+          const json = JSON.parse(text);
+          if (json.message) {
+            err.message = json.message;
+            if (err.response) err.response.data = json;
+          }
+        } catch (_) {}
+      }
+      throw err;
+    }
   },
 
   viewBlob: async (id) => {

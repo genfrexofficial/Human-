@@ -1,7 +1,7 @@
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 const mongoose = require('mongoose');
 const fs = require('fs');
-const path = require('path');
 
 const User = require('./models/User');
 const Project = require('./models/Project');
@@ -21,6 +21,8 @@ const AuditLog = require('./models/AuditLog');
 const Invoice = require('./models/Invoice');
 const Attendance = require('./models/Attendance');
 const LeaveRequest = require('./models/LeaveRequest');
+const Payroll = require('./models/Payroll');
+const SalaryStructure = require('./models/SalaryStructure');
 
 async function purgeData() {
   const mongoUri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/clientportal';
@@ -50,7 +52,9 @@ async function purgeData() {
     delAuditLogs,
     delInvoices,
     delAttendances,
-    delLeaveRequests
+    delLeaveRequests,
+    delPayrolls,
+    delSalaryStructures
   ] = await Promise.all([
     Project.deleteMany({}),
     Task.deleteMany({}),
@@ -67,7 +71,9 @@ async function purgeData() {
     AuditLog.deleteMany({}),
     Invoice.deleteMany({}),
     Attendance.deleteMany({}),
-    LeaveRequest.deleteMany({})
+    LeaveRequest.deleteMany({}),
+    Payroll.deleteMany({}),
+    SalaryStructure.deleteMany({})
   ]);
 
   console.log('[Purge] Records purged:');
@@ -87,6 +93,8 @@ async function purgeData() {
   console.log(`  - Invoices: ${delInvoices.deletedCount}`);
   console.log(`  - Attendances: ${delAttendances.deletedCount}`);
   console.log(`  - Leave Requests: ${delLeaveRequests.deletedCount}`);
+  console.log(`  - Payrolls: ${delPayrolls.deletedCount}`);
+  console.log(`  - Salary Structures: ${delSalaryStructures.deletedCount}`);
 
   // 3. Reset HR reference sequence to 1
   await HRSettings.updateMany({}, { $set: { currentSequence: 1 } });

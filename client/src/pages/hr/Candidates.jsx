@@ -107,7 +107,7 @@ const Candidates = () => {
       ...(cand.projectId && { projectId: cand.projectId }),
       ...(cand.clientId && { clientId: cand.clientId }),
       ...(cand.requirementId && { requirementId: cand.requirementId }),
-      ...(cand.workerId && { workerId: cand.workerId })
+      ...(cand.EmployeeId && { EmployeeId: cand.EmployeeId })
     });
     navigate(`/hr/appointments/create?${queryParams.toString()}`);
   };
@@ -245,15 +245,14 @@ const Candidates = () => {
                       {/* Source & Project Context */}
                       <td className="py-3.5 px-4">
                         <span
-                          className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                            cand.source === 'Client Project'
+                          className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ${cand.source === 'Client Project'
                               ? 'bg-purple-100 text-purple-800'
                               : cand.source === 'Talent Pool'
-                              ? 'bg-blue-100 text-blue-800'
-                              : cand.source === 'Internal'
-                              ? 'bg-amber-100 text-amber-800'
-                              : 'bg-slate-100 text-slate-700'
-                          }`}
+                                ? 'bg-blue-100 text-blue-800'
+                                : cand.source === 'Internal'
+                                  ? 'bg-amber-100 text-amber-800'
+                                  : 'bg-slate-100 text-slate-700'
+                            }`}
                         >
                           {cand.source || 'Direct HR'}
                         </span>
@@ -303,13 +302,12 @@ const Candidates = () => {
 
                       <td className="py-3.5 px-4">
                         <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                            cand.candidateStatus === 'ONBOARDED'
+                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${cand.candidateStatus === 'ONBOARDED'
                               ? 'bg-emerald-100 text-emerald-800'
                               : cand.candidateStatus === 'APPOINTED'
-                              ? 'bg-blue-100 text-blue-800'
-                              : 'bg-slate-100 text-slate-700'
-                          }`}
+                                ? 'bg-blue-100 text-blue-800'
+                                : 'bg-slate-100 text-slate-700'
+                            }`}
                         >
                           {cand.candidateStatus}
                         </span>

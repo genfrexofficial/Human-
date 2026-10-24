@@ -5,7 +5,7 @@ import NotificationDropdown from '../notifications/NotificationDropdown';
 import { Menu, Search, User, LogOut, ChevronDown, ShieldCheck, Briefcase, UserCheck } from 'lucide-react';
 
 const Navbar = ({ onMobileMenuToggle }) => {
-  const { user, logout, isAdmin, isHR, isWorker, isClient } = useAuth();
+  const { user, logout, isAdmin, isHR, isEmployee, isClient } = useAuth();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -18,7 +18,7 @@ const Navbar = ({ onMobileMenuToggle }) => {
   const getProfileRoute = () => {
     if (isAdmin) return '/admin/settings';
     if (isHR) return '/hr/settings';
-    if (isWorker) return '/worker/profile';
+    if (isEmployee) return '/Employee/profile';
     return '/client/profile';
   };
 
@@ -79,7 +79,7 @@ const Navbar = ({ onMobileMenuToggle }) => {
                   <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-cyan-700 bg-cyan-50 px-1.5 py-0.5 rounded border border-cyan-200">
                     <UserCheck className="w-2.5 h-2.5" /> HR Talent Lead
                   </span>
-                ) : isWorker ? (
+                ) : isEmployee ? (
                   <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
                     <Briefcase className="w-2.5 h-2.5" /> Team Engineer
                   </span>

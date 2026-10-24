@@ -22,7 +22,8 @@ import {
   Loader2,
   CheckCircle2,
   Lock,
-  User
+  User,
+  Download
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Badge from '../../components/common/Badge';
@@ -30,7 +31,7 @@ import ProgressBar from '../../components/common/ProgressBar';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
 
-const WorkerTaskDetails = () => {
+const EmployeeTaskDetails = () => {
   const { id: taskId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -42,6 +43,18 @@ const WorkerTaskDetails = () => {
   // Progress edit state
   const [progressValue, setProgressValue] = useState(0);
   const [updatingProgress, setUpdatingProgress] = useState(false);
+  const [downloadingFileId, setDownloadingFileId] = useState(null);
+
+  const handleDownloadFile = async (fileId, fileName) => {
+    try {
+      setDownloadingFileId(fileId);
+      await fileService.downloadBlob(fileId, fileName);
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || 'Failed to download file.');
+    } finally {
+      setDownloadingFileId(null);
+    }
+  };
 
   // Blocker modal state
   const [blockModalOpen, setBlockModalOpen] = useState(false);
@@ -83,7 +96,7 @@ const WorkerTaskDetails = () => {
       }
     } catch (err) {
       toast.error('Failed to load task details.');
-      navigate('/worker/tasks');
+      navigate('/Employee/tasks');
     } finally {
       setLoading(false);
     }
@@ -267,7 +280,7 @@ const WorkerTaskDetails = () => {
     <div className="space-y-6 max-w-5xl mx-auto">
       {/* Back button */}
       <Link
-        to="/worker/tasks"
+        to="/Employee/tasks"
         className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-slate-800 transition-colors"
       >
         <ArrowLeft className="h-3.5 w-3.5" />
@@ -444,11 +457,10 @@ const WorkerTaskDetails = () => {
           <button
             type="button"
             onClick={() => setActiveTab('discussion')}
-            className={`pb-3 text-xs font-semibold border-b-2 transition-colors flex items-center gap-1.5 ${
-              activeTab === 'discussion'
+            className={`pb-3 text-xs font-semibold border-b-2 transition-colors flex items-center gap-1.5 ${activeTab === 'discussion'
                 ? 'border-indigo-600 text-indigo-600'
                 : 'border-transparent text-slate-500 hover:text-slate-700'
-            }`}
+              }`}
           >
             <MessageSquare className="h-4 w-4" />
             <span>Discussion ({comments.length})</span>
@@ -457,11 +469,10 @@ const WorkerTaskDetails = () => {
           <button
             type="button"
             onClick={() => setActiveTab('files')}
-            className={`pb-3 text-xs font-semibold border-b-2 transition-colors flex items-center gap-1.5 ${
-              activeTab === 'files'
+            className={`pb-3 text-xs font-semibold border-b-2 transition-colors flex items-center gap-1.5 ${activeTab === 'files'
                 ? 'border-indigo-600 text-indigo-600'
                 : 'border-transparent text-slate-500 hover:text-slate-700'
-            }`}
+              }`}
           >
             <Paperclip className="h-4 w-4" />
             <span>Work Files & Deliverables ({files.length})</span>
@@ -470,11 +481,10 @@ const WorkerTaskDetails = () => {
           <button
             type="button"
             onClick={() => setActiveTab('activity')}
-            className={`pb-3 text-xs font-semibold border-b-2 transition-colors flex items-center gap-1.5 ${
-              activeTab === 'activity'
+            className={`pb-3 text-xs font-semibold border-b-2 transition-colors flex items-center gap-1.5 ${activeTab === 'activity'
                 ? 'border-indigo-600 text-indigo-600'
                 : 'border-transparent text-slate-500 hover:text-slate-700'
-            }`}
+              }`}
           >
             <History className="h-4 w-4" />
             <span>Audit Trail</span>
@@ -495,11 +505,10 @@ const WorkerTaskDetails = () => {
               comments.map((c) => (
                 <div
                   key={c._id}
-                  className={`p-3.5 rounded-lg border text-xs ${
-                    c.isInternal
+                  className={`p-3.5 rounded-lg border text-xs ${c.isInternal
                       ? 'bg-amber-50/60 border-amber-200/80 text-amber-900'
                       : 'bg-slate-50 border-slate-200/80 text-slate-800'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center justify-between mb-1.5">
                     <div className="flex items-center gap-2">
@@ -543,7 +552,7 @@ const WorkerTaskDetails = () => {
                 />
                 <span className="flex items-center gap-1 text-slate-700 font-medium">
                   <Lock className="h-3 w-3 text-amber-600" />
-                  Internal Team Note (Admin & Workers only)
+                  Internal Team Note (Admin & Employees only)
                 </span>
               </label>
 
@@ -582,14 +591,14 @@ const WorkerTaskDetails = () => {
                   <div className="flex items-center gap-3 min-w-0">
                     <FileText className="h-6 w-6 text-indigo-500 shrink-0" />
                     <div className="min-w-0">
-                      <a
-                        href={f.fileUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="font-semibold text-slate-900 hover:text-indigo-600 truncate block"
+                      <button
+                        type="button"
+                        onClick={() => handleDownloadFile(f._id, f.fileName)}
+                        className="font-semibold text-slate-900 hover:text-indigo-600 truncate block text-left"
+                        title={`Download ${f.fileName}`}
                       >
                         {f.fileName}
-                      </a>
+                      </button>
                       <span className="text-[10px] text-slate-400">
                         Uploaded by {f.uploadedBy?.name} &bull; {(f.fileSize / 1024).toFixed(0)} KB &bull;{' '}
                         {new Date(f.createdAt).toLocaleDateString()}
@@ -603,14 +612,20 @@ const WorkerTaskDetails = () => {
                         {f.approvalStatus?.replace('_', ' ')}
                       </Badge>
                     )}
-                    <a
-                      href={f.fileUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="px-2.5 py-1 rounded bg-slate-100 text-slate-700 hover:bg-slate-200 font-medium text-[11px]"
+                    <button
+                      type="button"
+                      onClick={() => handleDownloadFile(f._id, f.fileName)}
+                      disabled={downloadingFileId === f._id}
+                      className="px-2.5 py-1 rounded bg-slate-100 text-slate-700 hover:bg-slate-200 font-medium text-[11px] inline-flex items-center gap-1 disabled:opacity-50"
+                      title={`Download ${f.fileName}`}
                     >
-                      Download
-                    </a>
+                      {downloadingFileId === f._id ? (
+                        <Loader2 className="h-3 w-3 animate-spin text-slate-500" />
+                      ) : (
+                        <Download className="h-3 w-3" />
+                      )}
+                      <span>Download</span>
+                    </button>
                   </div>
                 </div>
               ))}
@@ -721,4 +736,4 @@ const WorkerTaskDetails = () => {
   );
 };
 
-export default WorkerTaskDetails;
+export default EmployeeTaskDetails;

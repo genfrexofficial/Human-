@@ -3,7 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { User, Mail, Phone, Briefcase, Award, Shield } from 'lucide-react';
 import Badge from '../../components/common/Badge';
 
-const WorkerProfile = () => {
+const EmployeeProfile = () => {
   const { user } = useAuth();
 
   return (
@@ -83,4 +83,4 @@ const WorkerProfile = () => {
   );
 };
 
-export default WorkerProfile;
+export default EmployeeProfile;

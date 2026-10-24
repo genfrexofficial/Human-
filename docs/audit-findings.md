@@ -116,7 +116,7 @@ This audit document details structural, security, configuration, and code qualit
 - **Location**: `README.md:1-257`
 - **Analysis**:
   The project's root `README.md` documents an earlier hackathon prototype and diverges significantly from current operational reality:
-  1. **Roles**: Documents only `ADMIN` and `CLIENT`. Actual implementation enforces 4 roles: `ADMIN`, `HR`, `WORKER`, `CLIENT`.
+  1. **Roles**: Documents only `ADMIN` and `CLIENT`. Actual implementation enforces 4 roles: `ADMIN`, `HR`, `Employee`, `CLIENT`.
   2. **Storage**: Documents only Cloudinary + Multer. The active primary storage is Google Drive API v3 with AWS S3 / Cloudinary fallbacks (`GOOGLE_DRIVE_SETUP.md`).
   3. **Registration**: Documents `POST /api/auth/register`. In the actual code (`authController.js:105`), public registration is hard-disabled with HTTP 403 Forbidden.
   4. **Seeding**: Documents `npm run seed` to load demo accounts. In the actual code (`server/seed/seed.js`), demo seeding is permanently disabled.

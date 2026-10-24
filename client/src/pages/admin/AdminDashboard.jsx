@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { projectService } from '../../services/projectService';
 import { activityService } from '../../services/activityService';
-import { workerService } from '../../services/workerService';
+import { EmployeeService } from '../../services/EmployeeService';
 import { hrService } from '../../services/hrService';
 import ProjectModal from '../../components/projects/ProjectModal';
 import Button from '../../components/common/Button';
@@ -37,7 +37,7 @@ import toast from 'react-hot-toast';
 const AdminDashboard = () => {
   const [projects, setProjects] = useState([]);
   const [activities, setActivities] = useState([]);
-  const [workers, setWorkers] = useState([]);
+  const [Employees, setEmployees] = useState([]);
   const [analytics, setAnalytics] = useState(null);
   const [hrStats, setHrStats] = useState(null);
   const [recentPendingHR, setRecentPendingHR] = useState([]);
@@ -53,7 +53,7 @@ const AdminDashboard = () => {
       const [projRes, actRes, workRes, anaRes, hrRes, apptsRes, storageRes] = await Promise.all([
         projectService.getProjects(),
         activityService.getRecentActivities(),
-        workerService.getWorkers(),
+        EmployeeService.getEmployees(),
         projectService.getAdminOverviewAnalytics(),
         hrService.getHRStats().catch(() => ({ success: false })),
         hrService.getAppointments({ limit: 50 }).catch(() => ({ success: false })),
@@ -62,7 +62,7 @@ const AdminDashboard = () => {
 
       if (projRes.success) setProjects(projRes.projects || []);
       if (actRes.success) setActivities(actRes.activities || []);
-      if (workRes.success) setWorkers(workRes.workers || []);
+      if (workRes.success) setEmployees(workRes.Employees || []);
       if (anaRes.success) setAnalytics(anaRes.analytics);
       if (storageRes.success) setStorageStats(storageRes.diagnostics);
       if (hrRes.success) {
@@ -138,10 +138,10 @@ const AdminDashboard = () => {
               <span>Add Client</span>
             </Button>
           </Link>
-          <Link to="/admin/workers">
+          <Link to="/admin/Employees">
             <Button size="sm" variant="secondary">
               <HardHat className="h-3.5 w-3.5 mr-1 text-slate-600" />
-              <span>Add Worker</span>
+              <span>Add Employee</span>
             </Button>
           </Link>
           <Link to="/admin/hr-team">
@@ -240,15 +240,15 @@ const AdminDashboard = () => {
             </span>
           </Link>
 
-          {/* Total Workers & Clients */}
-          <Link to="/admin/workers" className="rounded-xl border border-slate-200/80 bg-white p-3.5 shadow-sm hover:shadow transition-shadow">
+          {/* Total Employees & Clients */}
+          <Link to="/admin/Employees" className="rounded-xl border border-slate-200/80 bg-white p-3.5 shadow-sm hover:shadow transition-shadow">
             <div className="flex items-center justify-between text-slate-400">
               <span className="text-[11px] font-semibold text-slate-500">People</span>
               <Users className="h-4 w-4 text-purple-600" />
             </div>
             <p className="text-xl font-black text-slate-900 mt-1">
-              {workers.length}
-              <span className="text-[11px] font-normal text-slate-400"> Workers</span>
+              {Employees.length}
+              <span className="text-[11px] font-normal text-slate-400"> Employees</span>
             </p>
             <span className="text-[10px] text-slate-400 block mt-1">
               {hrStats?.totalCandidates || 0} Candidates
@@ -348,36 +348,36 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* Row 3: Worker Workload Table & Project Health */}
+      {/* Row 3: Employee Workload Table & Project Health */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Worker Workload Capacity */}
+        {/* Employee Workload Capacity */}
         <div className="lg:col-span-2 rounded-xl border border-slate-200/80 bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="text-sm font-bold text-slate-900">Engineer Workload & Capacity</h2>
               <p className="text-xs text-slate-500">Live active tasks allocated across engineering roster</p>
             </div>
-            <Link to="/admin/workers" className="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1">
+            <Link to="/admin/Employees" className="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1">
               <span>View Roster</span>
               <ArrowRight className="h-3 w-3" />
             </Link>
           </div>
 
           <div className="overflow-x-auto">
-            {workers.length === 0 ? (
+            {Employees.length === 0 ? (
               <div className="py-8 text-center text-slate-400">
                 <HardHat className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-                <p className="font-semibold text-slate-700">No workers created yet.</p>
+                <p className="font-semibold text-slate-700">No Employees created yet.</p>
                 <p className="text-[11px] text-slate-400 mb-3">Add engineering talent to your roster to allocate sprint tasks.</p>
-                <Link to="/admin/workers">
-                  <Button size="sm" variant="secondary">Add Worker</Button>
+                <Link to="/admin/Employees">
+                  <Button size="sm" variant="secondary">Add Employee</Button>
                 </Link>
               </div>
             ) : (
               <table className="w-full text-left text-xs min-w-[550px]">
                 <thead className="border-b border-slate-100 text-slate-400 uppercase tracking-wider font-semibold text-[10px]">
                   <tr>
-                    <th className="pb-2">Worker</th>
+                    <th className="pb-2">Employee</th>
                     <th className="pb-2 text-center">Assigned</th>
                     <th className="pb-2 text-center">In Progress</th>
                     <th className="pb-2 text-center">Review</th>
@@ -387,7 +387,7 @@ const AdminDashboard = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
-                  {workers.map((w) => {
+                  {Employees.map((w) => {
                     const wl = w.workload || {};
                     return (
                       <tr key={w._id} className="hover:bg-slate-50/50">
@@ -533,19 +533,18 @@ const AdminDashboard = () => {
                       </td>
                       <td className="py-3">
                         <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                            item.status === 'APPROVED'
+                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${item.status === 'APPROVED'
                               ? 'bg-emerald-100 text-emerald-800'
                               : item.status === 'PENDING_APPROVAL'
-                              ? 'bg-amber-100 text-amber-800'
-                              : item.status === 'SENT'
-                              ? 'bg-blue-100 text-blue-800'
-                              : item.status === 'ACCEPTED'
-                              ? 'bg-purple-100 text-purple-800'
-                              : item.status === 'REJECTED'
-                              ? 'bg-rose-100 text-rose-800'
-                              : 'bg-slate-100 text-slate-700'
-                          }`}
+                                ? 'bg-amber-100 text-amber-800'
+                                : item.status === 'SENT'
+                                  ? 'bg-blue-100 text-blue-800'
+                                  : item.status === 'ACCEPTED'
+                                    ? 'bg-purple-100 text-purple-800'
+                                    : item.status === 'REJECTED'
+                                      ? 'bg-rose-100 text-rose-800'
+                                      : 'bg-slate-100 text-slate-700'
+                            }`}
                         >
                           {item.status?.replace('_', ' ')}
                         </span>

@@ -115,9 +115,9 @@ const requireProjectAccess = async (req, res, next) => {
       return next();
     }
 
-    // Worker can access if explicitly assigned to project or has tasks in the project
-    if (req.user.role === 'WORKER') {
-      const isAssigned = project.assignedWorkers && project.assignedWorkers.some(
+    // Employee can access if explicitly assigned to project or has tasks in the project
+    if (req.user.role === 'Employee') {
+      const isAssigned = project.assignedEmployees && project.assignedEmployees.some(
         (w) => w.toString() === req.user._id.toString()
       );
       if (isAssigned) {
@@ -176,8 +176,8 @@ const requireTaskAccess = async (req, res, next) => {
       return next();
     }
 
-    // Worker can access if assigned to the task
-    if (req.user.role === 'WORKER') {
+    // Employee can access if assigned to the task
+    if (req.user.role === 'Employee') {
       if (task.assignedTo && task.assignedTo.toString() === req.user._id.toString()) {
         req.task = task;
         return next();

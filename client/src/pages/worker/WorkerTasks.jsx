@@ -18,7 +18,7 @@ import Badge from '../../components/common/Badge';
 import ProgressBar from '../../components/common/ProgressBar';
 import Button from '../../components/common/Button';
 
-const WorkerTasks = () => {
+const EmployeeTasks = () => {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('ALL');
@@ -115,11 +115,10 @@ const WorkerTasks = () => {
               key={st}
               type="button"
               onClick={() => setStatusFilter(st)}
-              className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
-                statusFilter === st
+              className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${statusFilter === st
                   ? 'bg-indigo-600 text-white'
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
+                }`}
             >
               {st.replace('_', ' ')}
             </button>
@@ -166,7 +165,7 @@ const WorkerTasks = () => {
                     <tr key={task._id} className="hover:bg-slate-50/70 transition-colors">
                       <td className="px-5 py-3.5 max-w-xs">
                         <Link
-                          to={`/worker/tasks/${task._id}`}
+                          to={`/Employee/tasks/${task._id}`}
                           className="font-semibold text-slate-900 hover:text-indigo-600 transition-colors line-clamp-1"
                         >
                           {task.title}
@@ -234,7 +233,7 @@ const WorkerTasks = () => {
                             </Button>
                           )}
 
-                          <Link to={`/worker/tasks/${task._id}`}>
+                          <Link to={`/Employee/tasks/${task._id}`}>
                             <Button size="xs" variant="secondary">
                               Open
                             </Button>
@@ -253,4 +252,4 @@ const WorkerTasks = () => {
   );
 };
 
-export default WorkerTasks;
+export default EmployeeTasks;

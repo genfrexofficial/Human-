@@ -57,10 +57,10 @@ const getRecentActivities = async (req, res, next) => {
         project: { $in: clientProjects.map((p) => p._id) },
         clientVisible: true
       };
-    } else if (req.user.role === 'WORKER') {
-      const workerProjectIds = await Task.distinct('project', { assignedTo: req.user._id });
-      const assignedProjects = await Project.find({ assignedWorkers: req.user._id }).select('_id');
-      const allIds = Array.from(new Set([...workerProjectIds, ...assignedProjects.map((p) => p._id.toString())]));
+    } else if (req.user.role === 'Employee') {
+      const EmployeeProjectIds = await Task.distinct('project', { assignedTo: req.user._id });
+      const assignedProjects = await Project.find({ assignedEmployees: req.user._id }).select('_id');
+      const allIds = Array.from(new Set([...EmployeeProjectIds, ...assignedProjects.map((p) => p._id.toString())]));
 
       query = { project: { $in: allIds } };
     }

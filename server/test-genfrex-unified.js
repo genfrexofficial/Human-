@@ -35,7 +35,7 @@ async function runUnifiedPlatformTests() {
 
     // 2. Authentication for all 4 roles via single endpoint
     console.log('\n[Test 2] Single Authentication Endpoint Verification (4 Roles)...');
-    
+
     // Admin login
     const adminLogin = await req('POST', '/auth/login', {
       email: 'admin@genfrex.com',
@@ -62,9 +62,9 @@ async function runUnifiedPlatformTests() {
     const hrLogin = await ensureUser('hr@genfrex.com', 'Hr@123', 'HR', 'HR Talent Lead');
     console.log(`✅ HR Authenticated:    ${hrLogin.user.name} (Role: ${hrLogin.user.role})`);
 
-    // Worker login
-    const workerLogin = await ensureUser('worker.unified@genfrex.com', 'Worker@123', 'WORKER', 'Arun Kumar', { title: 'Full Stack Engineer' });
-    console.log(`✅ Worker Authenticated: ${workerLogin.user.name} (Role: ${workerLogin.user.role})`);
+    // Employee login
+    const EmployeeLogin = await ensureUser('Employee.unified@genfrex.com', 'Employee@123', 'Employee', 'Arun Kumar', { title: 'Full Stack Engineer' });
+    console.log(`✅ Employee Authenticated: ${EmployeeLogin.user.name} (Role: ${EmployeeLogin.user.role})`);
 
     // Client login
     const clientLogin = await ensureUser('client.unified@clientcorp.com', 'Client@123', 'CLIENT', 'Sarah Jenkins', { companyName: 'ClientCorp' });
@@ -72,7 +72,7 @@ async function runUnifiedPlatformTests() {
 
     // 3. Strict RBAC Enforcement
     console.log('\n[Test 3] Testing Strict Role-Based Access Control (RBAC)...');
-    
+
     // Client trying to access HR candidates -> should fail with 403
     try {
       await req('GET', '/hr/candidates', null, clientLogin.token);
@@ -83,13 +83,13 @@ async function runUnifiedPlatformTests() {
       } else throw err;
     }
 
-    // Worker trying to access HR appointments -> should fail with 403
+    // Employee trying to access HR appointments -> should fail with 403
     try {
-      await req('GET', '/hr/appointments', null, workerLogin.token);
-      throw new Error('SECURITY VIOLATION: Worker accessed HR appointments!');
+      await req('GET', '/hr/appointments', null, EmployeeLogin.token);
+      throw new Error('SECURITY VIOLATION: Employee accessed HR appointments!');
     } catch (err) {
       if (err.status === 403) {
-        console.log('✅ RBAC Passed: Worker denied access to HR appointments (403 Forbidden).');
+        console.log('✅ RBAC Passed: Employee denied access to HR appointments (403 Forbidden).');
       } else throw err;
     }
 
@@ -210,8 +210,8 @@ async function runUnifiedPlatformTests() {
     const clientProjects = await req('GET', '/projects', null, clientLogin.token);
     console.log(`✅ Client Project Isolation Intact: Client sees ${clientProjects.count} assigned projects`);
 
-    const workersList = await req('GET', '/users/workers', null, adminLogin.token);
-    console.log(`✅ Worker Management Intact: ${workersList.workers?.length} active workers on roster`);
+    const EmployeesList = await req('GET', '/users/Employees', null, adminLogin.token);
+    console.log(`✅ Employee Management Intact: ${EmployeesList.Employees?.length} active Employees on roster`);
 
     console.log('\n================================================================');
     console.log('🎉 ALL GENFREX ACCEPTANCE SCENARIOS PASSED WITH 100% SUCCESS!');

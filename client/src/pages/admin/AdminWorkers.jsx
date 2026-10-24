@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { workerService } from '../../services/workerService';
+import { EmployeeService } from '../../services/EmployeeService';
 import {
   HardHat,
   UserPlus,
@@ -19,12 +19,12 @@ import Badge from '../../components/common/Badge';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
 
-const AdminWorkers = () => {
-  const [workers, setWorkers] = useState([]);
+const AdminEmployees = () => {
+  const [Employees, setEmployees] = useState([]);
   const [pendingCandidates, setPendingCandidates] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // New Worker Modal
+  // New Employee Modal
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [candidateContext, setCandidateContext] = useState(null);
   const [name, setName] = useState('');
@@ -38,23 +38,23 @@ const AdminWorkers = () => {
   // Temporary credentials preview modal
   const [createdCredential, setCreatedCredential] = useState(null);
 
-  const fetchWorkers = async () => {
+  const fetchEmployees = async () => {
     try {
       setLoading(true);
-      const res = await workerService.getWorkers();
+      const res = await EmployeeService.getEmployees();
       if (res.success) {
-        setWorkers(res.workers || []);
+        setEmployees(res.Employees || []);
         setPendingCandidates(res.pendingSetupCandidates || []);
       }
     } catch (err) {
-      toast.error('Failed to load workers roster.');
+      toast.error('Failed to load Employees roster.');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchWorkers();
+    fetchEmployees();
   }, []);
 
   const handleOpenProvisionFromCandidate = (cand) => {
@@ -79,7 +79,7 @@ const AdminWorkers = () => {
     setCreateModalOpen(true);
   };
 
-  const handleCreateWorker = async (e) => {
+  const handleCreateEmployee = async (e) => {
     e.preventDefault();
     if (!name.trim() || !email.trim()) {
       toast.error('Name and email are required.');
@@ -88,7 +88,7 @@ const AdminWorkers = () => {
 
     try {
       setCreating(true);
-      const res = await workerService.createWorker({
+      const res = await EmployeeService.createEmployee({
         name: name.trim(),
         email: email.trim(),
         title: title.trim(),
@@ -102,12 +102,12 @@ const AdminWorkers = () => {
       if (res.success) {
         toast.success(
           candidateContext
-            ? `Worker account provisioned for candidate ${res.worker?.name || name}!`
-            : 'Worker account created successfully!'
+            ? `Employee account provisioned for candidate ${res.Employee?.name || name}!`
+            : 'Employee account created successfully!'
         );
         setCreatedCredential({
-          name: res.worker?.name || res.user?.name || name,
-          email: res.worker?.email || res.user?.email || email,
+          name: res.Employee?.name || res.user?.name || name,
+          email: res.Employee?.email || res.user?.email || email,
           password: res.temporaryPassword || password
         });
         setCreateModalOpen(false);
@@ -118,10 +118,10 @@ const AdminWorkers = () => {
         setSkills('');
         setPhone('');
         setPassword('');
-        fetchWorkers();
+        fetchEmployees();
       }
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to create worker account.');
+      toast.error(err.response?.data?.message || 'Failed to create Employee account.');
     } finally {
       setCreating(false);
     }
@@ -159,14 +159,14 @@ const AdminWorkers = () => {
               <div>
                 <div className="flex items-center gap-2">
                   <h2 className="text-sm font-bold text-slate-900">
-                    Approved Candidates Awaiting Worker Account Setup
+                    Approved Candidates Awaiting Employee Account Setup
                   </h2>
                   <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-600 text-white shadow-sm">
                     {pendingCandidates.length} Ready
                   </span>
                 </div>
                 <p className="text-xs text-slate-500">
-                  Appointment letter has been approved by Admin. Create worker email and password to activate their workspace.
+                  Appointment letter has been approved by Admin. Create Employee email and password to activate their workspace.
                 </p>
               </div>
             </div>
@@ -198,7 +198,7 @@ const AdminWorkers = () => {
                   className="w-full justify-center text-xs"
                 >
                   <KeyRound className="w-3.5 h-3.5 mr-1" />
-                  <span>Setup Worker Account</span>
+                  <span>Setup Employee Account</span>
                 </Button>
               </div>
             ))}
@@ -206,17 +206,17 @@ const AdminWorkers = () => {
         </div>
       )}
 
-      {/* Workers Roster Table */}
+      {/* Employees Roster Table */}
       {loading ? (
         <div className="flex h-64 items-center justify-center">
           <Loader2 className="h-6 w-6 animate-spin text-indigo-600" />
         </div>
-      ) : workers.length === 0 ? (
+      ) : Employees.length === 0 ? (
         <div className="rounded-xl border border-slate-200 bg-white p-8 text-center">
           <HardHat className="mx-auto h-8 w-8 text-slate-300 mb-2" />
-          <h3 className="text-sm font-semibold text-slate-800">No workers created yet.</h3>
+          <h3 className="text-sm font-semibold text-slate-800">No Employees created yet.</h3>
           <p className="text-xs text-slate-500 mt-1 mb-4">Add your first engineer to begin allocating sprint tasks and tracking capacity.</p>
-          <Button onClick={() => setCreateModalOpen(true)}>Add Worker</Button>
+          <Button onClick={() => setCreateModalOpen(true)}>Add Employee</Button>
         </div>
       ) : (
         <div className="rounded-xl border border-slate-200/80 bg-white overflow-hidden shadow-sm">
@@ -236,40 +236,40 @@ const AdminWorkers = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {workers.map((worker) => {
-                  const wl = worker.workload || {};
+                {Employees.map((Employee) => {
+                  const wl = Employee.workload || {};
                   return (
-                    <tr key={worker._id} className="hover:bg-slate-50/70 transition-colors">
+                    <tr key={Employee._id} className="hover:bg-slate-50/70 transition-colors">
                       <td className="px-5 py-3.5 whitespace-nowrap">
                         <div className="flex items-center gap-3">
                           <div className="h-8 w-8 rounded-full bg-indigo-100 text-indigo-700 font-bold text-xs flex items-center justify-center shrink-0">
-                            {worker.name?.charAt(0) || 'W'}
+                            {Employee.name?.charAt(0) || 'W'}
                           </div>
                           <div>
                             <div className="flex items-center gap-1.5">
-                              <span className="font-semibold text-slate-900 block">{worker.name}</span>
-                              {worker.hiredFromCandidate && (
+                              <span className="font-semibold text-slate-900 block">{Employee.name}</span>
+                              {Employee.hiredFromCandidate && (
                                 <span className="inline-flex items-center gap-0.5 text-[9px] px-1.5 py-0.2 rounded-full font-bold bg-blue-50 text-blue-700 border border-blue-200">
                                   OfferFlow Hired
                                 </span>
                               )}
                             </div>
-                            <span className="text-[10px] text-slate-400 block">{worker.email}</span>
+                            <span className="text-[10px] text-slate-400 block">{Employee.email}</span>
                           </div>
                         </div>
                       </td>
 
                       <td className="px-4 py-3.5 max-w-xs">
-                        <span className="font-medium text-slate-700 block">{worker.title || 'Engineer'}</span>
-                        {worker.skills && worker.skills.length > 0 && (
+                        <span className="font-medium text-slate-700 block">{Employee.title || 'Engineer'}</span>
+                        {Employee.skills && Employee.skills.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-1">
-                            {worker.skills.slice(0, 3).map((s, i) => (
+                            {Employee.skills.slice(0, 3).map((s, i) => (
                               <span key={i} className="text-[9px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">
                                 {s}
                               </span>
                             ))}
-                            {worker.skills.length > 3 && (
-                              <span className="text-[9px] text-slate-400">+{worker.skills.length - 3}</span>
+                            {Employee.skills.length > 3 && (
+                              <span className="text-[9px] text-slate-400">+{Employee.skills.length - 3}</span>
                             )}
                           </div>
                         )}
@@ -300,13 +300,12 @@ const AdminWorkers = () => {
                       </td>
 
                       <td className="px-4 py-3.5 text-right whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold ${
-                          (wl.totalActive || 0) > 4
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold ${(wl.totalActive || 0) > 4
                             ? 'bg-rose-50 text-rose-700 border border-rose-200'
                             : (wl.totalActive || 0) > 2
-                            ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                            : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                        }`}>
+                              ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                              : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                          }`}>
                           {wl.totalActive || 0} Tasks
                         </span>
                       </td>
@@ -319,16 +318,16 @@ const AdminWorkers = () => {
         </div>
       )}
 
-      {/* Add Worker Modal */}
+      {/* Add Employee Modal */}
       <Modal
         isOpen={createModalOpen}
         onClose={() => {
           setCreateModalOpen(false);
           setCandidateContext(null);
         }}
-        title={candidateContext ? `Provision Worker Account: ${candidateContext.name}` : 'Add Engineer to Roster'}
+        title={candidateContext ? `Provision Employee Account: ${candidateContext.name}` : 'Add Engineer to Roster'}
       >
-        <form onSubmit={handleCreateWorker} className="space-y-4 text-xs">
+        <form onSubmit={handleCreateEmployee} className="space-y-4 text-xs">
           {candidateContext && (
             <div className="p-3.5 bg-blue-50/80 border border-blue-200 rounded-xl space-y-1 text-xs">
               <div className="flex items-center justify-between font-bold text-blue-950">
@@ -363,12 +362,12 @@ const AdminWorkers = () => {
 
           <div>
             <label className="block font-semibold text-slate-800 mb-1">
-              Worker Login Email * (Admin can customize or keep candidate email)
+              Employee Login Email * (Admin can customize or keep candidate email)
             </label>
             <input
               type="email"
               required
-              placeholder="worker@genfrex.com"
+              placeholder="Employee@genfrex.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full rounded-lg border border-slate-200 p-2 text-xs text-slate-800 focus:border-indigo-500 focus:outline-none"
@@ -414,11 +413,11 @@ const AdminWorkers = () => {
           <div>
             <div className="flex items-center justify-between mb-1">
               <label className="font-semibold text-slate-800">
-                Initial Password * (Admin creates password for worker)
+                Initial Password * (Admin creates password for Employee)
               </label>
               <button
                 type="button"
-                onClick={() => setPassword(`GFX@${Math.floor(1000 + Math.random() * 9000)}Worker!`)}
+                onClick={() => setPassword(`GFX@${Math.floor(1000 + Math.random() * 9000)}Employee!`)}
                 className="text-[11px] text-blue-600 hover:text-blue-700 font-semibold"
               >
                 Generate Secure Password
@@ -426,13 +425,13 @@ const AdminWorkers = () => {
             </div>
             <input
               type="text"
-              placeholder="Enter initial worker password"
+              placeholder="Enter initial Employee password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full rounded-lg border border-slate-200 p-2 text-xs font-mono text-slate-800 focus:border-indigo-500 focus:outline-none"
             />
             <p className="text-[10px] text-slate-400 mt-1">
-              Admin defines the worker password. Worker will log in with this email and password.
+              Admin defines the Employee password. Employee will log in with this email and password.
             </p>
           </div>
 
@@ -450,7 +449,7 @@ const AdminWorkers = () => {
             </Button>
             <Button size="sm" type="submit" disabled={creating}>
               {creating ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <UserPlus className="h-3 w-3 mr-1" />}
-              {candidateContext ? 'Create & Activate Worker' : 'Create Worker Account'}
+              {candidateContext ? 'Create & Activate Employee' : 'Create Employee Account'}
             </Button>
           </div>
         </form>
@@ -502,4 +501,4 @@ const AdminWorkers = () => {
   );
 };
 
-export default AdminWorkers;
+export default AdminEmployees;

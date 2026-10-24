@@ -49,7 +49,7 @@ const getCandidates = async (req, res, next) => {
       .populate('client', 'name email companyName phone')
       .populate('project', 'name status stage client')
       .populate('requirement', 'title description priority status')
-      .populate('assignedWorker', 'name email title avatar skills')
+      .populate('assignedEmployee', 'name email title avatar skills')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit, 10));
@@ -77,7 +77,7 @@ const getCandidateById = async (req, res, next) => {
       .populate('client', 'name email companyName phone')
       .populate('project', 'name status stage client')
       .populate('requirement', 'title description priority status')
-      .populate('assignedWorker', 'name email title avatar skills');
+      .populate('assignedEmployee', 'name email title avatar skills');
 
     if (!candidate) {
       return res.status(404).json({ success: false, message: 'Candidate not found.' });
@@ -119,8 +119,8 @@ const createCandidate = async (req, res, next) => {
       projectId,
       requirement,
       requirementId,
-      assignedWorker,
-      workerId
+      assignedEmployee,
+      EmployeeId
     } = req.body;
 
     if (!name || !email || !phone || !designation) {
@@ -161,8 +161,8 @@ const createCandidate = async (req, res, next) => {
       projectId: projectId || project || null,
       requirement: requirement || requirementId || null,
       requirementId: requirementId || requirement || null,
-      assignedWorker: assignedWorker || workerId || null,
-      workerId: workerId || assignedWorker || null,
+      assignedEmployee: assignedEmployee || EmployeeId || null,
+      EmployeeId: EmployeeId || assignedEmployee || null,
       createdBy: req.user._id
     });
 
@@ -203,7 +203,7 @@ const createCandidate = async (req, res, next) => {
       .populate('client', 'name email companyName phone')
       .populate('project', 'name status stage client')
       .populate('requirement', 'title description priority status')
-      .populate('assignedWorker', 'name email title avatar skills');
+      .populate('assignedEmployee', 'name email title avatar skills');
 
     res.status(201).json({
       success: true,
@@ -247,7 +247,7 @@ const updateCandidate = async (req, res, next) => {
       .populate('client', 'name email companyName phone')
       .populate('project', 'name status stage client')
       .populate('requirement', 'title description priority status')
-      .populate('assignedWorker', 'name email title avatar skills');
+      .populate('assignedEmployee', 'name email title avatar skills');
 
     await recordHRAudit({
       actorId: req.user._id,
@@ -297,7 +297,7 @@ const updateCandidate = async (req, res, next) => {
  */
 const linkCandidateToProject = async (req, res, next) => {
   try {
-    const { projectId, clientId, requirementId, workerId, assignedWorkerId, designation, role } = req.body;
+    const { projectId, clientId, requirementId, EmployeeId, assignedEmployeeId, designation, role } = req.body;
 
     const candidate = await Candidate.findById(req.params.id);
     if (!candidate) {
@@ -320,10 +320,10 @@ const linkCandidateToProject = async (req, res, next) => {
       candidate.requirement = requirementId;
     }
 
-    const targetWorker = assignedWorkerId || workerId;
-    if (targetWorker) {
-      candidate.workerId = targetWorker;
-      candidate.assignedWorker = targetWorker;
+    const targetEmployee = assignedEmployeeId || EmployeeId;
+    if (targetEmployee) {
+      candidate.EmployeeId = targetEmployee;
+      candidate.assignedEmployee = targetEmployee;
     }
 
     if (designation || role) {
@@ -332,10 +332,10 @@ const linkCandidateToProject = async (req, res, next) => {
 
     await candidate.save();
 
-    // If linking a worker to the project, ensure worker is assigned to project as well
-    if (projectId && targetWorker) {
+    // If linking a Employee to the project, ensure Employee is assigned to project as well
+    if (projectId && targetEmployee) {
       await Project.findByIdAndUpdate(projectId, {
-        $addToSet: { assignedWorkers: targetWorker }
+        $addToSet: { assignedEmployees: targetEmployee }
       });
     }
 
@@ -372,7 +372,7 @@ const linkCandidateToProject = async (req, res, next) => {
       .populate('client', 'name email companyName phone')
       .populate('project', 'name status stage client')
       .populate('requirement', 'title description priority status')
-      .populate('assignedWorker', 'name email title avatar skills');
+      .populate('assignedEmployee', 'name email title avatar skills');
 
     res.status(200).json({
       success: true,

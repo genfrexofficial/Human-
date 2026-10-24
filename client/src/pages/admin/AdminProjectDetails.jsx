@@ -89,7 +89,7 @@ const AdminProjectDetails = () => {
     newCandidateEmail: '',
     newCandidatePhone: '',
     requirementId: '',
-    workerId: '',
+    EmployeeId: '',
     role: ''
   });
 
@@ -316,7 +316,7 @@ const AdminProjectDetails = () => {
       newCandidateEmail: '',
       newCandidatePhone: '',
       requirementId: prefill.requirementId || '',
-      workerId: prefill.workerId || '',
+      EmployeeId: prefill.EmployeeId || '',
       role: prefill.role || ''
     });
     setCreateApptModalOpen(true);
@@ -342,7 +342,7 @@ const AdminProjectDetails = () => {
           projectId: project._id,
           clientId: project.client?._id || project.client,
           requirementId: apptForm.requirementId || null,
-          workerId: apptForm.workerId || null
+          EmployeeId: apptForm.EmployeeId || null
         });
         if (candRes.success) {
           targetCandId = candRes.candidate._id;
@@ -357,7 +357,7 @@ const AdminProjectDetails = () => {
         clientId: project.client?._id || project.client || '',
         ...(targetCandId && { candidateId: targetCandId }),
         ...(apptForm.requirementId && { requirementId: apptForm.requirementId }),
-        ...(apptForm.workerId && { workerId: apptForm.workerId }),
+        ...(apptForm.EmployeeId && { EmployeeId: apptForm.EmployeeId }),
         ...(apptForm.role && { designation: apptForm.role })
       });
 
@@ -390,11 +390,10 @@ const AdminProjectDetails = () => {
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                project.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-800' :
-                project.status === 'IN_PROGRESS' ? 'bg-blue-100 text-blue-800' :
-                'bg-slate-100 text-slate-800'
-              }`}>
+              <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${project.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-800' :
+                  project.status === 'IN_PROGRESS' ? 'bg-blue-100 text-blue-800' :
+                    'bg-slate-100 text-slate-800'
+                }`}>
                 {project.status?.replace('_', ' ')}
               </span>
               <span className="text-xs px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 font-medium">
@@ -522,7 +521,7 @@ const AdminProjectDetails = () => {
             { id: 'overview', label: 'Overview', icon: FolderKanban },
             { id: 'tasks', label: `Tasks (${tasks.length})`, icon: CheckSquare },
             { id: 'requirements', label: `Requirements (${taskRequests.length})`, icon: Briefcase },
-            { id: 'workers', label: `Workers (${project.assignedWorkers?.length || 0})`, icon: User },
+            { id: 'Employees', label: `Employees (${project.assignedEmployees?.length || 0})`, icon: User },
             { id: 'hr-appointments', label: `HR Appointments (${projectAppointments.length})`, icon: FileCheck },
             { id: 'milestones', label: `Milestones (${milestones.length})`, icon: Layers },
             { id: 'files', label: `Files & Deliverables (${files.length})`, icon: Files },
@@ -535,11 +534,10 @@ const AdminProjectDetails = () => {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 py-3 px-1 border-b-2 font-medium text-xs whitespace-nowrap transition-colors ${
-                  isActive
+                className={`flex items-center gap-2 py-3 px-1 border-b-2 font-medium text-xs whitespace-nowrap transition-colors ${isActive
                     ? 'border-blue-600 text-blue-600 font-bold'
                     : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
-                }`}
+                  }`}
               >
                 <Icon className="w-4 h-4" />
                 <span>{tab.label}</span>
@@ -599,13 +597,12 @@ const AdminProjectDetails = () => {
                       <div>
                         <div className="flex items-center gap-2">
                           <span className="font-bold text-slate-900">{app.referenceNumber}</span>
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                            app.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-800' :
-                            app.status === 'PENDING_APPROVAL' ? 'bg-amber-100 text-amber-800' :
-                            app.status === 'SENT' ? 'bg-blue-100 text-blue-800' :
-                            app.status === 'ACCEPTED' ? 'bg-purple-100 text-purple-800' :
-                            'bg-slate-100 text-slate-700'
-                          }`}>
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${app.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-800' :
+                              app.status === 'PENDING_APPROVAL' ? 'bg-amber-100 text-amber-800' :
+                                app.status === 'SENT' ? 'bg-blue-100 text-blue-800' :
+                                  app.status === 'ACCEPTED' ? 'bg-purple-100 text-purple-800' :
+                                    'bg-slate-100 text-slate-700'
+                            }`}>
                             {app.status?.replace('_', ' ')}
                           </span>
                         </div>
@@ -679,26 +676,26 @@ const AdminProjectDetails = () => {
             </Card>
 
             <Card
-              title="Assigned Workers"
+              title="Assigned Employees"
               subtitle="Talent currently deployed on this project"
               action={
-                <Button size="xs" onClick={() => setActiveTab('workers')}>
+                <Button size="xs" onClick={() => setActiveTab('Employees')}>
                   View All
                 </Button>
               }
             >
-              {!project.assignedWorkers || project.assignedWorkers.length === 0 ? (
-                <p className="text-xs text-slate-400 py-2">No workers assigned to this project yet.</p>
+              {!project.assignedEmployees || project.assignedEmployees.length === 0 ? (
+                <p className="text-xs text-slate-400 py-2">No Employees assigned to this project yet.</p>
               ) : (
                 <div className="space-y-2.5 text-xs">
-                  {project.assignedWorkers.map((worker) => (
-                    <div key={worker._id} className="flex items-center justify-between py-1.5 border-b border-slate-50">
+                  {project.assignedEmployees.map((Employee) => (
+                    <div key={Employee._id} className="flex items-center justify-between py-1.5 border-b border-slate-50">
                       <div>
-                        <p className="font-bold text-slate-900">{worker.name}</p>
-                        <p className="text-[10px] text-slate-400">{worker.title || 'Engineer'}</p>
+                        <p className="font-bold text-slate-900">{Employee.name}</p>
+                        <p className="text-[10px] text-slate-400">{Employee.title || 'Engineer'}</p>
                       </div>
                       <button
-                        onClick={() => handleOpenCreateAppt({ workerId: worker._id, role: worker.title || 'Software Engineer' })}
+                        onClick={() => handleOpenCreateAppt({ EmployeeId: Employee._id, role: Employee.title || 'Software Engineer' })}
                         className="text-[10px] text-blue-600 font-semibold hover:underline"
                       >
                         + Offer Letter
@@ -781,65 +778,63 @@ const AdminProjectDetails = () => {
             <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs min-w-[650px]">
-                <thead className="bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                  <tr>
-                    <th className="py-3 px-4">Requirement / Title</th>
-                    <th className="py-3 px-4">Priority</th>
-                    <th className="py-3 px-4">Status</th>
-                    <th className="py-3 px-4">Requested Deadline</th>
-                    <th className="py-3 px-4 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {taskRequests.map((req) => (
-                    <tr key={req._id} className="hover:bg-slate-50/60 transition-colors">
-                      <td className="py-3 px-4">
-                        <p className="font-bold text-slate-900">{req.title}</p>
-                        <p className="text-[11px] text-slate-500 line-clamp-1">{req.description}</p>
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                          req.priority === 'URGENT' ? 'bg-rose-100 text-rose-800' :
-                          req.priority === 'HIGH' ? 'bg-amber-100 text-amber-800' :
-                          'bg-slate-100 text-slate-700'
-                        }`}>
-                          {req.priority}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                          req.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-800' :
-                          req.status === 'PENDING_APPROVAL' ? 'bg-amber-100 text-amber-800' :
-                          'bg-slate-100 text-slate-700'
-                        }`}>
-                          {req.status?.replace('_', ' ')}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-slate-600 font-medium">
-                        {req.requestedDeadline ? formatDate(req.requestedDeadline) : 'Flexible'}
-                      </td>
-                      <td className="py-3 px-4 text-right">
-                        <Button
-                          size="xs"
-                          variant="secondary"
-                          onClick={() => handleOpenCreateAppt({ requirementId: req._id, role: req.title })}
-                          className="text-[11px]"
-                        >
-                          Assign Talent & Offer
-                        </Button>
-                      </td>
+                  <thead className="bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                    <tr>
+                      <th className="py-3 px-4">Requirement / Title</th>
+                      <th className="py-3 px-4">Priority</th>
+                      <th className="py-3 px-4">Status</th>
+                      <th className="py-3 px-4">Requested Deadline</th>
+                      <th className="py-3 px-4 text-right">Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {taskRequests.map((req) => (
+                      <tr key={req._id} className="hover:bg-slate-50/60 transition-colors">
+                        <td className="py-3 px-4">
+                          <p className="font-bold text-slate-900">{req.title}</p>
+                          <p className="text-[11px] text-slate-500 line-clamp-1">{req.description}</p>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${req.priority === 'URGENT' ? 'bg-rose-100 text-rose-800' :
+                              req.priority === 'HIGH' ? 'bg-amber-100 text-amber-800' :
+                                'bg-slate-100 text-slate-700'
+                            }`}>
+                            {req.priority}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${req.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-800' :
+                              req.status === 'PENDING_APPROVAL' ? 'bg-amber-100 text-amber-800' :
+                                'bg-slate-100 text-slate-700'
+                            }`}>
+                            {req.status?.replace('_', ' ')}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-slate-600 font-medium">
+                          {req.requestedDeadline ? formatDate(req.requestedDeadline) : 'Flexible'}
+                        </td>
+                        <td className="py-3 px-4 text-right">
+                          <Button
+                            size="xs"
+                            variant="secondary"
+                            onClick={() => handleOpenCreateAppt({ requirementId: req._id, role: req.title })}
+                            className="text-[11px]"
+                          >
+                            Assign Talent & Offer
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           )}
         </div>
       )}
 
-      {/* Tab: Workers & Talent Assignment */}
-      {activeTab === 'workers' && (
+      {/* Tab: Employees & Talent Assignment */}
+      {activeTab === 'Employees' && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
@@ -859,27 +854,27 @@ const AdminProjectDetails = () => {
             </Button>
           </div>
 
-          {!project.assignedWorkers || project.assignedWorkers.length === 0 ? (
+          {!project.assignedEmployees || project.assignedEmployees.length === 0 ? (
             <div className="bg-white rounded-xl border border-slate-200 p-8 text-center text-xs text-slate-400">
               <Users className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-              <p>No workers assigned to this project yet.</p>
+              <p>No Employees assigned to this project yet.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {project.assignedWorkers.map((worker) => (
-                <div key={worker._id} className="p-4 rounded-xl border border-slate-200 bg-white shadow-sm flex flex-col justify-between">
+              {project.assignedEmployees.map((Employee) => (
+                <div key={Employee._id} className="p-4 rounded-xl border border-slate-200 bg-white shadow-sm flex flex-col justify-between">
                   <div>
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-full bg-blue-100 text-blue-700 font-bold text-xs flex items-center justify-center shrink-0">
-                        {worker.name?.charAt(0) || 'W'}
+                        {Employee.name?.charAt(0) || 'W'}
                       </div>
                       <div>
-                        <h4 className="font-bold text-slate-900 text-xs">{worker.name}</h4>
-                        <p className="text-[10px] text-slate-400">{worker.email}</p>
+                        <h4 className="font-bold text-slate-900 text-xs">{Employee.name}</h4>
+                        <p className="text-[10px] text-slate-400">{Employee.email}</p>
                       </div>
                     </div>
                     <div className="mt-3 text-[11px] text-slate-600">
-                      <p>Role: <strong>{worker.title || 'Software Engineer'}</strong></p>
+                      <p>Role: <strong>{Employee.title || 'Software Engineer'}</strong></p>
                     </div>
                   </div>
 
@@ -888,7 +883,7 @@ const AdminProjectDetails = () => {
                       <CheckCircle2 className="w-3 h-3" /> Assigned
                     </span>
                     <button
-                      onClick={() => handleOpenCreateAppt({ workerId: worker._id, role: worker.title || 'Software Engineer' })}
+                      onClick={() => handleOpenCreateAppt({ EmployeeId: Employee._id, role: Employee.title || 'Software Engineer' })}
                       className="text-xs font-semibold text-blue-600 hover:text-blue-700 hover:underline"
                     >
                       Issue Offer Letter &rarr;
@@ -940,64 +935,63 @@ const AdminProjectDetails = () => {
             <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs min-w-[650px]">
-                <thead className="bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                  <tr>
-                    <th className="py-3 px-4">Reference</th>
-                    <th className="py-3 px-4">Candidate</th>
-                    <th className="py-3 px-4">Required Role</th>
-                    <th className="py-3 px-4">Status</th>
-                    <th className="py-3 px-4">Joining Date</th>
-                    <th className="py-3 px-4 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {projectAppointments.map((app) => (
-                    <tr key={app._id} className="hover:bg-slate-50/60 transition-colors">
-                      <td className="py-3 px-4 font-bold text-slate-900">
-                        {app.referenceNumber}
-                      </td>
-                      <td className="py-3 px-4">
-                        <p className="font-semibold text-slate-900">{app.candidateId?.name || app.candidate?.name}</p>
-                        <p className="text-[10px] text-slate-400">{app.candidateId?.email || app.candidate?.email}</p>
-                      </td>
-                      <td className="py-3 px-4 text-slate-700 font-medium">
-                        {app.designation}
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                          app.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-800' :
-                          app.status === 'PENDING_APPROVAL' ? 'bg-amber-100 text-amber-800' :
-                          app.status === 'SENT' ? 'bg-blue-100 text-blue-800' :
-                          app.status === 'ACCEPTED' ? 'bg-purple-100 text-purple-800' :
-                          app.status === 'REJECTED' ? 'bg-rose-100 text-rose-800' :
-                          'bg-slate-100 text-slate-700'
-                        }`}>
-                          {app.status?.replace('_', ' ')}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-slate-700 font-medium">
-                        {app.joiningDate ? formatDate(app.joiningDate) : 'TBD'}
-                      </td>
-                      <td className="py-3 px-4 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <button
-                            onClick={() => setPreviewLetter(app)}
-                            className="px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-[11px]"
-                          >
-                            Preview
-                          </button>
-                          <Link
-                            to={`/hr/appointments/${app._id}`}
-                            className="px-2 py-1 rounded bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold text-[11px]"
-                          >
-                            Details &rarr;
-                          </Link>
-                        </div>
-                      </td>
+                  <thead className="bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                    <tr>
+                      <th className="py-3 px-4">Reference</th>
+                      <th className="py-3 px-4">Candidate</th>
+                      <th className="py-3 px-4">Required Role</th>
+                      <th className="py-3 px-4">Status</th>
+                      <th className="py-3 px-4">Joining Date</th>
+                      <th className="py-3 px-4 text-right">Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {projectAppointments.map((app) => (
+                      <tr key={app._id} className="hover:bg-slate-50/60 transition-colors">
+                        <td className="py-3 px-4 font-bold text-slate-900">
+                          {app.referenceNumber}
+                        </td>
+                        <td className="py-3 px-4">
+                          <p className="font-semibold text-slate-900">{app.candidateId?.name || app.candidate?.name}</p>
+                          <p className="text-[10px] text-slate-400">{app.candidateId?.email || app.candidate?.email}</p>
+                        </td>
+                        <td className="py-3 px-4 text-slate-700 font-medium">
+                          {app.designation}
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${app.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-800' :
+                              app.status === 'PENDING_APPROVAL' ? 'bg-amber-100 text-amber-800' :
+                                app.status === 'SENT' ? 'bg-blue-100 text-blue-800' :
+                                  app.status === 'ACCEPTED' ? 'bg-purple-100 text-purple-800' :
+                                    app.status === 'REJECTED' ? 'bg-rose-100 text-rose-800' :
+                                      'bg-slate-100 text-slate-700'
+                            }`}>
+                            {app.status?.replace('_', ' ')}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-slate-700 font-medium">
+                          {app.joiningDate ? formatDate(app.joiningDate) : 'TBD'}
+                        </td>
+                        <td className="py-3 px-4 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            <button
+                              onClick={() => setPreviewLetter(app)}
+                              className="px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-[11px]"
+                            >
+                              Preview
+                            </button>
+                            <Link
+                              to={`/hr/appointments/${app._id}`}
+                              className="px-2 py-1 rounded bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold text-[11px]"
+                            >
+                              Details &rarr;
+                            </Link>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           )}
@@ -1128,22 +1122,20 @@ const AdminProjectDetails = () => {
                   <button
                     type="button"
                     onClick={() => setApptForm((prev) => ({ ...prev, candidateMode: 'existing' }))}
-                    className={`py-2 px-3 rounded-lg border font-semibold text-center ${
-                      apptForm.candidateMode === 'existing'
+                    className={`py-2 px-3 rounded-lg border font-semibold text-center ${apptForm.candidateMode === 'existing'
                         ? 'bg-blue-50 border-blue-600 text-blue-700'
                         : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-                    }`}
+                      }`}
                   >
                     Select Existing Candidate
                   </button>
                   <button
                     type="button"
                     onClick={() => setApptForm((prev) => ({ ...prev, candidateMode: 'new' }))}
-                    className={`py-2 px-3 rounded-lg border font-semibold text-center ${
-                      apptForm.candidateMode === 'new'
+                    className={`py-2 px-3 rounded-lg border font-semibold text-center ${apptForm.candidateMode === 'new'
                         ? 'bg-blue-50 border-blue-600 text-blue-700'
                         : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-                    }`}
+                      }`}
                   >
                     + Register New Candidate
                   </button>
@@ -1252,19 +1244,19 @@ const AdminProjectDetails = () => {
                 />
               </div>
 
-              {/* Worker mentor / assignment */}
-              {project.assignedWorkers && project.assignedWorkers.length > 0 && (
+              {/* Employee mentor / assignment */}
+              {project.assignedEmployees && project.assignedEmployees.length > 0 && (
                 <div>
                   <label className="block font-semibold text-slate-700 mb-1">
-                    Assign Worker / Mentor (Optional):
+                    Assign Employee / Mentor (Optional):
                   </label>
                   <select
-                    value={apptForm.workerId}
-                    onChange={(e) => setApptForm((prev) => ({ ...prev, workerId: e.target.value }))}
+                    value={apptForm.EmployeeId}
+                    onChange={(e) => setApptForm((prev) => ({ ...prev, EmployeeId: e.target.value }))}
                     className="w-full p-2.5 rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:border-blue-500"
                   >
                     <option value="">-- Direct Technical Lead Assignment --</option>
-                    {project.assignedWorkers.map((w) => (
+                    {project.assignedEmployees.map((w) => (
                       <option key={w._id} value={w._id}>
                         {w.name} ({w.title || 'Engineer'})
                       </option>

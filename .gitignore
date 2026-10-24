@@ -8,3 +8,6 @@ server/uploads/*
 powershell.cmd
 *.log
 .DS_Store
+*service-account*.json
+*.pem
+*.key

@@ -15,7 +15,7 @@ const generateProjectSummary = async (req, res, next) => {
     const project = await Project.findById(projectId)
       .populate('client', 'name companyName')
       .populate('createdBy', 'name')
-      .populate('assignedWorkers', 'name email title');
+      .populate('assignedEmployees', 'name email title');
 
     if (!project) {
       return res.status(404).json({
@@ -32,8 +32,8 @@ const generateProjectSummary = async (req, res, next) => {
       });
     }
 
-    if (req.user.role === 'WORKER') {
-      const isAssigned = project.assignedWorkers && project.assignedWorkers.some(
+    if (req.user.role === 'Employee') {
+      const isAssigned = project.assignedEmployees && project.assignedEmployees.some(
         (w) => (w._id ? w._id.toString() : w.toString()) === req.user._id.toString()
       );
       const hasTask = await Task.exists({ project: project._id, assignedTo: req.user._id });

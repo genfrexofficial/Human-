@@ -35,7 +35,7 @@ async function runStorageTestSuite() {
     email: {
       $in: [
         'test_hr_storage@genfrex.com',
-        'test_worker_storage@genfrex.com',
+        'test_Employee_storage@genfrex.com',
         'client1_storage@test.com',
         'client2_storage@test.com'
       ]
@@ -62,12 +62,12 @@ async function runStorageTestSuite() {
 
   let adminToken = null;
   let hrToken = null;
-  let workerToken = null;
+  let EmployeeToken = null;
   let client1Token = null;
   let client2Token = null;
 
   let hrUser = null;
-  let workerUser = null;
+  let EmployeeUser = null;
   let client1User = null;
   let client2User = null;
   let testProject = null;
@@ -118,7 +118,7 @@ async function runStorageTestSuite() {
     assert(exeRes.status !== 200 && exeRes.status !== 201, '4. Malicious executable (.exe) rejected by security filter');
 
     // -------------------------------------------------------------
-    // Test 5: Setup temporary test accounts (HR, Worker, Clients)
+    // Test 5: Setup temporary test accounts (HR, Employee, Clients)
     // -------------------------------------------------------------
     const createHRRes = await fetch(`${BASE_URL}/users`, {
       method: 'POST',
@@ -140,24 +140,24 @@ async function runStorageTestSuite() {
     });
     hrToken = (await hrLoginRes.json()).token;
 
-    const createWorkerRes = await fetch(`${BASE_URL}/users`, {
+    const createEmployeeRes = await fetch(`${BASE_URL}/users`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
       body: JSON.stringify({
-        name: 'Test Worker Engineer',
-        email: 'test_worker_storage@genfrex.com',
-        role: 'WORKER',
+        name: 'Test Employee Engineer',
+        email: 'test_Employee_storage@genfrex.com',
+        role: 'Employee',
         password: 'Password@123'
       })
     });
-    workerUser = (await createWorkerRes.json()).user;
+    EmployeeUser = (await createEmployeeRes.json()).user;
 
-    const workerLoginRes = await fetch(`${BASE_URL}/auth/login`, {
+    const EmployeeLoginRes = await fetch(`${BASE_URL}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: 'test_worker_storage@genfrex.com', password: 'Password@123' })
+      body: JSON.stringify({ email: 'test_Employee_storage@genfrex.com', password: 'Password@123' })
     });
-    workerToken = (await workerLoginRes.json()).token;
+    EmployeeToken = (await EmployeeLoginRes.json()).token;
 
     const createClient1Res = await fetch(`${BASE_URL}/users`, {
       method: 'POST',
@@ -202,12 +202,12 @@ async function runStorageTestSuite() {
     testProject = await Project.create({
       name: 'Client 1 ERP Platform',
       client: client1User._id || client1User.id,
-      assignedWorkers: [workerUser._id || workerUser.id],
+      assignedEmployees: [EmployeeUser._id || EmployeeUser.id],
       createdBy: adminId,
       status: 'IN_PROGRESS'
     });
 
-    assert(testProject && hrToken && workerToken && client1Token && client2Token, '5. Authorized test entities created for verification');
+    assert(testProject && hrToken && EmployeeToken && client1Token && client2Token, '5. Authorized test entities created for verification');
 
     // -------------------------------------------------------------
     // Test 6: HR uploads authorized confidential HR document
@@ -232,12 +232,12 @@ async function runStorageTestSuite() {
     const confidentialFileId = hrUploadData.file?._id;
 
     // -------------------------------------------------------------
-    // Test 7: Worker is FORBIDDEN from accessing HR document (403)
+    // Test 7: Employee is FORBIDDEN from accessing HR document (403)
     // -------------------------------------------------------------
-    const workerAccessRes = await fetch(`${BASE_URL}/files/${confidentialFileId}/download`, {
-      headers: { Authorization: `Bearer ${workerToken}` }
+    const EmployeeAccessRes = await fetch(`${BASE_URL}/files/${confidentialFileId}/download`, {
+      headers: { Authorization: `Bearer ${EmployeeToken}` }
     });
-    assert(workerAccessRes.status === 403, '7. Worker access to confidential HR document rejected (403 Forbidden)');
+    assert(EmployeeAccessRes.status === 403, '7. Employee access to confidential HR document rejected (403 Forbidden)');
 
     // -------------------------------------------------------------
     // Test 8: Client is FORBIDDEN from accessing HR document (403)
@@ -348,7 +348,7 @@ async function runStorageTestSuite() {
       email: {
         $in: [
           'test_hr_storage@genfrex.com',
-          'test_worker_storage@genfrex.com',
+          'test_Employee_storage@genfrex.com',
           'client1_storage@test.com',
           'client2_storage@test.com'
         ]

@@ -18,7 +18,7 @@ flowchart TB
     subgraph ClientLayer ["Frontend Client Layer (Vite + React 18)"]
         UI_Admin["Admin Workspace (/admin/*)<br/>17 Pages: Analytics, Projects, Users, Storage, HR"]
         UI_Client["Client Portal (/client/*)<br/>9 Pages: Projects, Reviews, Requests, Files"]
-        UI_Worker["Worker Portal (/worker/*)<br/>7 Pages: Tasks, Execution, Submissions, Files"]
+        UI_Employee["Employee Portal (/Employee/*)<br/>7 Pages: Tasks, Execution, Submissions, Files"]
         UI_HR["HR Portal (/hr/*)<br/>6 Pages: Candidates, Letters, Approvals, Templates"]
         AuthContext["AuthContext & API Client<br/>Axios Bearer Interceptor & Token Management"]
     end
@@ -26,7 +26,7 @@ flowchart TB
     subgraph SecurityLayer ["API Gateway & Security Layer"]
         CORS["CORS Middleware"]
         AuthMiddleware["authenticateToken<br/>JWT Verification & tokenVersion Check"]
-        RBAC["authorizeRoles<br/>ADMIN | HR | WORKER | CLIENT"]
+        RBAC["authorizeRoles<br/>ADMIN | HR | Employee | CLIENT"]
         ResourceGuards["requireProjectAccess<br/>requireTaskAccess"]
         UploadFilter["uploadMiddleware<br/>Extension Whitelist & Executable Sanitizer"]
     end
@@ -52,7 +52,7 @@ flowchart TB
         PDFKit["pdfService.js<br/>Vector A4 PDF Engine"]
     end
 
-    UI_Admin & UI_Client & UI_Worker & UI_HR --> AuthContext
+    UI_Admin & UI_Client & UI_Employee & UI_HR --> AuthContext
     AuthContext --> CORS
     CORS --> AuthMiddleware
     AuthMiddleware --> RBAC
@@ -121,7 +121,7 @@ sequenceDiagram
 The platform enforces a centralized **Role-Based Access Control (RBAC)** architecture governed by 4 discrete roles:
 - `ADMIN`: Unrestricted platform operations, user management, project orchestration, and HR approvals.
 - `HR`: Candidate management, appointment letter creation, template management, and HR reporting.
-- `WORKER`: Task execution, status updates (`IN_PROGRESS`, `BLOCKED`, `IN_REVIEW`), task time tracking, and deliverable submission.
+- `Employee`: Task execution, status updates (`IN_PROGRESS`, `BLOCKED`, `IN_REVIEW`), task time tracking, and deliverable submission.
 - `CLIENT`: Read-only transparency over assigned projects, task request submissions, and deliverable review (`APPROVED` / `CHANGES_REQUESTED`).
 
 ```mermaid
@@ -161,7 +161,7 @@ The database uses MongoDB via Mongoose. All project progress percentages and hea
 ```mermaid
 flowchart LR
     subgraph TriggerAction ["Task Mutation Trigger"]
-        WorkerUpdate["Worker / Admin Updates Task<br/>POST /tasks/:id/progress<br/>POST /tasks/:id/complete<br/>PUT /tasks/:id"]
+        EmployeeUpdate["Employee / Admin Updates Task<br/>POST /tasks/:id/progress<br/>POST /tasks/:id/complete<br/>PUT /tasks/:id"]
     end
 
     subgraph ProgressEngine ["progressService.js"]
@@ -176,7 +176,7 @@ flowchart LR
         NotifyUsers["Notification.create():<br/>Notify Client & Project Creator"]
     end
 
-    WorkerUpdate --> CountTasks
+    EmployeeUpdate --> CountTasks
     CountTasks --> CalcFormula
     CalcFormula --> CheckHealth
     CheckHealth --> UpdateProj
@@ -193,7 +193,7 @@ Files undergo a rigorous security pipeline. No public links are ever generated i
 ```mermaid
 sequenceDiagram
     autonumber
-    actor Uploader as User (Admin / Worker / Client / HR)
+    actor Uploader as User (Admin / Employee / Client / HR)
     participant UI as AdminStorage / FileUploadModal
     participant UploadMW as uploadMiddleware.js (Multer)
     participant FileCtrl as fileController.js
@@ -231,7 +231,7 @@ sequenceDiagram
 
     Note over Consumer, GDrive: Authenticated Retrieval Pipeline
     Consumer->>FileCtrl: GET /api/files/:id/download (Bearer JWT)
-    Note over FileCtrl: Strict RBAC & Ownership Verification:<br/>- Confidential HR files: ADMIN or HR only<br/>- Client files: matching project client only<br/>- Worker files: assigned worker only
+    Note over FileCtrl: Strict RBAC & Ownership Verification:<br/>- Confidential HR files: ADMIN or HR only<br/>- Client files: matching project client only<br/>- Employee files: assigned Employee only
     FileCtrl->>DriveSvc: getFileStreamFromGoogleDrive(file.driveFileId)
     DriveSvc->>GDrive: files.get({ fileId, alt: 'media' }, responseType: 'stream')
     GDrive-->>DriveSvc: Readable Stream
@@ -269,8 +269,8 @@ flowchart TD
 
     subgraph OnboardingStage ["4. Acceptance & Staff Assignment"]
         O1["Candidate Accepts Appointment"]
-        O2["Candidate converted to Worker account in User collection"]
-        O3["Worker assigned to Project assignedWorkers & Task assignedTo"]
+        O2["Candidate converted to Employee account in User collection"]
+        O3["Employee assigned to Project assignedEmployees & Task assignedTo"]
     end
 
     C1 --> C2 --> C3
@@ -311,7 +311,7 @@ flowchart TD
 
 | Architecture Claim | Codebase Evidence | Verification State |
 |---|---|---|
-| 4-Role RBAC Model (`ADMIN`, `HR`, `WORKER`, `CLIENT`) | `server/models/User.js:27`, `server/middleware/authMiddleware.js:67` | **Verified Ground Truth** |
+| 4-Role RBAC Model (`ADMIN`, `HR`, `Employee`, `CLIENT`) | `server/models/User.js:27`, `server/middleware/authMiddleware.js:67` | **Verified Ground Truth** |
 | Single JWT Authentication Barrier | `server/middleware/authMiddleware.js:9-62` | **Verified Ground Truth** |
 | Session Invalidation via `tokenVersion` | `server/models/User.js:65`, `server/middleware/authMiddleware.js:41` | **Verified Ground Truth** |
 | Google Drive Primary Storage with Zero Public Links | `server/services/googleDriveService.js:229-244`, `server/controllers/fileController.js:632-645` | **Verified Ground Truth** |
