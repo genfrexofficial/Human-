@@ -375,7 +375,7 @@ const ClientProjectDetails = () => {
 
           {files.length === 0 ? (
             <div className="bg-white rounded-xl border border-slate-200 p-8 text-center text-xs text-slate-400">
-              No files or deliverables uploaded yet.
+              No deliverables released yet. Deliverables will appear here once approved by your agency admin.
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

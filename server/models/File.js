@@ -155,6 +155,29 @@ const fileSchema = new mongoose.Schema(
     },
     reviewedAt: {
       type: Date
+    },
+
+    // Admin Gatekeeper Approval Flow (Controls release to Client)
+    adminApprovalStatus: {
+      type: String,
+      enum: ['PENDING', 'APPROVED', 'CHANGES_REQUESTED'],
+      default: 'PENDING'
+    },
+    adminApproved: {
+      type: Boolean,
+      default: false
+    },
+    adminApprovedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    adminApprovedAt: {
+      type: Date
+    },
+    adminFeedback: {
+      type: String,
+      trim: true,
+      default: ''
     }
   },
   {
@@ -212,6 +235,8 @@ fileSchema.index({ candidate: 1 });
 fileSchema.index({ storageProvider: 1 });
 fileSchema.index({ isConfidential: 1 });
 fileSchema.index({ isDeliverable: 1, approvalStatus: 1 });
+fileSchema.index({ adminApproved: 1, isDeliverable: 1 });
+fileSchema.index({ adminApprovalStatus: 1 });
 fileSchema.index({ createdAt: -1 });
 
 module.exports = mongoose.model('File', fileSchema);

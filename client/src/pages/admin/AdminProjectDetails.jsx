@@ -19,6 +19,7 @@ import MilestoneTimeline from '../../components/milestones/MilestoneTimeline';
 import MilestoneModal from '../../components/milestones/MilestoneModal';
 import DeliverableReviewCard from '../../components/files/DeliverableReviewCard';
 import FileUploadModal from '../../components/files/FileUploadModal';
+import ChangeRequestModal from '../../components/files/ChangeRequestModal';
 import CommentSection from '../../components/feedback/CommentSection';
 import RecentActivityFeed from '../../components/dashboard/RecentActivityFeed';
 import ProjectModal from '../../components/projects/ProjectModal';
@@ -76,6 +77,8 @@ const AdminProjectDetails = () => {
   const [milestoneModalOpen, setMilestoneModalOpen] = useState(false);
   const [editingMilestone, setEditingMilestone] = useState(null);
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [changeModalOpen, setChangeModalOpen] = useState(false);
+  const [selectedDeliverable, setSelectedDeliverable] = useState(null);
   const [completionModalOpen, setCompletionModalOpen] = useState(false);
   const [aiModalOpen, setAiModalOpen] = useState(false);
   const [createApptModalOpen, setCreateApptModalOpen] = useState(false);
@@ -280,6 +283,37 @@ const AdminProjectDetails = () => {
       } catch (err) {
         toast.error('Failed to delete file.');
       }
+    }
+  };
+
+  const handleApproveDeliverable = async (fileId) => {
+    try {
+      const res = await fileService.reviewDeliverable(fileId, 'APPROVED');
+      if (res.success) {
+        toast.success('🎉 Deliverable approved! It is now open to the client.');
+        fetchProjectData();
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to approve deliverable.');
+    }
+  };
+
+  const handleOpenChangeModal = (file) => {
+    setSelectedDeliverable(file);
+    setChangeModalOpen(true);
+  };
+
+  const handleSubmitChangeRequest = async (fileId, reason) => {
+    try {
+      const res = await fileService.reviewDeliverable(fileId, 'CHANGES_REQUESTED', reason);
+      if (res.success) {
+        toast.success('Changes requested! The deliverable remains hidden from client.');
+        setChangeModalOpen(false);
+        fetchProjectData();
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to submit revision request.');
+      throw err;
     }
   };
 
@@ -649,6 +683,8 @@ const AdminProjectDetails = () => {
                       key={file._id}
                       file={file}
                       isAdmin={true}
+                      onApprove={handleApproveDeliverable}
+                      onRequestChanges={handleOpenChangeModal}
                       onDelete={handleDeleteFile}
                     />
                   ))}
@@ -1063,6 +1099,8 @@ const AdminProjectDetails = () => {
                   key={file._id}
                   file={file}
                   isAdmin={true}
+                  onApprove={handleApproveDeliverable}
+                  onRequestChanges={handleOpenChangeModal}
                   onDelete={handleDeleteFile}
                 />
               ))}
@@ -1339,6 +1377,14 @@ const AdminProjectDetails = () => {
           candidate={previewLetter.candidateId || previewLetter.candidate}
         />
       )}
+
+      {/* Change Request Modal */}
+      <ChangeRequestModal
+        isOpen={changeModalOpen}
+        onClose={() => setChangeModalOpen(false)}
+        deliverable={selectedDeliverable}
+        onSubmit={handleSubmitChangeRequest}
+      />
     </div>
   );
 };

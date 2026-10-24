@@ -3,10 +3,11 @@ import { projectService } from '../../services/projectService';
 import { fileService } from '../../services/fileService';
 import DeliverableReviewCard from '../../components/files/DeliverableReviewCard';
 import FileUploadModal from '../../components/files/FileUploadModal';
+import ChangeRequestModal from '../../components/files/ChangeRequestModal';
 import Button from '../../components/common/Button';
 import EmptyState from '../../components/common/EmptyState';
 import { CardSkeleton } from '../../components/common/Skeleton';
-import { Files, Upload, Filter } from 'lucide-react';
+import { Files, Upload, Filter, CheckCircle2, Clock, AlertTriangle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const AdminFiles = () => {
@@ -15,6 +16,9 @@ const AdminFiles = () => {
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [changeModalOpen, setChangeModalOpen] = useState(false);
+  const [selectedDeliverable, setSelectedDeliverable] = useState(null);
+  const [statusFilter, setStatusFilter] = useState('ALL');
 
   const fetchInitial = async () => {
     try {
@@ -58,16 +62,56 @@ const AdminFiles = () => {
     }
   };
 
+  const reloadFiles = async () => {
+    if (!selectedProjectId) return;
+    try {
+      const res = await fileService.getProjectFiles(selectedProjectId);
+      if (res.success) setFiles(res.files || []);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const handleUploadSuccess = async (formData) => {
     try {
       const res = await fileService.uploadFile(formData);
       if (res.success) {
         toast.success('File uploaded successfully!');
-        const filesRes = await fileService.getProjectFiles(selectedProjectId);
-        if (filesRes.success) setFiles(filesRes.files || []);
+        reloadFiles();
       }
     } catch (err) {
       toast.error(err.response?.data?.message || 'Upload failed.');
+      throw err;
+    }
+  };
+
+  const handleApproveDeliverable = async (fileId) => {
+    try {
+      const res = await fileService.reviewDeliverable(fileId, 'APPROVED');
+      if (res.success) {
+        toast.success('🎉 Deliverable approved! It is now open to the client.');
+        reloadFiles();
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to approve deliverable.');
+    }
+  };
+
+  const handleOpenChangeModal = (file) => {
+    setSelectedDeliverable(file);
+    setChangeModalOpen(true);
+  };
+
+  const handleSubmitChangeRequest = async (fileId, reason) => {
+    try {
+      const res = await fileService.reviewDeliverable(fileId, 'CHANGES_REQUESTED', reason);
+      if (res.success) {
+        toast.success('Changes requested! The deliverable remains hidden from client.');
+        setChangeModalOpen(false);
+        reloadFiles();
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to submit revision request.');
       throw err;
     }
   };
@@ -77,13 +121,38 @@ const AdminFiles = () => {
       try {
         await fileService.deleteFile(fileId);
         toast.success('File deleted.');
-        const filesRes = await fileService.getProjectFiles(selectedProjectId);
-        if (filesRes.success) setFiles(filesRes.files || []);
+        reloadFiles();
       } catch (err) {
         toast.error('Failed to delete file.');
       }
     }
   };
+
+  // Stats calculation
+  const pendingCount = files.filter(
+    (f) => (f.isDeliverable || f.category === 'DELIVERABLE') && !f.adminApproved && f.adminApprovalStatus !== 'APPROVED' && f.approvalStatus !== 'APPROVED' && f.adminApprovalStatus !== 'CHANGES_REQUESTED'
+  ).length;
+
+  const approvedCount = files.filter(
+    (f) => (f.isDeliverable || f.category === 'DELIVERABLE') && (f.adminApproved || f.adminApprovalStatus === 'APPROVED' || (f.approvalStatus === 'APPROVED' && f.adminApprovalStatus !== 'CHANGES_REQUESTED'))
+  ).length;
+
+  const changesCount = files.filter(
+    (f) => (f.isDeliverable || f.category === 'DELIVERABLE') && (f.adminApprovalStatus === 'CHANGES_REQUESTED' || f.approvalStatus === 'CHANGES_REQUESTED')
+  ).length;
+
+  // Filtered files
+  const filteredFiles = files.filter((f) => {
+    const isDeliv = f.isDeliverable || f.category === 'DELIVERABLE';
+    const isAppr = f.adminApproved || f.adminApprovalStatus === 'APPROVED' || (f.approvalStatus === 'APPROVED' && f.adminApprovalStatus !== 'CHANGES_REQUESTED');
+    const isChanges = f.adminApprovalStatus === 'CHANGES_REQUESTED' || f.approvalStatus === 'CHANGES_REQUESTED';
+    const isPend = isDeliv && !isAppr && !isChanges;
+
+    if (statusFilter === 'PENDING') return isPend;
+    if (statusFilter === 'APPROVED') return isAppr;
+    if (statusFilter === 'CHANGES_REQUESTED') return isChanges;
+    return true;
+  });
 
   return (
     <div className="space-y-6">
@@ -91,7 +160,7 @@ const AdminFiles = () => {
         <div>
           <h1 className="text-xl font-bold text-slate-900 tracking-tight">Files & Deliverables</h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Centralized document and design repository for client deliverables and sign-offs.
+            Admin gatekeeper repository: Review, approve, and release deliverables to the client portal.
           </p>
         </div>
 
@@ -102,24 +171,70 @@ const AdminFiles = () => {
         )}
       </div>
 
-      {/* Project Selector Bar */}
-      <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-subtle flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      {/* Project Selector Bar & Filters */}
+      <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-subtle flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <Filter className="w-4 h-4 text-slate-400" />
-          <span className="text-xs font-semibold text-slate-700">Filter by Project:</span>
+          <span className="text-xs font-semibold text-slate-700">Project:</span>
+          <select
+            value={selectedProjectId}
+            onChange={(e) => handleProjectSelect(e.target.value)}
+            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 min-w-[220px]"
+          >
+            {projects.map((p) => (
+              <option key={p._id} value={p._id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
         </div>
 
-        <select
-          value={selectedProjectId}
-          onChange={(e) => handleProjectSelect(e.target.value)}
-          className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 min-w-[240px]"
-        >
-          {projects.map((p) => (
-            <option key={p._id} value={p._id}>
-              {p.name}
-            </option>
-          ))}
-        </select>
+        {/* Filter Tabs */}
+        <div className="flex items-center gap-1.5 overflow-x-auto">
+          <button
+            onClick={() => setStatusFilter('ALL')}
+            className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
+              statusFilter === 'ALL'
+                ? 'bg-slate-900 text-white'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            }`}
+          >
+            All ({files.length})
+          </button>
+          <button
+            onClick={() => setStatusFilter('PENDING')}
+            className={`inline-flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
+              statusFilter === 'PENDING'
+                ? 'bg-amber-600 text-white'
+                : 'bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200'
+            }`}
+          >
+            <Clock className="w-3 h-3" />
+            Pending Admin ({pendingCount})
+          </button>
+          <button
+            onClick={() => setStatusFilter('APPROVED')}
+            className={`inline-flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
+              statusFilter === 'APPROVED'
+                ? 'bg-emerald-600 text-white'
+                : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'
+            }`}
+          >
+            <CheckCircle2 className="w-3 h-3" />
+            Open to Client ({approvedCount})
+          </button>
+          <button
+            onClick={() => setStatusFilter('CHANGES_REQUESTED')}
+            className={`inline-flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
+              statusFilter === 'CHANGES_REQUESTED'
+                ? 'bg-rose-600 text-white'
+                : 'bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200'
+            }`}
+          >
+            <AlertTriangle className="w-3 h-3" />
+            Revisions ({changesCount})
+          </button>
+        </div>
       </div>
 
       {/* Files Grid */}
@@ -129,23 +244,29 @@ const AdminFiles = () => {
           <CardSkeleton />
           <CardSkeleton />
         </div>
-      ) : files.length === 0 ? (
+      ) : filteredFiles.length === 0 ? (
         <div className="bg-white rounded-xl border border-slate-200 p-8">
           <EmptyState
             icon={Files}
-            title="No files in this project"
-            description="Upload design mockups, contracts, or production deliverables for client review."
-            actionLabel="Upload First File"
-            onAction={() => setUploadModalOpen(true)}
+            title={statusFilter === 'ALL' ? 'No files in this project' : 'No deliverables match this filter'}
+            description={
+              statusFilter === 'ALL'
+                ? 'Upload design mockups, contracts, or production deliverables for client review.'
+                : 'Switch filters or upload new deliverables for this project.'
+            }
+            actionLabel={statusFilter === 'ALL' ? 'Upload First File' : undefined}
+            onAction={statusFilter === 'ALL' ? () => setUploadModalOpen(true) : undefined}
           />
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {files.map((file) => (
+          {filteredFiles.map((file) => (
             <DeliverableReviewCard
               key={file._id}
               file={file}
               isAdmin={true}
+              onApprove={handleApproveDeliverable}
+              onRequestChanges={handleOpenChangeModal}
               onDelete={handleDeleteFile}
             />
           ))}
@@ -158,6 +279,14 @@ const AdminFiles = () => {
         onClose={() => setUploadModalOpen(false)}
         projectId={selectedProjectId}
         onUploadSuccess={handleUploadSuccess}
+      />
+
+      {/* Change Request Modal */}
+      <ChangeRequestModal
+        isOpen={changeModalOpen}
+        onClose={() => setChangeModalOpen(false)}
+        deliverable={selectedDeliverable}
+        onSubmit={handleSubmitChangeRequest}
       />
     </div>
   );

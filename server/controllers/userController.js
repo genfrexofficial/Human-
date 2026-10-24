@@ -53,7 +53,8 @@ const createUser = async (req, res, next) => {
       });
     }
 
-    const targetRole = role.toUpperCase();
+    const upperRole = (role || '').toUpperCase();
+    const targetRole = upperRole === 'EMPLOYEE' ? 'Employee' : upperRole;
 
     // STRICT: ADMIN cannot be created via standard user creation
     if (targetRole === 'ADMIN') {

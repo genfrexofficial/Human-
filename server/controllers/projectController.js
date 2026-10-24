@@ -57,7 +57,20 @@ const getProjects = async (req, res, next) => {
           Task.countDocuments({ project: project._id, status: 'IN_REVIEW' }),
           Milestone.countDocuments({ project: project._id }),
           Milestone.countDocuments({ project: project._id, status: 'COMPLETED' }),
-          File.countDocuments({ project: project._id, approvalStatus: 'PENDING_REVIEW' }),
+          File.countDocuments(
+            req.user.role === 'CLIENT'
+              ? {
+                  project: project._id,
+                  $or: [{ isDeliverable: true }, { category: 'DELIVERABLE' }],
+                  adminApproved: true,
+                  approvalStatus: 'PENDING_REVIEW'
+                }
+              : {
+                  project: project._id,
+                  $or: [{ isDeliverable: true }, { category: 'DELIVERABLE' }],
+                  adminApproved: { $ne: true }
+                }
+          ),
           TaskRequest.countDocuments({ project: project._id, status: 'PENDING_APPROVAL' })
         ]);
 
@@ -150,9 +163,37 @@ const getProjectById = async (req, res, next) => {
       Task.countDocuments({ project: project._id, status: 'IN_REVIEW' }),
       Milestone.countDocuments({ project: project._id }),
       Milestone.countDocuments({ project: project._id, status: 'COMPLETED' }),
-      File.countDocuments({ project: project._id, approvalStatus: 'PENDING_REVIEW' }),
-      File.countDocuments({ project: project._id, category: 'DELIVERABLE' }),
-      File.countDocuments({ project: project._id, approvalStatus: 'APPROVED' }),
+      File.countDocuments(
+        req.user.role === 'CLIENT'
+          ? {
+              project: project._id,
+              $or: [{ isDeliverable: true }, { category: 'DELIVERABLE' }],
+              adminApproved: true,
+              approvalStatus: 'PENDING_REVIEW'
+            }
+          : {
+              project: project._id,
+              $or: [{ isDeliverable: true }, { category: 'DELIVERABLE' }],
+              adminApproved: { $ne: true }
+            }
+      ),
+      File.countDocuments(
+        req.user.role === 'CLIENT'
+          ? {
+              project: project._id,
+              $or: [{ isDeliverable: true }, { category: 'DELIVERABLE' }],
+              $or: [{ adminApproved: true }, { adminApprovalStatus: 'APPROVED' }]
+            }
+          : {
+              project: project._id,
+              $or: [{ isDeliverable: true }, { category: 'DELIVERABLE' }]
+            }
+      ),
+      File.countDocuments({
+        project: project._id,
+        $or: [{ isDeliverable: true }, { category: 'DELIVERABLE' }],
+        $or: [{ adminApproved: true }, { adminApprovalStatus: 'APPROVED' }]
+      }),
       TaskRequest.countDocuments({ project: project._id, status: 'PENDING_APPROVAL' })
     ]);
 

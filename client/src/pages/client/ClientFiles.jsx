@@ -5,7 +5,7 @@ import DeliverableReviewCard from '../../components/files/DeliverableReviewCard'
 import ChangeRequestModal from '../../components/files/ChangeRequestModal';
 import EmptyState from '../../components/common/EmptyState';
 import { CardSkeleton } from '../../components/common/Skeleton';
-import { Files } from 'lucide-react';
+import { Files, CheckCircle2, ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const ClientFiles = () => {
@@ -47,7 +47,7 @@ const ClientFiles = () => {
     try {
       const res = await fileService.reviewDeliverable(fileId, 'APPROVED');
       if (res.success) {
-        toast.success('🎉 Deliverable approved successfully!');
+        toast.success('🎉 Deliverable signed off successfully!');
         fetchClientFiles();
       }
     } catch (err) {
@@ -64,7 +64,8 @@ const ClientFiles = () => {
     try {
       const res = await fileService.reviewDeliverable(fileId, 'CHANGES_REQUESTED', reason);
       if (res.success) {
-        toast.success('Changes requested! The agency team has been notified.');
+        toast.success('Feedback submitted! The agency team has been notified.');
+        setChangeModalOpen(false);
         fetchClientFiles();
       }
     } catch (err) {
@@ -75,11 +76,17 @@ const ClientFiles = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-xl font-bold text-slate-900 tracking-tight">Deliverables & Files</h1>
-        <p className="text-xs text-slate-500 mt-0.5">
-          Review, download, and approve deliverables submitted by your agency.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-bold text-slate-900 tracking-tight">Deliverables & Files</h1>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Review and download official deliverables approved and released by your agency.
+          </p>
+        </div>
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+          <span>Admin Verified Assets</span>
+        </div>
       </div>
 
       {loading ? (
@@ -91,8 +98,8 @@ const ClientFiles = () => {
         <div className="bg-white rounded-xl border border-slate-200 p-8">
           <EmptyState
             icon={Files}
-            title="No files or deliverables yet"
-            description="Your agency team hasn't uploaded any deliverables yet."
+            title="No deliverables released yet"
+            description="Deliverables will open and appear here once approved by your agency admin."
           />
         </div>
       ) : (

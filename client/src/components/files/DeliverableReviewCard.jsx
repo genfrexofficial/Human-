@@ -9,6 +9,7 @@ import {
   ExternalLink,
   CheckCircle2,
   AlertTriangle,
+  Clock,
   FileText,
   FileCode,
   Image as ImageIcon,
@@ -32,6 +33,12 @@ const DeliverableReviewCard = ({
   if (!currentFile) return null;
 
   const [downloading, setDownloading] = useState(false);
+
+  const isDeliverable = currentFile.isDeliverable === true || currentFile.category === 'DELIVERABLE';
+  const isAdminApproved = currentFile.adminApproved === true ||
+    currentFile.adminApprovalStatus === 'APPROVED' ||
+    (currentFile.approvalStatus === 'APPROVED' && currentFile.adminApprovalStatus !== 'CHANGES_REQUESTED' && currentFile.adminApproved !== false);
+  const isChangesRequested = currentFile.adminApprovalStatus === 'CHANGES_REQUESTED' || currentFile.approvalStatus === 'CHANGES_REQUESTED';
 
   const approvalCfg = APPROVAL_STATUS[currentFile.approvalStatus] || {
     label: currentFile.approvalStatus || 'PENDING_REVIEW',
@@ -68,7 +75,7 @@ const DeliverableReviewCard = ({
         <div className="flex items-start justify-between gap-3 mb-3">
           <div className="flex items-start gap-3 min-w-0">
             <div className="p-2 rounded-lg bg-slate-100 shrink-0 mt-0.5">
-              {getFileIcon(currentFile.fileType)}
+              {getFileIcon(currentFile.fileType || currentFile.mimeType)}
             </div>
             <div className="min-w-0">
               <h4 className="text-xs font-bold text-slate-900 truncate" title={currentFile.fileName}>
@@ -80,11 +87,32 @@ const DeliverableReviewCard = ({
             </div>
           </div>
 
-          <span
-            className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border shrink-0 ${approvalCfg.color}`}
-          >
-            {approvalCfg.label}
-          </span>
+          {/* Contextual Status Badge */}
+          {isAdmin && isDeliverable ? (
+            isAdminApproved ? (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold border shrink-0 bg-emerald-50 text-emerald-700 border-emerald-200">
+                <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Approved (Open to Client)
+              </span>
+            ) : isChangesRequested ? (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold border shrink-0 bg-rose-50 text-rose-700 border-rose-200">
+                <AlertTriangle className="w-3 h-3 text-rose-600" /> Changes Requested
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold border shrink-0 bg-amber-50 text-amber-700 border-amber-200">
+                <Clock className="w-3 h-3 text-amber-600" /> Pending Admin Approval
+              </span>
+            )
+          ) : isClient && isDeliverable ? (
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold border shrink-0 bg-emerald-50 text-emerald-700 border-emerald-200">
+              <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Admin Approved • Open
+            </span>
+          ) : (
+            <span
+              className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border shrink-0 ${approvalCfg.color}`}
+            >
+              {approvalCfg.label}
+            </span>
+          )}
         </div>
 
         {/* Metadata */}
@@ -92,7 +120,7 @@ const DeliverableReviewCard = ({
           <div className="flex justify-between">
             <span className="text-slate-400">Uploaded By:</span>
             <span className="font-medium text-slate-700 truncate max-w-[140px]">
-              {currentFile.uploadedBy?.name || 'Team Lead'}
+              {currentFile.uploadedBy?.name || 'Team Member'}
             </span>
           </div>
           <div className="flex justify-between">
@@ -104,6 +132,14 @@ const DeliverableReviewCard = ({
               <span className="text-slate-400">Linked Task:</span>
               <span className="font-medium text-slate-700 truncate max-w-[150px]" title={currentFile.task.title}>
                 {currentFile.task.title}
+              </span>
+            </div>
+          )}
+          {currentFile.adminApprovedBy?.name && (
+            <div className="flex justify-between">
+              <span className="text-slate-400">Approved By Admin:</span>
+              <span className="font-medium text-emerald-700 truncate max-w-[140px]">
+                {currentFile.adminApprovedBy.name}
               </span>
             </div>
           )}
@@ -134,37 +170,89 @@ const DeliverableReviewCard = ({
           <span>{downloading ? 'Downloading...' : 'Download'}</span>
         </button>
 
-        {/* Client Review Actions */}
+        {/* Action Controls for Admin and Client */}
         <div className="flex items-center gap-1.5">
-          {isClient && currentFile.approvalStatus !== 'APPROVED' && (
+          {/* Admin Approval Controls */}
+          {isAdmin && isDeliverable && (
             <>
-              <Button
-                variant="danger"
-                size="xs"
-                onClick={() => onRequestChanges(currentFile)}
-                icon={AlertTriangle}
-              >
-                Request Changes
-              </Button>
-              <Button
-                variant="success"
-                size="xs"
-                onClick={() => onApprove(currentFile._id)}
-                icon={CheckCircle2}
-              >
-                Approve
-              </Button>
+              {!isAdminApproved ? (
+                <>
+                  {onRequestChanges && (
+                    <Button
+                      variant="danger"
+                      size="xs"
+                      onClick={() => onRequestChanges(currentFile)}
+                      icon={AlertTriangle}
+                    >
+                      Request Changes
+                    </Button>
+                  )}
+                  {onApprove && (
+                    <Button
+                      variant="success"
+                      size="xs"
+                      onClick={() => onApprove(currentFile._id)}
+                      icon={CheckCircle2}
+                    >
+                      Approve for Client
+                    </Button>
+                  )}
+                </>
+              ) : (
+                <>
+                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-200">
+                    <CheckCircle2 className="w-3 h-3" /> Client Can Access
+                  </span>
+                  {onRequestChanges && (
+                    <Button
+                      variant="secondary"
+                      size="xs"
+                      onClick={() => onRequestChanges(currentFile)}
+                      icon={AlertTriangle}
+                      title="Request revisions and hide from client until re-approved"
+                    >
+                      Revision
+                    </Button>
+                  )}
+                </>
+              )}
             </>
           )}
 
-          {isClient && currentFile.approvalStatus === 'APPROVED' && (
+          {/* Client Review Actions (Only active if approved by admin) */}
+          {isClient && isDeliverable && isAdminApproved && currentFile.approvalStatus !== 'APPROVED' && (
+            <>
+              {onRequestChanges && (
+                <Button
+                  variant="danger"
+                  size="xs"
+                  onClick={() => onRequestChanges(currentFile)}
+                  icon={AlertTriangle}
+                >
+                  Request Changes
+                </Button>
+              )}
+              {onApprove && (
+                <Button
+                  variant="success"
+                  size="xs"
+                  onClick={() => onApprove(currentFile._id)}
+                  icon={CheckCircle2}
+                >
+                  Sign Off
+                </Button>
+              )}
+            </>
+          )}
+
+          {isClient && isDeliverable && isAdminApproved && currentFile.approvalStatus === 'APPROVED' && (
             <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-200">
-              <CheckCircle2 className="w-3.5 h-3.5" /> Approved
+              <CheckCircle2 className="w-3.5 h-3.5" /> Signed Off
             </span>
           )}
 
           {/* Admin delete file button */}
-          {isAdmin && (
+          {isAdmin && onDelete && (
             <button
               type="button"
               onClick={() => onDelete(currentFile._id)}

@@ -107,9 +107,40 @@ const getProjectFiles = async (req, res, next) => {
       query.isConfidential = { $ne: true };
     }
 
+    // Client role enforcement: Only deliverables approved by Admin can be seen by Client!
+    if (req.user.role === 'CLIENT') {
+      query.$and = [
+        {
+          $or: [
+            {
+              isDeliverable: { $ne: true },
+              category: { $nin: ['DELIVERABLE'] }
+            },
+            {
+              $and: [
+                { $or: [{ isDeliverable: true }, { category: 'DELIVERABLE' }] },
+                {
+                  $or: [
+                    { adminApproved: true },
+                    { adminApprovalStatus: 'APPROVED' },
+                    {
+                      approvalStatus: 'APPROVED',
+                      adminApprovalStatus: { $ne: 'CHANGES_REQUESTED' },
+                      adminApproved: { $ne: false }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ];
+    }
+
     const files = await File.find(query)
       .populate('uploadedBy', 'name email avatar role title')
       .populate('reviewedBy', 'name email')
+      .populate('adminApprovedBy', 'name email')
       .populate('task', 'title status')
       .sort({ createdAt: -1 });
 
@@ -203,6 +234,18 @@ const uploadProjectFile = async (req, res, next) => {
       fileName: cleanFileName
     });
 
+    const isAdmin = req.user.role === 'ADMIN';
+
+    // If Admin uploads a deliverable, it is approved by Admin by default
+    // If Employee/Worker uploads, it requires Admin review & approval first
+    const initialAdminApproved = isDeliverable ? isAdmin : true;
+    const initialAdminApprovalStatus = isDeliverable
+      ? (isAdmin ? 'APPROVED' : 'PENDING')
+      : 'APPROVED';
+    const initialApprovalStatus = isDeliverable
+      ? (isAdmin ? 'APPROVED' : 'PENDING_REVIEW')
+      : 'APPROVED';
+
     const fileDoc = await File.create({
       project: project ? project._id : null,
       task: taskId || null,
@@ -227,7 +270,11 @@ const uploadProjectFile = async (req, res, next) => {
       isDeliverable,
       isConfidential: shouldBeConfidential,
       status: 'ACTIVE',
-      approvalStatus: isDeliverable ? 'PENDING_REVIEW' : 'APPROVED'
+      adminApprovalStatus: initialAdminApprovalStatus,
+      adminApproved: initialAdminApproved,
+      adminApprovedBy: isAdmin ? req.user._id : null,
+      adminApprovedAt: isAdmin ? new Date() : null,
+      approvalStatus: initialApprovalStatus
     });
 
     // Set permanent URL referencing backend streaming endpoint for local/drive, or retain CDN url for Cloudinary
@@ -255,6 +302,8 @@ const uploadProjectFile = async (req, res, next) => {
 
     // Activity log for projects
     if (project) {
+      const isClientVisible = !shouldBeConfidential && (!isDeliverable || initialAdminApproved);
+
       await logActivity({
         projectId: project._id,
         userId: req.user._id,
@@ -262,23 +311,39 @@ const uploadProjectFile = async (req, res, next) => {
         description: `${req.user.name} uploaded ${isDeliverable ? 'deliverable' : 'file'} "${fileDoc.fileName}".`,
         entityType: 'FILE',
         entityId: fileDoc._id,
-        clientVisible: !shouldBeConfidential
+        clientVisible: isClientVisible
       });
 
-      // Notify client if deliverable is uploaded by admin or Employee
-      if (isDeliverable && req.user.role !== 'CLIENT' && project.client) {
-        await sendNotification({
-          userId: project.client._id || project.client,
-          title: 'New Deliverable Ready for Review',
-          message: `${req.user.name} uploaded deliverable "${fileDoc.fileName}" for project "${project.name}".`,
-          type: 'DELIVERABLE_UPLOADED',
-          entityId: fileDoc._id
-        });
+      // Notification logic:
+      // If deliverable is uploaded by Admin -> Notify Client that a new deliverable is ready
+      // If deliverable is uploaded by Employee -> Notify Admin to review and approve before client access!
+      if (isDeliverable) {
+        if (isAdmin && project.client) {
+          await sendNotification({
+            userId: project.client._id || project.client,
+            title: 'New Deliverable Available',
+            message: `${req.user.name} uploaded deliverable "${fileDoc.fileName}" for project "${project.name}".`,
+            type: 'FILE',
+            entityId: fileDoc._id
+          });
+        } else if (!isAdmin) {
+          const adminUsers = await User.find({ role: 'ADMIN', status: 'ACTIVE' }).select('_id');
+          for (const admin of adminUsers) {
+            await sendNotification({
+              userId: admin._id,
+              title: 'Deliverable Pending Admin Approval',
+              message: `${req.user.name} submitted deliverable "${cleanFileName}" for project "${project.name}". Admin approval is required before the client can view it.`,
+              type: 'APPROVAL',
+              entityId: fileDoc._id
+            });
+          }
+        }
       }
     }
 
     const populatedFile = await File.findById(fileDoc._id)
       .populate('uploadedBy', 'name email avatar role title')
+      .populate('adminApprovedBy', 'name email')
       .populate('task', 'title');
 
     res.status(201).json({
@@ -569,6 +634,30 @@ const downloadFile = async (req, res, next) => {
           });
         }
       }
+
+      // Client Deliverable Release Check:
+      // Client can ONLY open/download deliverables that have been approved by Admin!
+      const isDeliverableFile = file.isDeliverable === true || file.category === 'DELIVERABLE';
+      const isAdminApproved = file.adminApproved === true ||
+        file.adminApprovalStatus === 'APPROVED' ||
+        (file.approvalStatus === 'APPROVED' && file.adminApprovalStatus !== 'CHANGES_REQUESTED' && file.adminApproved !== false);
+
+      if (isDeliverableFile && !isAdminApproved) {
+        await recordStorageAudit({
+          performedBy: req.user._id,
+          performedByRole: req.user.role,
+          fileId: file._id,
+          fileName: file.fileName,
+          relatedModule: file.module,
+          action: 'FILE_ACCESS_DENIED',
+          metadata: { reason: 'DELIVERABLE_NOT_ADMIN_APPROVED' }
+        });
+
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied. This deliverable is pending Admin approval and is not yet available to the client.'
+        });
+      }
     }
 
     // 3. Employee ACCESS ENFORCEMENT
@@ -820,12 +909,27 @@ const reviewDeliverable = async (req, res, next) => {
       });
     }
 
-    // Role check: client can review their project's deliverables
-    if (req.user.role === 'CLIENT' && project.client.toString() !== req.user._id.toString()) {
-      return res.status(403).json({
-        success: false,
-        message: 'Unauthorized to review this deliverable.'
-      });
+    // Role check: client can review their project's deliverables only
+    if (req.user.role === 'CLIENT') {
+      if (project.client.toString() !== req.user._id.toString()) {
+        return res.status(403).json({
+          success: false,
+          message: 'Unauthorized to review this deliverable.'
+        });
+      }
+
+      // Client cannot review an unapproved deliverable
+      const isDeliverableFile = file.isDeliverable === true || file.category === 'DELIVERABLE';
+      const isAdminApproved = file.adminApproved === true ||
+        file.adminApprovalStatus === 'APPROVED' ||
+        (file.approvalStatus === 'APPROVED' && file.adminApprovalStatus !== 'CHANGES_REQUESTED' && file.adminApproved !== false);
+
+      if (isDeliverableFile && !isAdminApproved) {
+        return res.status(403).json({
+          success: false,
+          message: 'This deliverable is pending Admin approval and cannot be reviewed yet.'
+        });
+      }
     }
 
     if (!['APPROVED', 'CHANGES_REQUESTED'].includes(status)) {
@@ -842,31 +946,137 @@ const reviewDeliverable = async (req, res, next) => {
       });
     }
 
-    file.approvalStatus = status;
-    file.revisionNotes = reason || '';
-    file.reviewedBy = req.user._id;
-    file.reviewedAt = new Date();
+    const isAdmin = req.user.role === 'ADMIN';
+
+    if (isAdmin) {
+      if (status === 'APPROVED') {
+        file.adminApproved = true;
+        file.adminApprovalStatus = 'APPROVED';
+        file.adminApprovedBy = req.user._id;
+        file.adminApprovedAt = new Date();
+        file.approvalStatus = 'APPROVED';
+        file.revisionNotes = reason || '';
+        file.reviewedBy = req.user._id;
+        file.reviewedAt = new Date();
+      } else {
+        file.adminApproved = false;
+        file.adminApprovalStatus = 'CHANGES_REQUESTED';
+        file.adminFeedback = reason || '';
+        file.approvalStatus = 'CHANGES_REQUESTED';
+        file.revisionNotes = reason || '';
+        file.reviewedBy = req.user._id;
+        file.reviewedAt = new Date();
+      }
+    } else {
+      // Client review
+      file.approvalStatus = status;
+      file.revisionNotes = reason || '';
+      file.reviewedBy = req.user._id;
+      file.reviewedAt = new Date();
+    }
+
     await file.save();
 
-    const action = status === 'APPROVED' ? 'DELIVERABLE_APPROVED' : 'CHANGES_REQUESTED';
-    const description = status === 'APPROVED'
-      ? `${req.user.name} approved deliverable "${file.fileName}".`
-      : `${req.user.name} requested changes on deliverable "${file.fileName}": "${reason}".`;
+    // Audit and notifications
+    if (isAdmin) {
+      if (status === 'APPROVED') {
+        // 1. Notify Client: deliverable is now unlocked & ready
+        if (project.client) {
+          await sendNotification({
+            userId: project.client._id || project.client,
+            title: 'Deliverable Approved & Ready',
+            message: `Admin approved deliverable "${file.fileName}" for project "${project.name}". It is now open and available in your portal.`,
+            type: 'APPROVAL',
+            entityId: file._id
+          });
+        }
 
-    await logActivity({
-      projectId: project._id,
-      userId: req.user._id,
-      action,
-      description,
-      entityType: 'FILE',
-      entityId: file._id,
-      clientVisible: true
-    });
+        // 2. Notify Employee/Uploader
+        if (file.uploadedBy && file.uploadedBy.toString() !== req.user._id.toString()) {
+          await sendNotification({
+            userId: file.uploadedBy,
+            title: 'Deliverable Approved by Admin',
+            message: `Your deliverable "${file.fileName}" for project "${project.name}" was approved by Admin and released to the client.`,
+            type: 'APPROVAL',
+            entityId: file._id
+          });
+        }
+
+        await logActivity({
+          projectId: project._id,
+          userId: req.user._id,
+          action: 'DELIVERABLE_APPROVED',
+          description: `Admin ${req.user.name} approved deliverable "${file.fileName}" for client access.`,
+          entityType: 'FILE',
+          entityId: file._id,
+          clientVisible: true
+        });
+      } else {
+        // Changes requested by Admin
+        if (file.uploadedBy && file.uploadedBy.toString() !== req.user._id.toString()) {
+          await sendNotification({
+            userId: file.uploadedBy,
+            title: 'Deliverable Revisions Requested',
+            message: `Admin requested revisions on deliverable "${file.fileName}": "${reason}". Please review and update.`,
+            type: 'APPROVAL',
+            entityId: file._id
+          });
+        }
+
+        await logActivity({
+          projectId: project._id,
+          userId: req.user._id,
+          action: 'CHANGES_REQUESTED',
+          description: `Admin ${req.user.name} requested changes on deliverable "${file.fileName}": "${reason}".`,
+          entityType: 'FILE',
+          entityId: file._id,
+          clientVisible: false
+        });
+      }
+    } else {
+      // Client reviewed deliverable
+      const action = status === 'APPROVED' ? 'DELIVERABLE_APPROVED' : 'CHANGES_REQUESTED';
+      const description = status === 'APPROVED'
+        ? `Client ${req.user.name} signed off deliverable "${file.fileName}".`
+        : `Client ${req.user.name} requested changes on deliverable "${file.fileName}": "${reason}".`;
+
+      await logActivity({
+        projectId: project._id,
+        userId: req.user._id,
+        action,
+        description,
+        entityType: 'FILE',
+        entityId: file._id,
+        clientVisible: true
+      });
+
+      // Notify Admins of client response
+      const adminUsers = await User.find({ role: 'ADMIN', status: 'ACTIVE' }).select('_id');
+      for (const admin of adminUsers) {
+        await sendNotification({
+          userId: admin._id,
+          title: status === 'APPROVED' ? 'Client Signed Off Deliverable' : 'Client Requested Changes',
+          message: description,
+          type: 'APPROVAL',
+          entityId: file._id
+        });
+      }
+    }
+
+    const populatedFile = await File.findById(file._id)
+      .populate('uploadedBy', 'name email avatar role title')
+      .populate('reviewedBy', 'name email')
+      .populate('adminApprovedBy', 'name email')
+      .populate('task', 'title status');
 
     res.status(200).json({
       success: true,
-      message: `Deliverable marked as ${status.replace('_', ' ')}.`,
-      file
+      message: isAdmin
+        ? (status === 'APPROVED'
+            ? 'Deliverable approved and opened to client.'
+            : 'Revisions requested. Deliverable remains hidden from client.')
+        : `Deliverable marked as ${status.replace('_', ' ')}.`,
+      file: populatedFile
     });
   } catch (error) {
     next(error);
@@ -947,6 +1157,32 @@ const browseFiles = async (req, res, next) => {
     if (req.user.role === 'CLIENT') {
       query.client = req.user._id;
       query.isConfidential = { $ne: true };
+      query.$and = [
+        {
+          $or: [
+            {
+              isDeliverable: { $ne: true },
+              category: { $nin: ['DELIVERABLE'] }
+            },
+            {
+              $and: [
+                { $or: [{ isDeliverable: true }, { category: 'DELIVERABLE' }] },
+                {
+                  $or: [
+                    { adminApproved: true },
+                    { adminApprovalStatus: 'APPROVED' },
+                    {
+                      approvalStatus: 'APPROVED',
+                      adminApprovalStatus: { $ne: 'CHANGES_REQUESTED' },
+                      adminApproved: { $ne: false }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ];
     } else if (req.user.role === 'Employee') {
       query.isConfidential = { $ne: true };
       query.module = { $ne: 'HR' };

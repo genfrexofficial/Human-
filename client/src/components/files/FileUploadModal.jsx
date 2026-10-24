@@ -155,7 +155,7 @@ const FileUploadModal = ({ isOpen, onClose, projectId, onUploadSuccess }) => {
             onChange={(e) => setCategory(e.target.value)}
             className="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
           >
-            <option value="DELIVERABLE">Deliverable (Requires Client Review)</option>
+            <option value="DELIVERABLE">Deliverable (Requires Admin Approval before Client Access)</option>
             <option value="DESIGN">Design Asset</option>
             <option value="DOCUMENT">Project Document / Brief</option>
             <option value="OTHER">Other Resource</option>
