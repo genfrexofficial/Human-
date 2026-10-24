@@ -160,6 +160,7 @@ const TaskModal = ({ isOpen, onClose, task = null, projectId, onSaved }) => {
               <option value="IN_PROGRESS">IN PROGRESS</option>
               <option value="BLOCKED">BLOCKED</option>
               <option value="IN_REVIEW">IN REVIEW</option>
+              <option value="CHANGES_REQUESTED">CHANGES REQUESTED</option>
               <option value="COMPLETED">COMPLETED</option>
             </select>
           </div>

@@ -87,8 +87,11 @@ const TaskTable = ({
                         onChange={(e) => onStatusChange(task._id, e.target.value)}
                         className={`text-xs font-medium rounded-md px-2 py-1 border cursor-pointer focus:outline-none focus:ring-1 focus:ring-indigo-500 ${statusCfg.color}`}
                       >
+                        <option value="ASSIGNED">Assigned</option>
                         <option value="TODO">To Do</option>
                         <option value="IN_PROGRESS">In Progress</option>
+                        <option value="IN_REVIEW">Under Review</option>
+                        <option value="CHANGES_REQUESTED">Changes Requested</option>
                         <option value="COMPLETED">Completed</option>
                         <option value="BLOCKED">Blocked</option>
                       </select>
