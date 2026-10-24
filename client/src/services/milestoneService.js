@@ -2,6 +2,9 @@ import api from './api';
 
 export const milestoneService = {
   getProjectMilestones: async (projectId) => {
+    if (!projectId || projectId === 'undefined' || projectId === 'null') {
+      return { success: true, count: 0, milestones: [] };
+    }
     const response = await api.get(`/milestones/project/${projectId}`);
     return response.data;
   },

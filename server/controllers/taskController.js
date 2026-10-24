@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Task = require('../models/Task');
 const Project = require('../models/Project');
 const User = require('../models/User');
@@ -30,6 +31,14 @@ const ADMIN_ALLOWED_TRANSITIONS = {
 const getProjectTasks = async (req, res, next) => {
   try {
     const { projectId } = req.params;
+
+    if (!projectId || projectId === 'undefined' || !mongoose.Types.ObjectId.isValid(projectId)) {
+      return res.status(200).json({
+        success: true,
+        count: 0,
+        tasks: []
+      });
+    }
 
     const project = await Project.findById(projectId);
     if (!project) {

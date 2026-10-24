@@ -2,6 +2,9 @@ import api from './api';
 
 export const taskService = {
   getProjectTasks: async (projectId, params = {}) => {
+    if (!projectId || projectId === 'undefined' || projectId === 'null') {
+      return { success: true, count: 0, tasks: [] };
+    }
     const response = await api.get(`/tasks/project/${projectId}`, { params });
     return response.data;
   },

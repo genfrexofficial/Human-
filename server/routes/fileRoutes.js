@@ -33,6 +33,7 @@ router.put('/:id/replace', upload.single('file'), replaceFile);
 
 // Project Files
 router.get('/project/:projectId', getProjectFiles);
+router.get('/project', (req, res) => res.status(200).json({ success: true, count: 0, files: [] }));
 
 // Secure Download & Stream (Direct Google Drive streaming proxy)
 router.get('/:id/download', downloadFile);

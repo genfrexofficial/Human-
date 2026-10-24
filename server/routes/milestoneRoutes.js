@@ -11,6 +11,7 @@ const { authenticateToken, authorizeRoles } = require('../middleware/authMiddlew
 router.use(authenticateToken);
 
 router.get('/project/:projectId', getProjectMilestones);
+router.get('/project', (req, res) => res.status(200).json({ success: true, count: 0, milestones: [] }));
 
 // Admin only mutations
 router.post('/', authorizeRoles('ADMIN'), createMilestone);

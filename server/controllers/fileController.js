@@ -1,5 +1,6 @@
 const path = require('path');
 const fs = require('fs');
+const mongoose = require('mongoose');
 const File = require('../models/File');
 const Project = require('../models/Project');
 const Task = require('../models/Task');
@@ -56,6 +57,14 @@ const getProjectFiles = async (req, res, next) => {
   try {
     const { projectId } = req.params;
     const { category, taskId } = req.query;
+
+    if (!projectId || projectId === 'undefined' || !mongoose.Types.ObjectId.isValid(projectId)) {
+      return res.status(200).json({
+        success: true,
+        count: 0,
+        files: []
+      });
+    }
 
     const project = await Project.findById(projectId);
     if (!project) {

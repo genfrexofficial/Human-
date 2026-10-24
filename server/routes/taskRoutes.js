@@ -22,6 +22,7 @@ router.get('/my-tasks', authorizeRoles('Employee', 'ADMIN'), getMyTasks);
 
 // Get tasks for a project
 router.get('/project/:projectId', getProjectTasks);
+router.get('/project', (req, res) => res.status(200).json({ success: true, count: 0, tasks: [] }));
 
 // Single task details
 router.get('/:id', getTaskById);

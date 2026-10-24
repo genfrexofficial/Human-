@@ -41,6 +41,9 @@ const EmployeeFiles = () => {
           const firstId = pRes.projects[0]._id;
           setSelectedProjectId(firstId);
           await loadProjectFiles(firstId);
+        } else {
+          setProjects([]);
+          setFiles([]);
         }
       } catch (err) {
         toast.error('Failed to load project files.');
@@ -52,6 +55,10 @@ const EmployeeFiles = () => {
   }, []);
 
   const loadProjectFiles = async (pId) => {
+    if (!pId) {
+      setFiles([]);
+      return;
+    }
     try {
       const fRes = await fileService.getProjectFiles(pId);
       if (fRes.success) {

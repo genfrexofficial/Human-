@@ -26,6 +26,9 @@ const AdminFiles = () => {
         setSelectedProjectId(firstId);
         const filesRes = await fileService.getProjectFiles(firstId);
         if (filesRes.success) setFiles(filesRes.files || []);
+      } else {
+        setProjects([]);
+        setFiles([]);
       }
     } catch (err) {
       toast.error('Failed to load files.');
@@ -40,6 +43,10 @@ const AdminFiles = () => {
 
   const handleProjectSelect = async (projectId) => {
     setSelectedProjectId(projectId);
+    if (!projectId) {
+      setFiles([]);
+      return;
+    }
     try {
       setLoading(true);
       const res = await fileService.getProjectFiles(projectId);

@@ -1,8 +1,14 @@
 import api from './api';
 
 export const fileService = {
-  getProjectFiles: async (projectId) => {
-    const response = await api.get(`/files/project/${projectId}`);
+  getProjectFiles: async (projectId, category = null, taskId = null) => {
+    if (!projectId || projectId === 'undefined' || projectId === 'null') {
+      return { success: true, count: 0, files: [] };
+    }
+    const params = {};
+    if (category) params.category = category;
+    if (taskId) params.taskId = taskId;
+    const response = await api.get(`/files/project/${projectId}`, { params });
     return response.data;
   },
 
