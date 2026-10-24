@@ -313,56 +313,55 @@ const Login = () => {
       </div>
 
       {/* ================= RIGHT AUTHENTICATION GLASS PORTAL ================= */}
-      <div className="w-full lg:w-[50%] xl:w-[46%] min-h-screen lg:h-full lg:max-h-screen flex flex-col justify-center items-center p-4 sm:p-6 lg:p-8 relative z-20 overflow-y-auto">
+      <div className="w-full lg:w-[52%] xl:w-[50%] min-h-screen lg:h-full lg:max-h-screen flex flex-col justify-center items-center p-4 sm:p-8 lg:p-10 relative z-20 overflow-y-auto">
         {/* Mobile Header (Visible only on small screens) */}
-        <div className="lg:hidden text-center mb-3 animate-card-entrance">
-          <div className="inline-flex p-2 px-4 rounded-xl bg-white/95 backdrop-blur-xl shadow-lg border border-white/40 mb-1">
+        <div className="lg:hidden text-center mb-5 animate-card-entrance">
+          <div className="inline-flex p-2 px-5 rounded-2xl bg-white/95 backdrop-blur-xl shadow-lg border border-white/40 mb-2">
             <img
               src="/logo.png"
               alt="GENFREX"
-              className="h-8 w-auto object-contain"
+              className="h-9 w-auto object-contain"
             />
           </div>
-          <h2 className="text-sm font-bold text-white tracking-tight">
+          <h2 className="text-base font-bold text-white tracking-tight">
             Unified Business Management Portal
           </h2>
         </div>
 
         {/* Main Glassmorphism Portal Card */}
-        <div className="w-full max-w-[410px] relative group animate-card-entrance">
+        <div className="w-full max-w-[500px] xl:max-w-[520px] relative group animate-card-entrance">
           {/* Animated Neon Border Glow */}
-          <div className="absolute -inset-1 bg-gradient-to-r from-blue-600/30 via-cyan-500/30 to-indigo-600/30 rounded-2xl blur-xl opacity-75 group-hover:opacity-100 transition duration-700 pointer-events-none" />
+          <div className="absolute -inset-1 bg-gradient-to-r from-blue-600/35 via-cyan-500/35 to-indigo-600/35 rounded-3xl blur-2xl opacity-75 group-hover:opacity-100 transition duration-700 pointer-events-none" />
 
-          <div className="relative glass-panel rounded-2xl p-5 sm:p-7 shadow-2xl border border-white/15 backdrop-blur-3xl bg-[#090e1f]/85 overflow-hidden">
+          <div className="relative glass-panel rounded-3xl p-7 sm:p-10 shadow-2xl border border-white/15 backdrop-blur-3xl bg-[#090e1f]/90 overflow-hidden">
             {/* Top Glowing Laser Accent Line */}
-            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-600 via-cyan-400 to-indigo-600" />
+            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-blue-600 via-cyan-400 to-indigo-600" />
 
             {/* Form Header */}
-            <div className="mb-4 text-center">
-              <h3 className="text-lg sm:text-xl font-black text-white tracking-tight">
+            <div className="mb-6 text-center">
+              <h3 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
                 Authorized Sign-In
               </h3>
-              <p className="mt-0.5 text-[11px] text-slate-400">
+              <p className="mt-2 text-sm text-slate-300/90 leading-relaxed">
                 Enter your verified credentials to access your GENFREX workspace
               </p>
             </div>
 
-
             {errorMsg && (
-              <div className="mb-3 p-2.5 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2 animate-card-entrance">
-                <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0 animate-ping" />
+              <div className="mb-4 p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-sm flex items-center gap-2.5 animate-card-entrance">
+                <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0 animate-ping" />
                 <span>{errorMsg}</span>
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-3">
+            <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
               <div>
-                <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                <label className="block text-sm font-semibold text-slate-200 mb-2">
                   Official Email Address <span className="text-rose-400">*</span>
                 </label>
                 <div className="relative group/input">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 group-focus-within/input:text-cyan-400 transition-colors">
-                    <Mail className="h-3.5 w-3.5" />
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within/input:text-cyan-400 transition-colors">
+                    <Mail className="h-5 w-5" />
                   </div>
                   <input
                     type="email"
@@ -370,18 +369,18 @@ const Login = () => {
                     placeholder="official@company.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-950/80 border border-white/10 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 focus:bg-slate-900 transition-all duration-200"
+                    className="w-full pl-12 pr-4 py-3 sm:py-3.5 rounded-2xl bg-slate-950/80 border border-white/10 text-white placeholder-slate-400 text-sm sm:text-base focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 focus:bg-slate-900 transition-all duration-200"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                <label className="block text-sm font-semibold text-slate-200 mb-2">
                   Password <span className="text-rose-400">*</span>
                 </label>
                 <div className="relative group/input">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 group-focus-within/input:text-cyan-400 transition-colors">
-                    <Lock className="h-3.5 w-3.5" />
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within/input:text-cyan-400 transition-colors">
+                    <Lock className="h-5 w-5" />
                   </div>
                   <input
                     type={showPassword ? 'text' : 'password'}
@@ -389,68 +388,68 @@ const Login = () => {
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-9 pr-9 py-2 rounded-xl bg-slate-950/80 border border-white/10 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 focus:bg-slate-900 transition-all duration-200"
+                    className="w-full pl-12 pr-12 py-3 sm:py-3.5 rounded-2xl bg-slate-950/80 border border-white/10 text-white placeholder-slate-400 text-sm sm:text-base focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 focus:bg-slate-900 transition-all duration-200"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-cyan-300 transition-colors focus:outline-none"
+                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-cyan-300 transition-colors focus:outline-none"
                     aria-label={showPassword ? 'Hide password' : 'Show password'}
                   >
-                    {showPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                   </button>
                 </div>
               </div>
 
-              <div className="flex items-center text-[11px] pt-0.5">
-                <label className="flex items-center gap-2 cursor-pointer text-slate-400 hover:text-slate-200 transition-colors">
+              <div className="flex items-center text-sm pt-1">
+                <label className="flex items-center gap-2.5 cursor-pointer text-slate-300 hover:text-white transition-colors">
                   <input
                     type="checkbox"
                     checked={rememberMe}
                     onChange={(e) => setRememberMe(e.target.checked)}
-                    className="w-3.5 h-3.5 rounded border-white/20 bg-slate-900 text-cyan-500 focus:ring-0 focus:ring-offset-0 cursor-pointer"
+                    className="w-4 h-4 rounded border-white/20 bg-slate-900 text-cyan-500 focus:ring-0 focus:ring-offset-0 cursor-pointer"
                   />
-                  <span>Remember me</span>
+                  <span className="font-medium">Remember me</span>
                 </label>
               </div>
 
               {/* High-tech Shimmering Submit Button */}
-              <div className="pt-1.5">
+              <div className="pt-2">
                 <button
                   type="submit"
                   disabled={loading}
-                  className="relative w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-600 hover:from-blue-500 hover:via-indigo-500 hover:to-cyan-500 text-white font-semibold text-xs shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2 overflow-hidden transition-all duration-300 transform active:scale-[0.99] disabled:opacity-50"
+                  className="relative w-full py-3.5 sm:py-4 px-6 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-600 hover:from-blue-500 hover:via-indigo-500 hover:to-cyan-500 text-white font-bold text-sm sm:text-base shadow-xl shadow-blue-600/30 flex items-center justify-center gap-2.5 overflow-hidden transition-all duration-300 transform active:scale-[0.99] disabled:opacity-50"
                 >
                   {/* Light Shimmer Sweep */}
                   <div className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-12 animate-shimmer pointer-events-none" />
 
                   {loading ? (
                     <>
-                      <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                       <span>Verifying Credentials...</span>
                     </>
                   ) : (
                     <>
                       <span className="tracking-wide">Authorize & Enter Workspace</span>
-                      <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
+                      <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
                     </>
                   )}
                 </button>
               </div>
             </form>
 
-            <div className="mt-3.5 pt-2.5 border-t border-white/10 text-center">
-              <p className="text-[10px] text-slate-400">
+            <div className="mt-6 pt-4 border-t border-white/10 text-center">
+              <p className="text-xs sm:text-sm text-slate-400">
                 Platform accounts are provisioned and managed by your Administrator.
               </p>
             </div>
           </div>
 
           {/* Footer security tag */}
-          <div className="mt-2.5 text-center text-[9px] text-slate-500 flex items-center justify-center gap-2">
+          <div className="mt-4 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
             <span>&copy; {new Date().getFullYear()} GENFREX Business Management Platform</span>
             <span>•</span>
-            <span className="text-cyan-400/80">All rights reserved</span>
+            <span className="text-cyan-400/90 font-medium">All rights reserved</span>
           </div>
         </div>
       </div>
