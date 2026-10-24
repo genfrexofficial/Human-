@@ -4,8 +4,7 @@ const commentSchema = new mongoose.Schema(
   {
     project: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Project',
-      required: [true, 'Project reference is required']
+      ref: 'Project'
     },
     task: {
       type: mongoose.Schema.Types.ObjectId,

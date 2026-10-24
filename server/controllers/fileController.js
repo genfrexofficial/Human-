@@ -59,6 +59,25 @@ const getProjectFiles = async (req, res, next) => {
     const { category, taskId } = req.query;
 
     if (!projectId || projectId === 'undefined' || !mongoose.Types.ObjectId.isValid(projectId)) {
+      if (taskId && mongoose.Types.ObjectId.isValid(taskId)) {
+        let query = { task: taskId, status: { $ne: 'DELETED' } };
+        if (req.user.role !== 'ADMIN' && req.user.role !== 'HR') {
+          query.isConfidential = { $ne: true };
+        }
+        const taskFiles = await File.find(query)
+          .populate('uploadedBy', 'name email avatar role title')
+          .populate('reviewedBy', 'name email')
+          .populate('adminApprovedBy', 'name email')
+          .populate('task', 'title status')
+          .sort({ createdAt: -1 });
+
+        return res.status(200).json({
+          success: true,
+          count: taskFiles.length,
+          files: taskFiles
+        });
+      }
+
       return res.status(200).json({
         success: true,
         count: 0,
@@ -154,6 +173,114 @@ const getProjectFiles = async (req, res, next) => {
   }
 };
 
+// @desc    Get all files for a specific task (Project task or Personal company assignment)
+// @route   GET /api/files/task/:taskId
+// @access  Private
+const getTaskFiles = async (req, res, next) => {
+  try {
+    const { taskId } = req.params;
+
+    if (!taskId || taskId === 'undefined' || !mongoose.Types.ObjectId.isValid(taskId)) {
+      return res.status(200).json({
+        success: true,
+        count: 0,
+        files: []
+      });
+    }
+
+    const task = await Task.findById(taskId).populate('project');
+    if (!task) {
+      return res.status(404).json({
+        success: false,
+        message: 'Task not found.'
+      });
+    }
+
+    // Permission enforcement:
+    // ADMIN & HR: Full internal access
+    // CLIENT: Can ONLY view project task files that are clientVisible
+    // Employee: Can view if assigned to task, created task, or assigned to parent project
+    if (req.user.role === 'CLIENT') {
+      if (!task.project || task.clientVisible === false) {
+        return res.status(403).json({
+          success: false,
+          message: 'Unauthorized to view files for this task.'
+        });
+      }
+      if (task.project.client && task.project.client.toString() !== req.user._id.toString()) {
+        return res.status(403).json({
+          success: false,
+          message: 'Unauthorized to view files for this project task.'
+        });
+      }
+    } else if (req.user.role === 'Employee') {
+      const isAssigned = task.assignedTo && task.assignedTo.toString() === req.user._id.toString();
+      const isProjectAssigned = task.project && task.project.assignedEmployees && task.project.assignedEmployees.some(
+        (w) => w.toString() === req.user._id.toString()
+      );
+      const isCreator = task.createdBy && task.createdBy.toString() === req.user._id.toString();
+      if (!isAssigned && !isProjectAssigned && !isCreator) {
+        return res.status(403).json({
+          success: false,
+          message: 'Unauthorized to view files for this task.'
+        });
+      }
+    }
+
+    let query = { task: taskId, status: { $ne: 'DELETED' } };
+
+    // Confidential files are hidden from non-admin/non-HR
+    if (req.user.role !== 'ADMIN' && req.user.role !== 'HR') {
+      query.isConfidential = { $ne: true };
+    }
+
+    // Client role enforcement: Only deliverables approved by Admin can be seen by Client!
+    if (req.user.role === 'CLIENT') {
+      query.$and = [
+        {
+          $or: [
+            {
+              isDeliverable: { $ne: true },
+              category: { $nin: ['DELIVERABLE'] }
+            },
+            {
+              $and: [
+                { $or: [{ isDeliverable: true }, { category: 'DELIVERABLE' }] },
+                {
+                  $or: [
+                    { adminApproved: true },
+                    { adminApprovalStatus: 'APPROVED' },
+                    {
+                      approvalStatus: 'APPROVED',
+                      adminApprovalStatus: { $ne: 'CHANGES_REQUESTED' },
+                      adminApproved: { $ne: false }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ];
+    }
+
+    const files = await File.find(query)
+      .populate('uploadedBy', 'name email avatar role title')
+      .populate('reviewedBy', 'name email')
+      .populate('adminApprovedBy', 'name email')
+      .populate('task', 'title status')
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      count: files.length,
+      files
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // @desc    Upload project file / deliverable
 // @route   POST /api/files/upload
 // @access  Private (Admin, Employee, Client, HR)
@@ -166,20 +293,29 @@ const uploadProjectFile = async (req, res, next) => {
       });
     }
 
-    const { projectId, category, fileName, taskId, isConfidential, module: targetModule } = req.body;
+    let { projectId, category, fileName, taskId, isConfidential, module: targetModule } = req.body;
 
-    if (!projectId && !targetModule) {
+    if (!projectId && !targetModule && !taskId) {
       return res.status(400).json({
         success: false,
-        message: 'Project ID or Module is required.'
+        message: 'Project ID, Module, or Task ID is required.'
       });
     }
 
     let project = null;
+    let task = null;
     let clientName = '';
     let projectName = '';
 
-    if (projectId) {
+    if (taskId) {
+      task = await Task.findById(taskId).populate('project');
+      if (task && !projectId && task.project) {
+        projectId = task.project._id;
+        project = task.project;
+      }
+    }
+
+    if (projectId && !project) {
       project = await Project.findById(projectId).populate('client', 'name email');
       if (!project) {
         return res.status(404).json({
@@ -187,7 +323,9 @@ const uploadProjectFile = async (req, res, next) => {
           message: 'Project not found.'
         });
       }
+    }
 
+    if (project) {
       // Role validation
       if (req.user.role === 'CLIENT' && project.client?._id.toString() !== req.user._id.toString()) {
         return res.status(403).json({
@@ -211,7 +349,34 @@ const uploadProjectFile = async (req, res, next) => {
 
       projectName = project.name || 'Project';
       clientName = project.client?.name || 'Client';
+    } else if (task) {
+      // Personal task role authorization
+      if (req.user.role === 'CLIENT') {
+        return res.status(403).json({
+          success: false,
+          message: 'Clients are unauthorized to upload files to internal company tasks.'
+        });
+      }
+
+      if (req.user.role === 'Employee') {
+        const isAssigned = task.assignedTo && task.assignedTo.toString() === req.user._id.toString();
+        const isCreator = task.createdBy && task.createdBy.toString() === req.user._id.toString();
+        if (!isAssigned && !isCreator && req.user.role !== 'ADMIN' && req.user.role !== 'HR') {
+          return res.status(403).json({
+            success: false,
+            message: 'Unauthorized to upload files to this personal task.'
+          });
+        }
+      }
+
+      projectName = 'Personal Task - ' + (task.title || 'Internal');
+      clientName = 'Internal Assignment';
     }
+
+    const isPersonalTask = !project && Boolean(task);
+    const determinedModule = targetModule || (isPersonalTask ? 'Employee' : (project ? 'PROJECT' : 'GENERAL'));
+    const isDeliverable = !isPersonalTask && category === 'DELIVERABLE';
+    const cleanFileName = fileName ? fileName.trim() : req.file.originalname;
 
     const shouldBeConfidential = Boolean(
       isConfidential === 'true' ||
@@ -220,35 +385,31 @@ const uploadProjectFile = async (req, res, next) => {
       category === 'HR_DOCUMENT'
     );
 
-    const determinedModule = targetModule || (project ? 'PROJECT' : 'GENERAL');
-    const isDeliverable = category === 'DELIVERABLE';
-    const cleanFileName = fileName ? fileName.trim() : req.file.originalname;
-
     // Process upload via Google Drive (or graceful fallback)
     const stored = await uploadFile(req.file, {
-      category: category || 'DELIVERABLE',
+      category: category || (isPersonalTask ? 'DOCUMENT' : 'DELIVERABLE'),
       module: determinedModule,
       isConfidential: shouldBeConfidential,
       projectName,
       clientName,
+      EmployeeName: req.user.name,
       fileName: cleanFileName
     });
 
     const isAdmin = req.user.role === 'ADMIN';
 
-    // If Admin uploads a deliverable, it is approved by Admin by default
-    // If Employee/Worker uploads, it requires Admin review & approval first
-    const initialAdminApproved = isDeliverable ? isAdmin : true;
-    const initialAdminApprovalStatus = isDeliverable
-      ? (isAdmin ? 'APPROVED' : 'PENDING')
-      : 'APPROVED';
-    const initialApprovalStatus = isDeliverable
-      ? (isAdmin ? 'APPROVED' : 'PENDING_REVIEW')
-      : 'APPROVED';
+    // Personal tasks are internal assignments (approved by default without client gatekeeper)
+    const initialAdminApproved = isPersonalTask ? true : (isDeliverable ? isAdmin : true);
+    const initialAdminApprovalStatus = isPersonalTask
+      ? 'APPROVED'
+      : (isDeliverable ? (isAdmin ? 'APPROVED' : 'PENDING') : 'APPROVED');
+    const initialApprovalStatus = isPersonalTask
+      ? 'APPROVED'
+      : (isDeliverable ? (isAdmin ? 'APPROVED' : 'PENDING_REVIEW') : 'APPROVED');
 
     const fileDoc = await File.create({
       project: project ? project._id : null,
-      task: taskId || null,
+      task: task ? task._id : (taskId || null),
       client: project?.client?._id || project?.client || null,
       uploadedBy: req.user._id,
       uploadedByRole: req.user.role,
@@ -265,15 +426,15 @@ const uploadProjectFile = async (req, res, next) => {
       fileSize: stored.fileSize || req.file.size,
       module: determinedModule,
       relatedModule: determinedModule,
-      relatedEntityId: project ? project._id : req.user._id,
-      category: category || 'DELIVERABLE',
+      relatedEntityId: task ? task._id : (project ? project._id : req.user._id),
+      category: category || (isPersonalTask ? 'DOCUMENT' : 'DELIVERABLE'),
       isDeliverable,
       isConfidential: shouldBeConfidential,
       status: 'ACTIVE',
       adminApprovalStatus: initialAdminApprovalStatus,
       adminApproved: initialAdminApproved,
-      adminApprovedBy: isAdmin ? req.user._id : null,
-      adminApprovedAt: isAdmin ? new Date() : null,
+      adminApprovedBy: (isAdmin || isPersonalTask) ? req.user._id : null,
+      adminApprovedAt: (isAdmin || isPersonalTask) ? new Date() : null,
       approvalStatus: initialApprovalStatus
     });
 
@@ -290,13 +451,14 @@ const uploadProjectFile = async (req, res, next) => {
       fileId: fileDoc._id,
       fileName: fileDoc.fileName,
       relatedModule: determinedModule,
-      relatedEntityId: fileDoc.project || fileDoc._id,
+      relatedEntityId: fileDoc.task || fileDoc.project || fileDoc._id,
       action: 'FILE_UPLOAD',
       metadata: {
         storageProvider: fileDoc.storageProvider,
         fileSize: fileDoc.fileSize,
         mimeType: fileDoc.mimeType,
-        driveFileId: fileDoc.driveFileId
+        driveFileId: fileDoc.driveFileId,
+        isPersonalTask
       }
     });
 
@@ -338,6 +500,17 @@ const uploadProjectFile = async (req, res, next) => {
             });
           }
         }
+      }
+    } else if (isPersonalTask && !isAdmin) {
+      const adminUsers = await User.find({ role: 'ADMIN', status: 'ACTIVE' }).select('_id');
+      for (const admin of adminUsers) {
+        await sendNotification({
+          userId: admin._id,
+          title: 'Work File Uploaded to Personal Task',
+          message: `${req.user.name} uploaded file "${cleanFileName}" for task "${task.title}".`,
+          type: 'FILE',
+          entityId: fileDoc._id
+        });
       }
     }
 
@@ -669,10 +842,13 @@ const downloadFile = async (req, res, next) => {
         });
       }
 
-      if (file.module === 'Employee') {
+      if (file.module === 'Employee' || file.module === 'TASK') {
         const isEmployeeOwner = (file.relatedEntityId && file.relatedEntityId.toString() === req.user._id.toString()) ||
           (file.uploadedBy && file.uploadedBy.toString() === req.user._id.toString());
-        if (!isEmployeeOwner) {
+        const isTaskAssigned = file.task && file.task.assignedTo && file.task.assignedTo.toString() === req.user._id.toString();
+        const isTaskCreator = file.task && file.task.createdBy && file.task.createdBy.toString() === req.user._id.toString();
+
+        if (!isEmployeeOwner && !isTaskAssigned && !isTaskCreator) {
           await recordStorageAudit({
             performedBy: req.user._id,
             performedByRole: req.user.role,
@@ -1260,6 +1436,7 @@ const browseFiles = async (req, res, next) => {
 
 module.exports = {
   getProjectFiles,
+  getTaskFiles,
   uploadProjectFile,
   uploadConfidentialHRFile,
   replaceFile,

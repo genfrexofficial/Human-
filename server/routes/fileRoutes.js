@@ -3,6 +3,7 @@ const router = express.Router();
 const upload = require('../middleware/uploadMiddleware');
 const {
   getProjectFiles,
+  getTaskFiles,
   uploadProjectFile,
   uploadConfidentialHRFile,
   replaceFile,
@@ -34,6 +35,9 @@ router.put('/:id/replace', upload.single('file'), replaceFile);
 // Project Files
 router.get('/project/:projectId', getProjectFiles);
 router.get('/project', (req, res) => res.status(200).json({ success: true, count: 0, files: [] }));
+
+// Task Files (For both Project Tasks & Personal Assignments)
+router.get('/task/:taskId', getTaskFiles);
 
 // Secure Download & Stream (Direct Google Drive streaming proxy)
 router.get('/:id/download', downloadFile);

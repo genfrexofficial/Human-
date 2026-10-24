@@ -3,12 +3,23 @@ import api from './api';
 export const fileService = {
   getProjectFiles: async (projectId, category = null, taskId = null) => {
     if (!projectId || projectId === 'undefined' || projectId === 'null') {
+      if (taskId) {
+        return fileService.getTaskFiles(taskId);
+      }
       return { success: true, count: 0, files: [] };
     }
     const params = {};
     if (category) params.category = category;
     if (taskId) params.taskId = taskId;
     const response = await api.get(`/files/project/${projectId}`, { params });
+    return response.data;
+  },
+
+  getTaskFiles: async (taskId) => {
+    if (!taskId || taskId === 'undefined' || taskId === 'null') {
+      return { success: true, count: 0, files: [] };
+    }
+    const response = await api.get(`/files/task/${taskId}`);
     return response.data;
   },
 

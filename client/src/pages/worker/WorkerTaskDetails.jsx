@@ -87,10 +87,10 @@ const EmployeeTaskDetails = () => {
         setTask(res.task);
         setProgressValue(res.task.progress || 0);
 
-        // Fetch task-related comments
+        // Fetch task-related comments and files
+        fetchComments(res.task.project?._id);
+        fetchFiles(res.task.project?._id);
         if (res.task.project?._id) {
-          fetchComments(res.task.project._id);
-          fetchFiles(res.task.project._id);
           fetchActivities(res.task.project._id);
         }
       }
@@ -104,7 +104,9 @@ const EmployeeTaskDetails = () => {
 
   const fetchComments = async (projectId) => {
     try {
-      const res = await commentService.getProjectComments(projectId, null, taskId);
+      const res = projectId
+        ? await commentService.getProjectComments(projectId, null, taskId)
+        : await commentService.getTaskComments(taskId);
       if (res.success) {
         setComments(res.comments || []);
       }
@@ -115,7 +117,9 @@ const EmployeeTaskDetails = () => {
 
   const fetchFiles = async (projectId) => {
     try {
-      const res = await fileService.getProjectFiles(projectId, null, taskId);
+      const res = projectId
+        ? await fileService.getProjectFiles(projectId, null, taskId)
+        : await fileService.getTaskFiles(taskId);
       if (res.success) {
         setFiles(res.files || []);
       }
@@ -214,24 +218,21 @@ const EmployeeTaskDetails = () => {
   const handleAddComment = async (e) => {
     e.preventDefault();
     if (!commentText.trim()) return;
-    if (!task?.project?._id) {
-      toast.error('Notes and discussion are only enabled for project tasks.');
-      return;
-    }
 
     try {
       setCommentLoading(true);
+      const isPersonal = !task?.project?._id;
       const res = await commentService.createComment({
-        project: task.project._id,
+        project: task?.project?._id || null,
         task: taskId,
         message: commentText.trim(),
-        isInternal: isInternalComment
+        isInternal: isInternalComment || isPersonal
       });
 
       if (res.success) {
-        toast.success(isInternalComment ? 'Internal team note added.' : 'Comment posted.');
+        toast.success(isInternalComment || isPersonal ? 'Internal team note added.' : 'Comment posted.');
         setCommentText('');
-        fetchComments(task.project._id);
+        fetchComments(task?.project?._id);
       }
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to post comment.');
@@ -243,11 +244,7 @@ const EmployeeTaskDetails = () => {
   const handleFileUpload = async (e) => {
     e.preventDefault();
     if (!selectedFile) {
-      toast.error('Please select a file to upload.');
-      return;
-    }
-    if (!task?.project?._id) {
-      toast.error('File storage is only available for client project deliverables.');
+      toast.error('Please choose a file to upload.');
       return;
     }
 
@@ -255,7 +252,11 @@ const EmployeeTaskDetails = () => {
       setUploadingFile(true);
       const formData = new FormData();
       formData.append('file', selectedFile);
-      formData.append('projectId', task.project._id);
+      if (task?.project?._id) {
+        formData.append('projectId', task.project._id);
+      } else {
+        formData.append('module', 'Employee');
+      }
       formData.append('taskId', taskId);
       formData.append('category', fileCategory);
       formData.append('fileName', selectedFile.name);
@@ -265,7 +266,7 @@ const EmployeeTaskDetails = () => {
         toast.success('File uploaded successfully!');
         setSelectedFile(null);
         setUploadModalOpen(false);
-        fetchFiles(task.project._id);
+        fetchFiles(task?.project?._id);
       }
     } catch (err) {
       toast.error(err.response?.data?.message || 'File upload failed.');
@@ -590,12 +591,18 @@ const EmployeeTaskDetails = () => {
         <div className="rounded-xl border border-slate-200/80 bg-white p-4 sm:p-6 shadow-sm space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h3 className="text-sm font-bold text-slate-900">Deliverables & Attachments</h3>
-              <p className="text-xs text-slate-500">Upload code artifacts, design documents, or build outputs for this task</p>
+              <h3 className="text-sm font-bold text-slate-900">
+                {task.taskType === 'PERSONAL' || !task.project?._id ? 'Task Attachments & Work Files' : 'Deliverables & Attachments'}
+              </h3>
+              <p className="text-xs text-slate-500">
+                {task.taskType === 'PERSONAL' || !task.project?._id
+                  ? 'Upload work artifacts, documentation, or deliverables for this assignment'
+                  : 'Upload code artifacts, design documents, or build outputs for this task'}
+              </p>
             </div>
             <Button size="sm" onClick={() => setUploadModalOpen(true)}>
               <Upload className="h-3.5 w-3.5 mr-1" />
-              Upload Deliverable
+              {task.taskType === 'PERSONAL' || !task.project?._id ? 'Upload Work File' : 'Upload Deliverable'}
             </Button>
           </div>
 
@@ -658,17 +665,21 @@ const EmployeeTaskDetails = () => {
       {activeTab === 'activity' && (
         <div className="rounded-xl border border-slate-200/80 bg-white p-6 shadow-sm space-y-4">
           <h3 className="text-sm font-bold text-slate-900">Task Audit Trail</h3>
-          <div className="relative pl-6 space-y-4 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
-            {activities.map((a) => (
-              <div key={a._id} className="relative text-xs">
-                <span className="absolute -left-6 top-1 h-2.5 w-2.5 rounded-full bg-indigo-600 ring-4 ring-white" />
-                <p className="font-semibold text-slate-800">{a.description}</p>
-                <p className="text-[10px] text-slate-400 mt-0.5">
-                  {new Date(a.createdAt).toLocaleString()} &bull; Action: {a.action}
-                </p>
-              </div>
-            ))}
-          </div>
+          {activities.length === 0 ? (
+            <p className="text-xs text-slate-400 italic">No activity entries recorded for this task yet.</p>
+          ) : (
+            <div className="relative pl-6 space-y-4 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
+              {activities.map((a) => (
+                <div key={a._id} className="relative text-xs">
+                  <span className="absolute -left-6 top-1 h-2.5 w-2.5 rounded-full bg-indigo-600 ring-4 ring-white" />
+                  <p className="font-semibold text-slate-800">{a.description}</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">
+                    {new Date(a.createdAt).toLocaleString()} &bull; Action: {a.action}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -714,7 +725,7 @@ const EmployeeTaskDetails = () => {
       <Modal
         isOpen={uploadModalOpen}
         onClose={() => setUploadModalOpen(false)}
-        title="Upload Work Deliverable"
+        title={task?.taskType === 'PERSONAL' || !task?.project?._id ? "Upload Work Attachment / Document" : "Upload Work Deliverable"}
       >
         <form onSubmit={handleFileUpload} className="space-y-4 text-xs">
           <div>
@@ -734,10 +745,21 @@ const EmployeeTaskDetails = () => {
               onChange={(e) => setFileCategory(e.target.value)}
               className="w-full rounded-lg border border-slate-200 p-2 text-xs text-slate-800 focus:border-indigo-500 focus:outline-none"
             >
-              <option value="DELIVERABLE">Deliverable (Requires Client Sign-off)</option>
-              <option value="DOCUMENT">Documentation / Spec</option>
-              <option value="DESIGN">Design Asset</option>
-              <option value="OTHER">Other Attachment</option>
+              {task?.taskType === 'PERSONAL' || !task?.project?._id ? (
+                <>
+                  <option value="DOCUMENT">Documentation / Work Spec</option>
+                  <option value="DELIVERABLE">Work Deliverable / Artifact</option>
+                  <option value="DESIGN">Design Asset</option>
+                  <option value="OTHER">Other Attachment</option>
+                </>
+              ) : (
+                <>
+                  <option value="DELIVERABLE">Deliverable (Requires Client Sign-off)</option>
+                  <option value="DOCUMENT">Documentation / Spec</option>
+                  <option value="DESIGN">Design Asset</option>
+                  <option value="OTHER">Other Attachment</option>
+                </>
+              )}
             </select>
           </div>
 
