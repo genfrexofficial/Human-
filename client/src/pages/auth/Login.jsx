@@ -140,7 +140,12 @@ const TechParticleCanvas = () => {
 };
 
 const Login = () => {
-  const [email, setEmail] = useState('');
+  const [rememberMe, setRememberMe] = useState(() => {
+    return localStorage.getItem('clientflow_remember_me') === 'true';
+  });
+  const [email, setEmail] = useState(() => {
+    return localStorage.getItem('clientflow_saved_email') || '';
+  });
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [selectedRole, setSelectedRole] = useState('');
@@ -189,6 +194,16 @@ const Login = () => {
     try {
       setLoading(true);
       const user = await login(email, password);
+
+      // Persist or clear rememberMe
+      if (rememberMe) {
+        localStorage.setItem('clientflow_remember_me', 'true');
+        localStorage.setItem('clientflow_saved_email', email);
+      } else {
+        localStorage.removeItem('clientflow_remember_me');
+        localStorage.removeItem('clientflow_saved_email');
+      }
+
       let target = from;
       if (!target) {
         if (user.role === 'ADMIN') target = '/admin/dashboard';
