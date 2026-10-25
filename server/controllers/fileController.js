@@ -286,14 +286,28 @@ const getTaskFiles = async (req, res, next) => {
 // @access  Private (Admin, Employee, Client, HR)
 const uploadProjectFile = async (req, res, next) => {
   try {
-    if (!req.file) {
+    let {
+      projectId,
+      category,
+      fileName,
+      taskId,
+      isConfidential,
+      module: targetModule,
+      linkUrl,
+      url,
+      title,
+      uploadType
+    } = req.body;
+
+    const rawLink = linkUrl || url;
+    const isLinkUpload = uploadType === 'LINK' || Boolean(rawLink && rawLink.trim());
+
+    if (!req.file && !isLinkUpload) {
       return res.status(400).json({
         success: false,
-        message: 'Please choose a file to upload.'
+        message: 'Please choose a file to upload or enter an external link URL.'
       });
     }
-
-    let { projectId, category, fileName, taskId, isConfidential, module: targetModule } = req.body;
 
     if (!projectId && !targetModule && !taskId) {
       return res.status(400).json({
@@ -376,7 +390,6 @@ const uploadProjectFile = async (req, res, next) => {
     const isPersonalTask = !project && Boolean(task);
     const determinedModule = targetModule || (isPersonalTask ? 'Employee' : (project ? 'PROJECT' : 'GENERAL'));
     const isDeliverable = !isPersonalTask && category === 'DELIVERABLE';
-    const cleanFileName = fileName ? fileName.trim() : req.file.originalname;
 
     const shouldBeConfidential = Boolean(
       isConfidential === 'true' ||
@@ -384,17 +397,6 @@ const uploadProjectFile = async (req, res, next) => {
       category === 'HR_APPOINTMENT' ||
       category === 'HR_DOCUMENT'
     );
-
-    // Process upload via Google Drive (or graceful fallback)
-    const stored = await uploadFile(req.file, {
-      category: category || (isPersonalTask ? 'DOCUMENT' : 'DELIVERABLE'),
-      module: determinedModule,
-      isConfidential: shouldBeConfidential,
-      projectName,
-      clientName,
-      EmployeeName: req.user.name,
-      fileName: cleanFileName
-    });
 
     const isAdmin = req.user.role === 'ADMIN';
 
@@ -407,41 +409,112 @@ const uploadProjectFile = async (req, res, next) => {
       ? 'APPROVED'
       : (isDeliverable ? (isAdmin ? 'APPROVED' : 'PENDING_REVIEW') : 'APPROVED');
 
-    const fileDoc = await File.create({
-      project: project ? project._id : null,
-      task: task ? task._id : (taskId || null),
-      client: project?.client?._id || project?.client || null,
-      uploadedBy: req.user._id,
-      uploadedByRole: req.user.role,
-      fileName: cleanFileName,
-      originalFileName: req.file.originalname,
-      fileUrl: stored.fileUrl || `/api/files/download`,
-      publicId: stored.publicId || '',
-      storageProvider: stored.storageProvider || 'GOOGLE_DRIVE',
-      storageKey: stored.storageKey || stored.publicId || '',
-      driveFileId: stored.driveFileId || '',
-      driveFolderId: stored.driveFolderId || '',
-      mimeType: stored.mimeType || req.file.mimetype,
-      fileType: stored.mimeType || req.file.mimetype,
-      fileSize: stored.fileSize || req.file.size,
-      module: determinedModule,
-      relatedModule: determinedModule,
-      relatedEntityId: task ? task._id : (project ? project._id : req.user._id),
-      category: category || (isPersonalTask ? 'DOCUMENT' : 'DELIVERABLE'),
-      isDeliverable,
-      isConfidential: shouldBeConfidential,
-      status: 'ACTIVE',
-      adminApprovalStatus: initialAdminApprovalStatus,
-      adminApproved: initialAdminApproved,
-      adminApprovedBy: (isAdmin || isPersonalTask) ? req.user._id : null,
-      adminApprovedAt: (isAdmin || isPersonalTask) ? new Date() : null,
-      approvalStatus: initialApprovalStatus
-    });
+    let fileDoc;
+    let cleanFileName = '';
 
-    // Set permanent URL referencing backend streaming endpoint for local/drive, or retain CDN url for Cloudinary
-    if (fileDoc.storageProvider !== 'CLOUDINARY') {
-      fileDoc.fileUrl = `/api/files/${fileDoc._id}/download`;
-      await fileDoc.save();
+    if (isLinkUpload) {
+      let cleanLink = rawLink.trim();
+      if (!cleanLink.startsWith('http://') && !cleanLink.startsWith('https://')) {
+        cleanLink = 'https://' + cleanLink;
+      }
+
+      try {
+        new URL(cleanLink);
+      } catch (_) {
+        return res.status(400).json({
+          success: false,
+          message: 'Please provide a valid URL format (e.g. https://github.com/... or https://figma.com/...)'
+        });
+      }
+
+      cleanFileName = (fileName && fileName.trim())
+        ? fileName.trim()
+        : (title && title.trim())
+        ? title.trim()
+        : cleanLink;
+
+      fileDoc = await File.create({
+        project: project ? project._id : null,
+        task: task ? task._id : (taskId || null),
+        client: project?.client?._id || project?.client || null,
+        uploadedBy: req.user._id,
+        uploadedByRole: req.user.role,
+        fileName: cleanFileName,
+        originalFileName: cleanFileName,
+        fileUrl: cleanLink,
+        linkUrl: cleanLink,
+        isLink: true,
+        publicId: '',
+        storageProvider: 'EXTERNAL_LINK',
+        storageKey: cleanLink,
+        driveFileId: '',
+        driveFolderId: '',
+        mimeType: 'text/uri-list',
+        fileType: 'LINK',
+        fileSize: 0,
+        module: determinedModule,
+        relatedModule: determinedModule,
+        relatedEntityId: task ? task._id : (project ? project._id : req.user._id),
+        category: category || (isPersonalTask ? 'DOCUMENT' : 'DELIVERABLE'),
+        isDeliverable,
+        isConfidential: shouldBeConfidential,
+        status: 'ACTIVE',
+        adminApprovalStatus: initialAdminApprovalStatus,
+        adminApproved: initialAdminApproved,
+        adminApprovedBy: (isAdmin || isPersonalTask) ? req.user._id : null,
+        adminApprovedAt: (isAdmin || isPersonalTask) ? new Date() : null,
+        approvalStatus: initialApprovalStatus
+      });
+    } else {
+      cleanFileName = fileName ? fileName.trim() : req.file.originalname;
+
+      // Process upload via Google Drive (or graceful fallback)
+      const stored = await uploadFile(req.file, {
+        category: category || (isPersonalTask ? 'DOCUMENT' : 'DELIVERABLE'),
+        module: determinedModule,
+        isConfidential: shouldBeConfidential,
+        projectName,
+        clientName,
+        EmployeeName: req.user.name,
+        fileName: cleanFileName
+      });
+
+      fileDoc = await File.create({
+        project: project ? project._id : null,
+        task: task ? task._id : (taskId || null),
+        client: project?.client?._id || project?.client || null,
+        uploadedBy: req.user._id,
+        uploadedByRole: req.user.role,
+        fileName: cleanFileName,
+        originalFileName: req.file.originalname,
+        fileUrl: stored.fileUrl || `/api/files/download`,
+        publicId: stored.publicId || '',
+        storageProvider: stored.storageProvider || 'GOOGLE_DRIVE',
+        storageKey: stored.storageKey || stored.publicId || '',
+        driveFileId: stored.driveFileId || '',
+        driveFolderId: stored.driveFolderId || '',
+        mimeType: stored.mimeType || req.file.mimetype,
+        fileType: stored.mimeType || req.file.mimetype,
+        fileSize: stored.fileSize || req.file.size,
+        module: determinedModule,
+        relatedModule: determinedModule,
+        relatedEntityId: task ? task._id : (project ? project._id : req.user._id),
+        category: category || (isPersonalTask ? 'DOCUMENT' : 'DELIVERABLE'),
+        isDeliverable,
+        isConfidential: shouldBeConfidential,
+        status: 'ACTIVE',
+        adminApprovalStatus: initialAdminApprovalStatus,
+        adminApproved: initialAdminApproved,
+        adminApprovedBy: (isAdmin || isPersonalTask) ? req.user._id : null,
+        adminApprovedAt: (isAdmin || isPersonalTask) ? new Date() : null,
+        approvalStatus: initialApprovalStatus
+      });
+
+      // Set permanent URL referencing backend streaming endpoint for local/drive, or retain CDN url for Cloudinary
+      if (fileDoc.storageProvider !== 'CLOUDINARY') {
+        fileDoc.fileUrl = `/api/files/${fileDoc._id}/download`;
+        await fileDoc.save();
+      }
     }
 
     // Create Audit Log
@@ -452,13 +525,14 @@ const uploadProjectFile = async (req, res, next) => {
       fileName: fileDoc.fileName,
       relatedModule: determinedModule,
       relatedEntityId: fileDoc.task || fileDoc.project || fileDoc._id,
-      action: 'FILE_UPLOAD',
+      action: isLinkUpload ? 'LINK_SHARED' : 'FILE_UPLOAD',
       metadata: {
         storageProvider: fileDoc.storageProvider,
         fileSize: fileDoc.fileSize,
         mimeType: fileDoc.mimeType,
         driveFileId: fileDoc.driveFileId,
-        isPersonalTask
+        isPersonalTask,
+        isLink: isLinkUpload
       }
     });
 
@@ -470,20 +544,18 @@ const uploadProjectFile = async (req, res, next) => {
         projectId: project._id,
         userId: req.user._id,
         action: 'FILE_UPLOADED',
-        description: `${req.user.name} uploaded ${isDeliverable ? 'deliverable' : 'file'} "${fileDoc.fileName}".`,
+        description: `${req.user.name} shared ${isDeliverable ? 'deliverable' : (isLinkUpload ? 'link' : 'file')} "${fileDoc.fileName}".`,
         entityType: 'FILE',
         entityId: fileDoc._id,
         clientVisible: isClientVisible
       });
 
       // Notification logic:
-      // If deliverable is uploaded by Admin -> Notify Client that a new deliverable is ready
-      // If deliverable is uploaded by Employee -> Notify Admin to review and approve before client access!
       if (isDeliverable) {
         if (isAdmin && project.client) {
           await sendNotification({
             userId: project.client._id || project.client,
-            title: 'New Deliverable Available',
+            title: isLinkUpload ? 'New Deliverable Link Available' : 'New Deliverable Available',
             message: `${req.user.name} uploaded deliverable "${fileDoc.fileName}" for project "${project.name}".`,
             type: 'FILE',
             entityId: fileDoc._id
@@ -493,8 +565,8 @@ const uploadProjectFile = async (req, res, next) => {
           for (const admin of adminUsers) {
             await sendNotification({
               userId: admin._id,
-              title: 'Deliverable Pending Admin Approval',
-              message: `${req.user.name} submitted deliverable "${cleanFileName}" for project "${project.name}". Admin approval is required before the client can view it.`,
+              title: isLinkUpload ? 'Deliverable Link Pending Admin Approval' : 'Deliverable Pending Admin Approval',
+              message: `${req.user.name} submitted deliverable ${isLinkUpload ? 'link' : ''} "${cleanFileName}" for project "${project.name}". Admin approval is required before the client can view it.`,
               type: 'APPROVAL',
               entityId: fileDoc._id
             });
@@ -506,8 +578,8 @@ const uploadProjectFile = async (req, res, next) => {
       for (const admin of adminUsers) {
         await sendNotification({
           userId: admin._id,
-          title: 'Work File Uploaded to Personal Task',
-          message: `${req.user.name} uploaded file "${cleanFileName}" for task "${task.title}".`,
+          title: isLinkUpload ? 'Work Link Attached to Personal Task' : 'Work File Uploaded to Personal Task',
+          message: `${req.user.name} uploaded ${isLinkUpload ? 'link' : 'file'} "${cleanFileName}" for task "${task.title}".`,
           type: 'FILE',
           entityId: fileDoc._id
         });
@@ -521,7 +593,7 @@ const uploadProjectFile = async (req, res, next) => {
 
     res.status(201).json({
       success: true,
-      message: 'File uploaded successfully.',
+      message: isLinkUpload ? 'External link attached successfully.' : 'File uploaded successfully.',
       file: populatedFile
     });
   } catch (error) {
@@ -918,6 +990,24 @@ const downloadFile = async (req, res, next) => {
         fileType: file.fileType || file.mimeType,
         fileSize: file.fileSize
       });
+    }
+
+    // 0. EXTERNAL LINK -> Redirect or return URL directly
+    if (file.storageProvider === 'EXTERNAL_LINK' || file.isLink || file.linkUrl) {
+      const targetUrl = file.linkUrl || file.fileUrl;
+      if (req.query.json === 'true') {
+        return res.status(200).json({
+          success: true,
+          url: targetUrl,
+          linkUrl: targetUrl,
+          fileName: file.fileName,
+          storageProvider: 'EXTERNAL_LINK',
+          fileType: 'LINK',
+          isLink: true,
+          fileSize: 0
+        });
+      }
+      return res.redirect(targetUrl);
     }
 
     // 1. STREAM SECURELY FROM GOOGLE DRIVE (No public Drive links exposed)

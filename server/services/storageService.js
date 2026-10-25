@@ -224,6 +224,10 @@ const uploadFile = async (file, options = {}) => {
 const getAccessibleDownloadUrl = async (fileRecord) => {
   if (!fileRecord) return null;
 
+  if (fileRecord.storageProvider === 'EXTERNAL_LINK' || fileRecord.isLink || fileRecord.linkUrl) {
+    return fileRecord.linkUrl || fileRecord.fileUrl;
+  }
+
   if (fileRecord.storageProvider === 'GOOGLE_DRIVE') {
     return `/api/files/${fileRecord._id}/download`;
   }

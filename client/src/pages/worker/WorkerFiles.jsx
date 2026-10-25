@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { projectService } from '../../services/projectService';
-import { fileService } from '../../services/fileService';
-import { Files, Upload, Loader2, Download, FileText, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
+import { Files, Upload, Loader2, Download, FileText, CheckCircle2, Clock, AlertCircle, Link2, ExternalLink, Globe } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Badge from '../../components/common/Badge';
 import Button from '../../components/common/Button';
@@ -15,7 +14,10 @@ const EmployeeFiles = () => {
 
   // Upload modal
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [uploadType, setUploadType] = useState('FILE'); // 'FILE' | 'LINK'
   const [uploadFileObj, setUploadFileObj] = useState(null);
+  const [linkUrl, setLinkUrl] = useState('');
+  const [linkTitle, setLinkTitle] = useState('');
   const [uploadCategory, setUploadCategory] = useState('DELIVERABLE');
   const [uploading, setUploading] = useState(false);
   const [downloadingId, setDownloadingId] = useState(null);
@@ -79,23 +81,53 @@ const EmployeeFiles = () => {
 
   const handleUpload = async (e) => {
     e.preventDefault();
-    if (!uploadFileObj || !selectedProjectId) {
-      toast.error('Please choose a file and project.');
+    if (!selectedProjectId) {
+      toast.error('Please select a project.');
       return;
+    }
+
+    if (uploadType === 'FILE') {
+      if (!uploadFileObj) {
+        toast.error('Please choose a file to upload.');
+        return;
+      }
+    } else {
+      if (!linkUrl.trim()) {
+        toast.error('Please enter a valid link / URL.');
+        return;
+      }
+      try {
+        const parsed = new URL(linkUrl.includes('://') ? linkUrl.trim() : `https://${linkUrl.trim()}`);
+        if (!parsed.hostname) throw new Error('Invalid URL');
+      } catch (_) {
+        toast.error('Please provide a valid URL (e.g. https://github.com/...)');
+        return;
+      }
     }
 
     try {
       setUploading(true);
       const formData = new FormData();
-      formData.append('file', uploadFileObj);
       formData.append('projectId', selectedProjectId);
       formData.append('category', uploadCategory);
-      formData.append('fileName', uploadFileObj.name);
+
+      if (uploadType === 'FILE') {
+        formData.append('file', uploadFileObj);
+        formData.append('fileName', uploadFileObj.name);
+      } else {
+        const cleanUrl = linkUrl.trim().startsWith('http') ? linkUrl.trim() : `https://${linkUrl.trim()}`;
+        formData.append('uploadType', 'LINK');
+        formData.append('linkUrl', cleanUrl);
+        formData.append('fileName', linkTitle.trim() || cleanUrl);
+      }
 
       const res = await fileService.uploadFile(formData);
       if (res.success) {
-        toast.success('Deliverable uploaded successfully!');
+        toast.success(uploadType === 'FILE' ? 'Deliverable uploaded successfully!' : 'Deliverable link saved successfully!');
         setUploadFileObj(null);
+        setLinkUrl('');
+        setLinkTitle('');
+        setUploadType('FILE');
         setUploadModalOpen(false);
         loadProjectFiles(selectedProjectId);
       }
@@ -164,62 +196,95 @@ const EmployeeFiles = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {files.map((file) => (
-                  <tr key={file._id} className="hover:bg-slate-50/70 transition-colors">
-                    <td className="px-5 py-3.5 max-w-xs">
-                      <div className="flex items-center gap-2.5">
-                        <FileText className="h-4 w-4 text-indigo-500 shrink-0" />
-                        <div className="min-w-0">
-                          <span className="font-semibold text-slate-900 block truncate">{file.fileName}</span>
-                          {file.revisionNotes && (
-                            <span className="text-[10px] text-rose-600 block mt-0.5 truncate font-medium">
-                              Revision note: {file.revisionNotes}
-                            </span>
+                {files.map((file) => {
+                  const isLink = file.isLink || file.storageProvider === 'EXTERNAL_LINK' || file.fileType === 'LINK';
+                  const targetUrl = file.linkUrl || file.fileUrl;
+                  return (
+                    <tr key={file._id} className="hover:bg-slate-50/70 transition-colors">
+                      <td className="px-5 py-3.5 max-w-xs">
+                        <div className="flex items-center gap-2.5">
+                          {isLink ? (
+                            <ExternalLink className="h-4 w-4 text-indigo-500 shrink-0" />
+                          ) : (
+                            <FileText className="h-4 w-4 text-indigo-500 shrink-0" />
                           )}
+                          <div className="min-w-0">
+                            {isLink ? (
+                              <a
+                                href={targetUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="font-semibold text-indigo-600 hover:text-indigo-800 hover:underline block truncate"
+                                title={`Open ${file.fileName || targetUrl}`}
+                              >
+                                {file.fileName || targetUrl}
+                              </a>
+                            ) : (
+                              <span className="font-semibold text-slate-900 block truncate">{file.fileName}</span>
+                            )}
+                            {file.revisionNotes && (
+                              <span className="text-[10px] text-rose-600 block mt-0.5 truncate font-medium">
+                                Revision note: {file.revisionNotes}
+                              </span>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    </td>
+                      </td>
 
-                    <td className="px-4 py-3.5 whitespace-nowrap">
-                      <span className="text-slate-600 font-medium text-[11px]">{file.category}</span>
-                    </td>
+                      <td className="px-4 py-3.5 whitespace-nowrap">
+                        <span className="text-slate-600 font-medium text-[11px]">{file.category}</span>
+                      </td>
 
-                    <td className="px-4 py-3.5 whitespace-nowrap">
-                      {file.isDeliverable ? (
-                        <Badge variant={file.approvalStatus?.toLowerCase() || 'default'}>
-                          {file.approvalStatus?.replace('_', ' ')}
-                        </Badge>
-                      ) : (
-                        <span className="text-slate-400 text-[11px]">N/A</span>
-                      )}
-                    </td>
-
-                    <td className="px-4 py-3.5 whitespace-nowrap text-slate-600">
-                      {file.uploadedBy?.name || 'User'}
-                    </td>
-
-                    <td className="px-4 py-3.5 whitespace-nowrap text-slate-400 text-[11px]">
-                      {new Date(file.createdAt).toLocaleDateString()}
-                    </td>
-
-                    <td className="px-5 py-3.5 text-right whitespace-nowrap">
-                      <button
-                        type="button"
-                        onClick={() => handleDownload(file._id, file.fileName)}
-                        disabled={downloadingId === file._id}
-                        className="px-2.5 py-1 rounded bg-slate-100 text-slate-700 hover:bg-slate-200 font-medium text-[11px] inline-flex items-center gap-1 disabled:opacity-50"
-                        title={`Download ${file.fileName}`}
-                      >
-                        {downloadingId === file._id ? (
-                          <Loader2 className="h-3 w-3 animate-spin text-slate-500" />
+                      <td className="px-4 py-3.5 whitespace-nowrap">
+                        {file.isDeliverable ? (
+                          <Badge variant={file.approvalStatus?.toLowerCase() || 'default'}>
+                            {file.approvalStatus?.replace('_', ' ')}
+                          </Badge>
                         ) : (
-                          <Download className="h-3 w-3" />
+                          <span className="text-slate-400 text-[11px]">N/A</span>
                         )}
-                        <span>Download</span>
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+
+                      <td className="px-4 py-3.5 whitespace-nowrap text-slate-600">
+                        {file.uploadedBy?.name || 'User'}
+                      </td>
+
+                      <td className="px-4 py-3.5 whitespace-nowrap text-slate-400 text-[11px]">
+                        {new Date(file.createdAt).toLocaleDateString()}
+                      </td>
+
+                      <td className="px-5 py-3.5 text-right whitespace-nowrap">
+                        {isLink ? (
+                          <a
+                            href={targetUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-2.5 py-1 rounded bg-indigo-50 text-indigo-700 hover:bg-indigo-100 font-medium text-[11px] inline-flex items-center gap-1"
+                            title={`Open ${file.fileName}`}
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                            <span>Open Link</span>
+                          </a>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handleDownload(file._id, file.fileName)}
+                            disabled={downloadingId === file._id}
+                            className="px-2.5 py-1 rounded bg-slate-100 text-slate-700 hover:bg-slate-200 font-medium text-[11px] inline-flex items-center gap-1 disabled:opacity-50"
+                            title={`Download ${file.fileName}`}
+                          >
+                            {downloadingId === file._id ? (
+                              <Loader2 className="h-3 w-3 animate-spin text-slate-500" />
+                            ) : (
+                              <Download className="h-3 w-3" />
+                            )}
+                            <span>Download</span>
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -229,10 +294,44 @@ const EmployeeFiles = () => {
       {/* Upload Modal */}
       <Modal
         isOpen={uploadModalOpen}
-        onClose={() => setUploadModalOpen(false)}
-        title="Upload Deliverable / File"
+        onClose={() => {
+          setUploadModalOpen(false);
+          setUploadFileObj(null);
+          setLinkUrl('');
+          setLinkTitle('');
+          setUploadType('FILE');
+        }}
+        title={uploadType === 'FILE' ? "Upload Project Deliverable / File" : "Add External Link Deliverable"}
       >
         <form onSubmit={handleUpload} className="space-y-4 text-xs">
+          {/* Toggle: File vs Link */}
+          <div className="flex rounded-lg bg-slate-100 p-1">
+            <button
+              type="button"
+              onClick={() => setUploadType('FILE')}
+              className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 ${
+                uploadType === 'FILE'
+                  ? 'bg-white text-slate-900 shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <Upload className="w-3.5 h-3.5 text-indigo-600" />
+              Upload File
+            </button>
+            <button
+              type="button"
+              onClick={() => setUploadType('LINK')}
+              className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 ${
+                uploadType === 'LINK'
+                  ? 'bg-white text-indigo-600 shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <Link2 className="w-3.5 h-3.5 text-indigo-600" />
+              External Link / URL
+            </button>
+          </div>
+
           <div>
             <label className="block font-semibold text-slate-800 mb-1">Target Project *</label>
             <select
@@ -248,15 +347,67 @@ const EmployeeFiles = () => {
             </select>
           </div>
 
-          <div>
-            <label className="block font-semibold text-slate-800 mb-1">Choose File *</label>
-            <input
-              type="file"
-              required
-              onChange={(e) => setUploadFileObj(e.target.files[0])}
-              className="w-full text-xs text-slate-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
-            />
-          </div>
+          {uploadType === 'FILE' ? (
+            <div>
+              <label className="block font-semibold text-slate-800 mb-1">Choose File *</label>
+              <input
+                type="file"
+                required
+                onChange={(e) => setUploadFileObj(e.target.files[0])}
+                className="w-full text-xs text-slate-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+              />
+            </div>
+          ) : (
+            <div className="space-y-2.5">
+              <div>
+                <label className="block font-semibold text-slate-800 mb-1">Resource Link / URL *</label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    required
+                    placeholder="https://github.com/..., https://figma.com/..., or cloud link"
+                    value={linkUrl}
+                    onChange={(e) => setLinkUrl(e.target.value)}
+                    className="w-full rounded-lg border border-slate-200 pl-8 pr-3 py-2 text-xs text-slate-800 focus:border-indigo-500 focus:outline-none"
+                  />
+                  <Globe className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-800 mb-1">Link Title / Label (Optional)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. GitHub Pull Request #14, Figma Prototype, Live Demo"
+                  value={linkTitle}
+                  onChange={(e) => setLinkTitle(e.target.value)}
+                  className="w-full rounded-lg border border-slate-200 p-2 text-xs text-slate-800 focus:border-indigo-500 focus:outline-none"
+                />
+              </div>
+
+              <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                <span className="text-[10px] text-slate-400">Quick suggestions:</span>
+                {[
+                  { label: 'GitHub PR', prefix: 'https://github.com/' },
+                  { label: 'Figma Mockup', prefix: 'https://figma.com/file/' },
+                  { label: 'Google Drive', prefix: 'https://drive.google.com/' },
+                  { label: 'Loom Video', prefix: 'https://loom.com/share/' }
+                ].map((item) => (
+                  <button
+                    key={item.label}
+                    type="button"
+                    onClick={() => {
+                      if (!linkUrl) setLinkUrl(item.prefix);
+                      if (!linkTitle) setLinkTitle(item.label);
+                    }}
+                    className="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 hover:bg-indigo-50 text-slate-600 hover:text-indigo-600 transition-colors border border-slate-200"
+                  >
+                    +{item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div>
             <label className="block font-semibold text-slate-800 mb-1">Category</label>
@@ -265,7 +416,7 @@ const EmployeeFiles = () => {
               onChange={(e) => setUploadCategory(e.target.value)}
               className="w-full rounded-lg border border-slate-200 p-2 text-xs text-slate-800 focus:border-indigo-500 focus:outline-none"
             >
-              <option value="DELIVERABLE">Deliverable (Requires Client Review)</option>
+              <option value="DELIVERABLE">Deliverable (Requires Admin Approval before Client Access)</option>
               <option value="DOCUMENT">Documentation / Architecture</option>
               <option value="DESIGN">Design Asset</option>
               <option value="OTHER">Other Artifact</option>
@@ -273,12 +424,33 @@ const EmployeeFiles = () => {
           </div>
 
           <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-            <Button size="sm" variant="secondary" type="button" onClick={() => setUploadModalOpen(false)}>
+            <Button
+              size="sm"
+              variant="secondary"
+              type="button"
+              onClick={() => {
+                setUploadModalOpen(false);
+                setUploadFileObj(null);
+                setLinkUrl('');
+                setLinkTitle('');
+                setUploadType('FILE');
+              }}
+            >
               Cancel
             </Button>
-            <Button size="sm" type="submit" disabled={uploading || !uploadFileObj}>
-              {uploading ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Upload className="h-3 w-3 mr-1" />}
-              Upload
+            <Button
+              size="sm"
+              type="submit"
+              disabled={uploading || (uploadType === 'FILE' ? !uploadFileObj : !linkUrl.trim())}
+            >
+              {uploading ? (
+                <Loader2 className="h-3 w-3 animate-spin mr-1" />
+              ) : uploadType === 'FILE' ? (
+                <Upload className="h-3 w-3 mr-1" />
+              ) : (
+                <Link2 className="h-3 w-3 mr-1" />
+              )}
+              {uploadType === 'FILE' ? 'Upload Deliverable' : 'Save Deliverable Link'}
             </Button>
           </div>
         </form>

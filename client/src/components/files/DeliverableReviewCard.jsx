@@ -35,6 +35,8 @@ const DeliverableReviewCard = ({
   const [downloading, setDownloading] = useState(false);
 
   const isDeliverable = currentFile.isDeliverable === true || currentFile.category === 'DELIVERABLE';
+  const isLink = currentFile.isLink || currentFile.storageProvider === 'EXTERNAL_LINK' || currentFile.fileType === 'LINK';
+  const targetUrl = currentFile.linkUrl || currentFile.fileUrl;
   const isAdminApproved = currentFile.adminApproved === true ||
     currentFile.adminApprovalStatus === 'APPROVED' ||
     (currentFile.approvalStatus === 'APPROVED' && currentFile.adminApprovalStatus !== 'CHANGES_REQUESTED' && currentFile.adminApproved !== false);
@@ -46,6 +48,7 @@ const DeliverableReviewCard = ({
   };
 
   const getFileIcon = (mime = '') => {
+    if (isLink) return <ExternalLink className="w-5 h-5 text-indigo-600" />;
     if (mime.includes('image')) return <ImageIcon className="w-5 h-5 text-indigo-500" />;
     if (mime.includes('pdf')) return <FileText className="w-5 h-5 text-rose-500" />;
     if (mime.includes('zip') || mime.includes('tar') || mime.includes('archive')) {
@@ -74,15 +77,27 @@ const DeliverableReviewCard = ({
         {/* Header: Icon, Name & Status */}
         <div className="flex items-start justify-between gap-3 mb-3">
           <div className="flex items-start gap-3 min-w-0">
-            <div className="p-2 rounded-lg bg-slate-100 shrink-0 mt-0.5">
+            <div className={`p-2 rounded-lg shrink-0 mt-0.5 ${isLink ? 'bg-indigo-50' : 'bg-slate-100'}`}>
               {getFileIcon(currentFile.fileType || currentFile.mimeType)}
             </div>
             <div className="min-w-0">
-              <h4 className="text-xs font-bold text-slate-900 truncate" title={currentFile.fileName}>
-                {currentFile.fileName}
-              </h4>
+              {isLink ? (
+                <a
+                  href={targetUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs font-bold text-indigo-600 hover:text-indigo-800 hover:underline truncate block"
+                  title={currentFile.fileName || targetUrl}
+                >
+                  {currentFile.fileName || targetUrl}
+                </a>
+              ) : (
+                <h4 className="text-xs font-bold text-slate-900 truncate" title={currentFile.fileName}>
+                  {currentFile.fileName}
+                </h4>
+              )}
               <p className="text-[11px] text-slate-500 mt-0.5">
-                {currentFile.category} • {formatFileSize(currentFile.fileSize)}
+                {currentFile.category} • {isLink ? 'External Link' : formatFileSize(currentFile.fileSize)}
               </p>
             </div>
           </div>
@@ -154,21 +169,34 @@ const DeliverableReviewCard = ({
 
       {/* Action Footer */}
       <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
-        {/* View / Download */}
-        <button
-          type="button"
-          onClick={handleDownload}
-          disabled={downloading}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-          title={`Download ${currentFile.fileName}`}
-        >
-          {downloading ? (
-            <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-500" />
-          ) : (
-            <Download className="w-3.5 h-3.5" />
-          )}
-          <span>{downloading ? 'Downloading...' : 'Download'}</span>
-        </button>
+        {/* View / Download / Open Link */}
+        {isLink ? (
+          <a
+            href={targetUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition-colors"
+            title={`Open ${currentFile.fileName || targetUrl}`}
+          >
+            <ExternalLink className="w-3.5 h-3.5" />
+            <span>Open Link</span>
+          </a>
+        ) : (
+          <button
+            type="button"
+            onClick={handleDownload}
+            disabled={downloading}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            title={`Download ${currentFile.fileName}`}
+          >
+            {downloading ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-500" />
+            ) : (
+              <Download className="w-3.5 h-3.5" />
+            )}
+            <span>{downloading ? 'Downloading...' : 'Download'}</span>
+          </button>
+        )}
 
         {/* Action Controls for Admin and Client */}
         <div className="flex items-center gap-1.5">

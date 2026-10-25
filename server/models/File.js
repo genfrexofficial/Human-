@@ -65,7 +65,7 @@ const fileSchema = new mongoose.Schema(
     // Storage tier provider
     storageProvider: {
       type: String,
-      enum: ['GOOGLE_DRIVE', 'CLOUDINARY', 'S3', 'LOCAL'],
+      enum: ['GOOGLE_DRIVE', 'CLOUDINARY', 'S3', 'LOCAL', 'EXTERNAL_LINK'],
       default: 'GOOGLE_DRIVE',
       required: true
     },
@@ -76,6 +76,15 @@ const fileSchema = new mongoose.Schema(
     fileUrl: {
       type: String,
       default: ''
+    },
+    linkUrl: {
+      type: String,
+      default: '',
+      trim: true
+    },
+    isLink: {
+      type: Boolean,
+      default: false
     },
     publicId: {
       type: String,

@@ -28,12 +28,13 @@ export const fileService = {
     return response.data;
   },
 
-  uploadFile: async (formData) => {
-    const response = await api.post('/files/upload', formData, {
+  uploadFile: async (payload) => {
+    const isFormData = payload instanceof FormData;
+    const response = await api.post('/files/upload', payload, isFormData ? {
       headers: {
         'Content-Type': 'multipart/form-data'
       }
-    });
+    } : {});
     return response.data;
   },
 

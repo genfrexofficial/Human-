@@ -23,7 +23,10 @@ import {
   CheckCircle2,
   Lock,
   User,
-  Download
+  Download,
+  Link2,
+  ExternalLink,
+  Globe
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Badge from '../../components/common/Badge';
@@ -69,7 +72,10 @@ const EmployeeTaskDetails = () => {
   // Files state
   const [files, setFiles] = useState([]);
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [uploadType, setUploadType] = useState('FILE'); // 'FILE' | 'LINK'
   const [selectedFile, setSelectedFile] = useState(null);
+  const [linkUrl, setLinkUrl] = useState('');
+  const [linkTitle, setLinkTitle] = useState('');
   const [fileCategory, setFileCategory] = useState('DELIVERABLE');
   const [uploadingFile, setUploadingFile] = useState(false);
 
@@ -243,15 +249,28 @@ const EmployeeTaskDetails = () => {
 
   const handleFileUpload = async (e) => {
     e.preventDefault();
-    if (!selectedFile) {
-      toast.error('Please choose a file to upload.');
-      return;
+    if (uploadType === 'FILE') {
+      if (!selectedFile) {
+        toast.error('Please choose a file to upload.');
+        return;
+      }
+    } else {
+      if (!linkUrl.trim()) {
+        toast.error('Please enter a valid link / URL.');
+        return;
+      }
+      try {
+        const parsed = new URL(linkUrl.includes('://') ? linkUrl.trim() : `https://${linkUrl.trim()}`);
+        if (!parsed.hostname) throw new Error('Invalid URL');
+      } catch (_) {
+        toast.error('Please provide a valid URL (e.g. https://github.com/...)');
+        return;
+      }
     }
 
     try {
       setUploadingFile(true);
       const formData = new FormData();
-      formData.append('file', selectedFile);
       if (task?.project?._id) {
         formData.append('projectId', task.project._id);
       } else {
@@ -259,17 +278,29 @@ const EmployeeTaskDetails = () => {
       }
       formData.append('taskId', taskId);
       formData.append('category', fileCategory);
-      formData.append('fileName', selectedFile.name);
+
+      if (uploadType === 'FILE') {
+        formData.append('file', selectedFile);
+        formData.append('fileName', selectedFile.name);
+      } else {
+        const cleanUrl = linkUrl.trim().startsWith('http') ? linkUrl.trim() : `https://${linkUrl.trim()}`;
+        formData.append('uploadType', 'LINK');
+        formData.append('linkUrl', cleanUrl);
+        formData.append('fileName', linkTitle.trim() || cleanUrl);
+      }
 
       const res = await fileService.uploadFile(formData);
       if (res.success) {
-        toast.success('File uploaded successfully!');
+        toast.success(uploadType === 'FILE' ? 'File uploaded successfully!' : 'Deliverable link saved successfully!');
         setSelectedFile(null);
+        setLinkUrl('');
+        setLinkTitle('');
+        setUploadType('FILE');
         setUploadModalOpen(false);
         fetchFiles(task?.project?._id);
       }
     } catch (err) {
-      toast.error(err.response?.data?.message || 'File upload failed.');
+      toast.error(err.response?.data?.message || 'Upload failed.');
     } finally {
       setUploadingFile(false);
     }
@@ -609,53 +640,89 @@ const EmployeeTaskDetails = () => {
           {files.length === 0 ? (
             <div className="text-center py-10 border border-dashed border-slate-200 rounded-lg">
               <FileText className="mx-auto h-8 w-8 text-slate-300" />
-              <p className="text-xs text-slate-500 mt-1">No files attached to this task yet.</p>
+              <p className="text-xs text-slate-500 mt-1">No files or deliverable links attached to this task yet.</p>
             </div>
           ) : (
             <div className="divide-y divide-slate-100">
-              {files.map((f) => (
-                <div key={f._id} className="py-3 flex items-center justify-between gap-3 text-xs">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <FileText className="h-6 w-6 text-indigo-500 shrink-0" />
-                    <div className="min-w-0">
-                      <button
-                        type="button"
-                        onClick={() => handleDownloadFile(f._id, f.fileName)}
-                        className="font-semibold text-slate-900 hover:text-indigo-600 truncate block text-left"
-                        title={`Download ${f.fileName}`}
-                      >
-                        {f.fileName}
-                      </button>
-                      <span className="text-[10px] text-slate-400">
-                        Uploaded by {f.uploadedBy?.name} &bull; {(f.fileSize / 1024).toFixed(0)} KB &bull;{' '}
-                        {new Date(f.createdAt).toLocaleDateString()}
-                      </span>
+              {files.map((f) => {
+                const isLink = f.isLink || f.storageProvider === 'EXTERNAL_LINK' || f.fileType === 'LINK';
+                const targetUrl = f.linkUrl || f.fileUrl;
+                return (
+                  <div key={f._id} className="py-3 flex items-center justify-between gap-3 text-xs">
+                    <div className="flex items-center gap-3 min-w-0">
+                      {isLink ? (
+                        <div className="p-1.5 rounded-lg bg-indigo-50 text-indigo-600 shrink-0">
+                          <ExternalLink className="h-4 w-4" />
+                        </div>
+                      ) : (
+                        <FileText className="h-6 w-6 text-indigo-500 shrink-0" />
+                      )}
+                      <div className="min-w-0">
+                        {isLink ? (
+                          <a
+                            href={targetUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-semibold text-indigo-600 hover:text-indigo-800 hover:underline truncate block text-left"
+                            title={`Open ${f.fileName || targetUrl}`}
+                          >
+                            {f.fileName || targetUrl}
+                          </a>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handleDownloadFile(f._id, f.fileName)}
+                            className="font-semibold text-slate-900 hover:text-indigo-600 truncate block text-left"
+                            title={`Download ${f.fileName}`}
+                          >
+                            {f.fileName}
+                          </button>
+                        )}
+                        <span className="text-[10px] text-slate-400">
+                          Uploaded by {f.uploadedBy?.name || 'Worker'} &bull;{' '}
+                          {isLink ? 'External Link' : `${(f.fileSize / 1024).toFixed(0)} KB`} &bull;{' '}
+                          {new Date(f.createdAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      {f.isDeliverable && (
+                        <Badge variant={f.approvalStatus?.toLowerCase() || 'default'}>
+                          {f.approvalStatus?.replace('_', ' ')}
+                        </Badge>
+                      )}
+                      {isLink ? (
+                        <a
+                          href={targetUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-2.5 py-1 rounded bg-indigo-50 text-indigo-700 hover:bg-indigo-100 font-medium text-[11px] inline-flex items-center gap-1"
+                          title={`Open ${f.fileName}`}
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                          <span>Open Link</span>
+                        </a>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => handleDownloadFile(f._id, f.fileName)}
+                          disabled={downloadingFileId === f._id}
+                          className="px-2.5 py-1 rounded bg-slate-100 text-slate-700 hover:bg-slate-200 font-medium text-[11px] inline-flex items-center gap-1 disabled:opacity-50"
+                          title={`Download ${f.fileName}`}
+                        >
+                          {downloadingFileId === f._id ? (
+                            <Loader2 className="h-3 w-3 animate-spin text-slate-500" />
+                          ) : (
+                            <Download className="h-3 w-3" />
+                          )}
+                          <span>Download</span>
+                        </button>
+                      )}
                     </div>
                   </div>
-
-                  <div className="flex items-center gap-2 shrink-0">
-                    {f.isDeliverable && (
-                      <Badge variant={f.approvalStatus?.toLowerCase() || 'default'}>
-                        {f.approvalStatus?.replace('_', ' ')}
-                      </Badge>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => handleDownloadFile(f._id, f.fileName)}
-                      disabled={downloadingFileId === f._id}
-                      className="px-2.5 py-1 rounded bg-slate-100 text-slate-700 hover:bg-slate-200 font-medium text-[11px] inline-flex items-center gap-1 disabled:opacity-50"
-                      title={`Download ${f.fileName}`}
-                    >
-                      {downloadingFileId === f._id ? (
-                        <Loader2 className="h-3 w-3 animate-spin text-slate-500" />
-                      ) : (
-                        <Download className="h-3 w-3" />
-                      )}
-                      <span>Download</span>
-                    </button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
@@ -721,22 +788,116 @@ const EmployeeTaskDetails = () => {
         </form>
       </Modal>
 
-      {/* Upload File Modal */}
+      {/* Upload File / Link Modal */}
       <Modal
         isOpen={uploadModalOpen}
-        onClose={() => setUploadModalOpen(false)}
-        title={task?.taskType === 'PERSONAL' || !task?.project?._id ? "Upload Work Attachment / Document" : "Upload Work Deliverable"}
+        onClose={() => {
+          setUploadModalOpen(false);
+          setSelectedFile(null);
+          setLinkUrl('');
+          setLinkTitle('');
+          setUploadType('FILE');
+        }}
+        title={
+          task?.taskType === 'PERSONAL' || !task?.project?._id
+            ? uploadType === 'FILE'
+              ? 'Upload Work Attachment'
+              : 'Add Work Link'
+            : uploadType === 'FILE'
+            ? 'Upload Work Deliverable'
+            : 'Add Deliverable Link'
+        }
       >
         <form onSubmit={handleFileUpload} className="space-y-4 text-xs">
-          <div>
-            <label className="block font-semibold text-slate-800 mb-1">Choose File *</label>
-            <input
-              type="file"
-              required
-              onChange={(e) => setSelectedFile(e.target.files[0])}
-              className="w-full text-xs text-slate-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
-            />
+          {/* Toggle Pills: File vs Link */}
+          <div className="flex rounded-lg bg-slate-100 p-1">
+            <button
+              type="button"
+              onClick={() => setUploadType('FILE')}
+              className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 ${
+                uploadType === 'FILE'
+                  ? 'bg-white text-slate-900 shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <Upload className="w-3.5 h-3.5 text-indigo-600" />
+              Upload File
+            </button>
+            <button
+              type="button"
+              onClick={() => setUploadType('LINK')}
+              className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 ${
+                uploadType === 'LINK'
+                  ? 'bg-white text-indigo-600 shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <Link2 className="w-3.5 h-3.5 text-indigo-600" />
+              External Link / URL
+            </button>
           </div>
+
+          {uploadType === 'FILE' ? (
+            <div>
+              <label className="block font-semibold text-slate-800 mb-1">Choose File *</label>
+              <input
+                type="file"
+                required
+                onChange={(e) => setSelectedFile(e.target.files[0])}
+                className="w-full text-xs text-slate-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+              />
+            </div>
+          ) : (
+            <div className="space-y-2.5">
+              <div>
+                <label className="block font-semibold text-slate-800 mb-1">Resource Link / URL *</label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    required
+                    placeholder="https://github.com/..., https://figma.com/..., or cloud link"
+                    value={linkUrl}
+                    onChange={(e) => setLinkUrl(e.target.value)}
+                    className="w-full rounded-lg border border-slate-200 pl-8 pr-3 py-2 text-xs text-slate-800 focus:border-indigo-500 focus:outline-none"
+                  />
+                  <Globe className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-800 mb-1">Link Title / Label (Optional)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. GitHub Pull Request #12, Figma Wireframes, Live Demo"
+                  value={linkTitle}
+                  onChange={(e) => setLinkTitle(e.target.value)}
+                  className="w-full rounded-lg border border-slate-200 p-2 text-xs text-slate-800 focus:border-indigo-500 focus:outline-none"
+                />
+              </div>
+
+              <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                <span className="text-[10px] text-slate-400">Quick suggestions:</span>
+                {[
+                  { label: 'GitHub PR', prefix: 'https://github.com/' },
+                  { label: 'Figma Design', prefix: 'https://figma.com/file/' },
+                  { label: 'Google Drive', prefix: 'https://drive.google.com/' },
+                  { label: 'Loom Video', prefix: 'https://loom.com/share/' }
+                ].map((item) => (
+                  <button
+                    key={item.label}
+                    type="button"
+                    onClick={() => {
+                      if (!linkUrl) setLinkUrl(item.prefix);
+                      if (!linkTitle) setLinkTitle(item.label);
+                    }}
+                    className="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 hover:bg-indigo-50 text-slate-600 hover:text-indigo-600 transition-colors border border-slate-200"
+                  >
+                    +{item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div>
             <label className="block font-semibold text-slate-800 mb-1">Category</label>
@@ -754,7 +915,7 @@ const EmployeeTaskDetails = () => {
                 </>
               ) : (
                 <>
-                  <option value="DELIVERABLE">Deliverable (Requires Client Sign-off)</option>
+                  <option value="DELIVERABLE">Deliverable (Requires Admin Approval)</option>
                   <option value="DOCUMENT">Documentation / Spec</option>
                   <option value="DESIGN">Design Asset</option>
                   <option value="OTHER">Other Attachment</option>
@@ -764,12 +925,33 @@ const EmployeeTaskDetails = () => {
           </div>
 
           <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-            <Button size="sm" variant="secondary" type="button" onClick={() => setUploadModalOpen(false)}>
+            <Button
+              size="sm"
+              variant="secondary"
+              type="button"
+              onClick={() => {
+                setUploadModalOpen(false);
+                setSelectedFile(null);
+                setLinkUrl('');
+                setLinkTitle('');
+                setUploadType('FILE');
+              }}
+            >
               Cancel
             </Button>
-            <Button size="sm" type="submit" disabled={uploadingFile || !selectedFile}>
-              {uploadingFile ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Upload className="h-3 w-3 mr-1" />}
-              Upload
+            <Button
+              size="sm"
+              type="submit"
+              disabled={uploadingFile || (uploadType === 'FILE' ? !selectedFile : !linkUrl.trim())}
+            >
+              {uploadingFile ? (
+                <Loader2 className="h-3 w-3 animate-spin mr-1" />
+              ) : uploadType === 'FILE' ? (
+                <Upload className="h-3 w-3 mr-1" />
+              ) : (
+                <Link2 className="h-3 w-3 mr-1" />
+              )}
+              {uploadType === 'FILE' ? 'Upload File' : 'Save Link Deliverable'}
             </Button>
           </div>
         </form>
