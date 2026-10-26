@@ -1,5 +1,7 @@
 // Global error handling middleware
 const errorHandler = (err, req, res, next) => {
+  console.error(`[API ERROR] ${req.method} ${req.originalUrl}:`, err);
+
   let statusCode = res.statusCode === 200 ? 500 : res.statusCode;
   let message = err.message || 'Internal Server Error';
 
@@ -30,7 +32,8 @@ const errorHandler = (err, req, res, next) => {
 
   res.status(statusCode).json({
     success: false,
-    message
+    message,
+    error: err.message
   });
 };
 

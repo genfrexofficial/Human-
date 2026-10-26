@@ -183,6 +183,16 @@ const getTaskById = async (req, res, next) => {
       });
     }
 
+    // Safe string ID resolver
+    const toIdStr = (val) => {
+      if (!val) return null;
+      if (val._id) return val._id.toString();
+      if (typeof val.toString === 'function') return val.toString();
+      return String(val);
+    };
+
+    const currentUserId = toIdStr(req.user._id);
+
     // Personal Task Access Rules
     if (task.taskType === 'PERSONAL') {
       if (req.user.role === 'CLIENT') {
@@ -192,7 +202,8 @@ const getTaskById = async (req, res, next) => {
         });
       }
       if (req.user.role === 'Employee') {
-        const isAssigned = task.assignedTo && task.assignedTo._id.toString() === req.user._id.toString();
+        const assignedId = toIdStr(task.assignedTo);
+        const isAssigned = assignedId && assignedId === currentUserId;
         if (!isAssigned) {
           return res.status(403).json({
             success: false,
@@ -208,14 +219,16 @@ const getTaskById = async (req, res, next) => {
 
     // Project Task Access Rules
     if (req.user.role === 'CLIENT') {
-      if (!task.project || task.project.client?.toString() !== req.user._id.toString() || !task.clientVisible) {
+      const projectClientId = toIdStr(task.project?.client);
+      if (!task.project || (projectClientId && projectClientId !== currentUserId) || !task.clientVisible) {
         return res.status(403).json({
           success: false,
           message: 'Access denied. You cannot view this task.'
         });
       }
     } else if (req.user.role === 'Employee') {
-      const isAssigned = task.assignedTo && task.assignedTo._id.toString() === req.user._id.toString();
+      const assignedId = toIdStr(task.assignedTo);
+      const isAssigned = assignedId && assignedId === currentUserId;
       if (!isAssigned) {
         return res.status(403).json({
           success: false,

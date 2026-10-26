@@ -825,20 +825,31 @@ const sendAppointment = async (req, res, next) => {
     appointment.pdfGeneratedAt = new Date();
     await appointment.save();
 
-    // Dispatch email
-    const emailResult = await sendAppointmentEmail({
-      toCandidateEmail: candidate.email,
-      candidateName: candidate.name,
-      designation: appointment.designation,
-      referenceNumber: appointment.referenceNumber,
-      joiningDate: appointment.joiningDate,
-      pdfPath,
-      pdfFileName
-    });
+    // Dispatch email safely
+    let emailResult = null;
+    try {
+      emailResult = await sendAppointmentEmail({
+        toCandidateEmail: candidate.email,
+        candidateName: candidate.name,
+        designation: appointment.designation,
+        referenceNumber: appointment.referenceNumber,
+        joiningDate: appointment.joiningDate,
+        pdfPath,
+        pdfFileName
+      });
+    } catch (emailErr) {
+      console.warn(`[Appointment Send] Email dispatch error:`, emailErr.message);
+      emailResult = {
+        success: false,
+        simulated: true,
+        messageId: `failed_${Date.now()}`,
+        warning: `Email could not be delivered (${emailErr.message}). Letter was marked as SENT and PDF generated successfully.`
+      };
+    }
 
     const previousStatus = appointment.status;
     appointment.status = 'SENT';
-    appointment.emailStatus = 'SENT';
+    appointment.emailStatus = emailResult.success ? 'SENT' : 'FAILED';
     appointment.sentAt = new Date();
     appointment.sentBy = req.user._id;
 
@@ -847,8 +858,9 @@ const sendAppointment = async (req, res, next) => {
       sentBy: req.user._id,
       recipient: candidate.email,
       subject: `GENFREX — Appointment Letter — ${appointment.designation}`,
-      status: 'SENT',
-      providerMessageId: emailResult.messageId
+      status: emailResult.success ? 'SENT' : 'FAILED',
+      providerMessageId: emailResult.messageId || 'N/A',
+      error: emailResult.success ? undefined : (emailResult.warning || 'Email delivery failed')
     });
 
     await appointment.save();
