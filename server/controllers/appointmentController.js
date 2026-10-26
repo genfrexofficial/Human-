@@ -880,7 +880,7 @@ const sendAppointment = async (req, res, next) => {
     res.status(200).json({
       success: true,
       message: emailResult.simulated
-        ? `Status updated to SENT (Development mode: Real email was NOT sent because SMTP credentials are not configured in server/.env).`
+        ? (emailResult.warning || `Status updated to SENT. (Email delivery simulated)`)
         : `Appointment letter sent successfully to ${candidate.email}.`,
       appointment,
       emailResult

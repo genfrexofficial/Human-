@@ -127,7 +127,7 @@ const AppointmentDetails = () => {
       if (res.success) {
         if (res.emailResult?.simulated) {
           toast.warning(
-            '⚠️ Simulated Dispatch: Real email was not delivered because SMTP credentials are not configured in server/.env.',
+            res.emailResult?.warning || '⚠️ Letter recorded & PDF ready. (Email simulated on cloud free tier)',
             { autoClose: 7000 }
           );
         } else {
