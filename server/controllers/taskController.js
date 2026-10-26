@@ -437,7 +437,9 @@ const updateTask = async (req, res, next) => {
       estimatedHours,
       actualHours,
       clientVisible,
-      progress
+      progress,
+      personalCategory,
+      category
     } = req.body;
 
     const oldStatus = task.status;
@@ -486,7 +488,7 @@ const updateTask = async (req, res, next) => {
       // Admin / HR update
       if (title) task.title = title.trim();
       if (description !== undefined) task.description = description;
-      if (personalCategory) task.personalCategory = personalCategory;
+      if (personalCategory || category) task.personalCategory = personalCategory || category;
       if (milestone !== undefined) task.milestone = milestone || null;
       if (priority) task.priority = priority;
       if (dueDate !== undefined) task.dueDate = dueDate || null;
