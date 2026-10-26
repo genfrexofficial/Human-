@@ -72,6 +72,15 @@ app.use('/uploads', authenticateToken, async (req, res, next) => {
   }
 });
 
+// Root endpoint
+app.get('/', (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'ClientFlow / GENFREX Backend API is running successfully!',
+    healthCheck: '/api/health'
+  });
+});
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.status(200).json({
