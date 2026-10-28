@@ -24,6 +24,7 @@ const sendAppointmentEmail = async ({
   pdfFileName
 }) => {
   const fromEmail = process.env.SMTP_FROM || process.env.OFFICIAL_EMAIL || 'genfrexofficial@gmail.com';
+  const replyToEmail = process.env.REPLY_TO_EMAIL || process.env.OFFICIAL_EMAIL || 'genfrexofficial@gmail.com';
   const subject = `GENFREX — Appointment Letter — ${designation} (${referenceNumber})`;
 
   const formattedJoiningDate = new Date(joiningDate).toLocaleDateString('en-GB', {
@@ -72,7 +73,7 @@ const sendAppointmentEmail = async ({
           <p>Please find attached your official appointment letter containing details of your role, responsibilities, compensation/stipend, and terms of engagement.</p>
           <p>Kindly review the attached document carefully and return a signed copy acknowledging your acceptance on or before the acceptance deadline.</p>
 
-          <p style="margin-top: 24px;">If you have any questions or require clarification, please do not hesitate to contact our HR operations team directly at <a href="mailto:${fromEmail}" style="color: #60A5FA;">${fromEmail}</a>.</p>
+          <p style="margin-top: 24px;">If you have any questions or require clarification, please do not hesitate to contact our HR operations team directly at <a href="mailto:${replyToEmail}" style="color: #60A5FA;">${replyToEmail}</a> or simply reply to this email.</p>
 
           <p style="margin-top: 32px; color: #94A3B8; font-size: 13px;">Warm regards,<br><strong style="color: #F8FAFC;">GENFREX Talent & People Operations</strong><br>Build. Grow. Connect.</p>
         </div>
@@ -115,6 +116,7 @@ const sendAppointmentEmail = async ({
         body: JSON.stringify({
           from: process.env.RESEND_FROM || `GENFREX People Operations <onboarding@resend.dev>`,
           to: [toCandidateEmail],
+          reply_to: replyToEmail,
           subject,
           html: htmlBody,
           attachments: resendAttachments
@@ -172,6 +174,7 @@ const sendAppointmentEmail = async ({
       const info = await transporter.sendMail({
         from: `"GENFREX People Operations" <${fromEmail}>`,
         to: toCandidateEmail,
+        replyTo: replyToEmail,
         subject,
         html: htmlBody,
         attachments
