@@ -23,7 +23,13 @@ const sendAppointmentEmail = async ({
   pdfPath,
   pdfFileName
 }) => {
-  const fromEmail = process.env.SMTP_FROM || process.env.OFFICIAL_EMAIL || 'genfrexofficial@gmail.com';
+  const extractEmail = (str) => {
+    if (!str) return 'hr@genfrex.com';
+    const match = str.match(/<([^>]+)>/);
+    return match ? match[1] : str.trim();
+  };
+  const senderDisplayEmail = process.env.RESEND_FROM ? extractEmail(process.env.RESEND_FROM) : (process.env.SMTP_FROM || 'hr@genfrex.com');
+  const fromEmail = senderDisplayEmail;
   const replyToEmail = process.env.REPLY_TO_EMAIL || process.env.OFFICIAL_EMAIL || 'genfrexofficial@gmail.com';
   const subject = `GENFREX — Appointment Letter — ${designation} (${referenceNumber})`;
 
@@ -73,7 +79,7 @@ const sendAppointmentEmail = async ({
           <p>Please find attached your official appointment letter containing details of your role, responsibilities, compensation/stipend, and terms of engagement.</p>
           <p>Kindly review the attached document carefully and return a signed copy acknowledging your acceptance on or before the acceptance deadline.</p>
 
-          <p style="margin-top: 24px;">If you have any questions or require clarification, please do not hesitate to contact our HR operations team directly at <a href="mailto:${replyToEmail}" style="color: #60A5FA;">${replyToEmail}</a> or simply reply to this email.</p>
+          <p style="margin-top: 24px;">If you have any questions or require clarification, please do not hesitate to contact our HR operations team directly at <a href="mailto:${senderDisplayEmail}" style="color: #60A5FA;">${senderDisplayEmail}</a> or simply reply to this email.</p>
 
           <p style="margin-top: 32px; color: #94A3B8; font-size: 13px;">Warm regards,<br><strong style="color: #F8FAFC;">GENFREX Talent & People Operations</strong><br>Build. Grow. Connect.</p>
         </div>
