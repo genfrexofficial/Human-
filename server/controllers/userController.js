@@ -80,7 +80,17 @@ const createUser = async (req, res, next) => {
       });
     }
 
-    const tempPassword = password && password.trim() ? password.trim() : `${targetRole}@${Math.floor(100 + Math.random() * 900)}Pass!`;
+    const crypto = require('crypto');
+
+// Generate cryptographically secure temporary password
+const generateTempPassword = (role) => {
+  const randomBytes = crypto.randomBytes(12).toString('base64url');
+  const specialChars = '!@#$%^&*';
+  const specialChar = specialChars[crypto.randomInt(specialChars.length)];
+  return `${role}@${randomBytes}${specialChar}`;
+};
+
+const tempPassword = password && password.trim() ? password.trim() : generateTempPassword(targetRole);
 
     if (tempPassword.length < 6) {
       return res.status(400).json({
@@ -417,21 +427,22 @@ const deleteUser = async (req, res, next) => {
       });
     }
 
-    // Deactivate and delete or mark inactive
-    user.status = 'INACTIVE';
-    user.isActive = false;
-    user.tokenVersion = (user.tokenVersion || 0) + 1;
-    await user.save();
+    // Store user info for audit log before deletion
+    const userInfo = {
+      _id: user._id,
+      role: user.role,
+      email: user.email
+    };
 
-    // Delete record
+    // Delete record directly (no intermediate deactivation needed)
     await User.findByIdAndDelete(id);
 
     await AuditLog.create({
       performedBy: req.user._id,
       action: 'DELETE_USER',
-      targetUser: user._id,
-      targetRole: user.role,
-      targetEmail: user.email,
+      targetUser: userInfo._id,
+      targetRole: userInfo.role,
+      targetEmail: userInfo.email,
       metadata: { ip: req.ip || req.headers['x-forwarded-for'] || '' }
     });
 

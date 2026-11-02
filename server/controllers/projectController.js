@@ -7,7 +7,7 @@ const Comment = require('../models/Comment');
 const Activity = require('../models/Activity');
 const Notification = require('../models/Notification');
 const User = require('../models/User');
-const { determineProjectHealth, recalculateProjectProgress } = require('../services/progressService');
+const { determineProjectHealth, recalculateProjectProgress, determineProjectsHealthBatch } = require('../services/progressService');
 const { logActivity } = require('../services/activityService');
 const { sendNotification } = require('../services/notificationService');
 
@@ -182,7 +182,7 @@ const getProjectById = async (req, res, next) => {
           ? {
               project: project._id,
               $or: [{ isDeliverable: true }, { category: 'DELIVERABLE' }],
-              $or: [{ adminApproved: true }, { adminApprovalStatus: 'APPROVED' }]
+              adminApproved: true
             }
           : {
               project: project._id,
@@ -191,8 +191,10 @@ const getProjectById = async (req, res, next) => {
       ),
       File.countDocuments({
         project: project._id,
-        $or: [{ isDeliverable: true }, { category: 'DELIVERABLE' }],
-        $or: [{ adminApproved: true }, { adminApprovalStatus: 'APPROVED' }]
+        $and: [
+          { $or: [{ isDeliverable: true }, { category: 'DELIVERABLE' }] },
+          { $or: [{ adminApproved: true }, { adminApprovalStatus: 'APPROVED' }] }
+        ]
       }),
       TaskRequest.countDocuments({ project: project._id, status: 'PENDING_APPROVAL' })
     ]);
@@ -482,14 +484,17 @@ const getAdminOverviewAnalytics = async (req, res, next) => {
       File.countDocuments({ approvalStatus: 'APPROVED' })
     ]);
 
-    // Health breakdown of active projects
-    const allProjects = await Project.find({ status: { $ne: 'COMPLETED' } }).select('endDate');
+    // Health breakdown of active projects - use batch computation to avoid N+1 queries
+    const allProjects = await Project.find({ status: { $ne: 'COMPLETED' } }).select('_id');
+    const projectIds = allProjects.map(p => p._id);
+    const healthMap = await determineProjectsHealthBatch(projectIds);
+
     let onTrackCount = 0;
     let atRiskCount = 0;
     let overdueBlockedCount = 0;
 
-    for (const p of allProjects) {
-      const h = await determineProjectHealth(p._id, p.endDate);
+    for (const pid of projectIds) {
+      const h = healthMap[pid.toString()];
       if (h === 'ON_TRACK') onTrackCount++;
       else if (h === 'AT_RISK') atRiskCount++;
       else if (h === 'OVERDUE_BLOCKED') overdueBlockedCount++;

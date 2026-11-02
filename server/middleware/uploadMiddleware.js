@@ -34,7 +34,13 @@ const storage = multer.diskStorage({
 const DANGEROUS_EXTENSIONS = [
   '.exe', '.bat', '.cmd', '.sh', '.bash', '.php', '.php3', '.php4', '.phtml',
   '.cgi', '.pl', '.jsp', '.asp', '.aspx', '.vbs', '.scr', '.jar', '.msi',
-  '.com', '.pif', '.pyc', '.dll', '.bin', '.reg', '.wsf', '.apk', '.iso'
+  '.com', '.pif', '.pyc', '.dll', '.bin', '.reg', '.wsf', '.apk', '.iso',
+  '.ps1', '.psm1', '.psd1', '.msh', '.msh1', '.msh2', '.hta', '.ws', '.cpl',
+  '.msc', '.gadget', '.msix', '.appx', '.inf', '.ins', '.inx', '.isu', '.job',
+  '.jse', '.ksh', '.lnk', '.mad', '.maf', '.mag', '.mam', '.maq', '.mar',
+  '.mas', '.mat', '.mau', '.mav', '.maw', '.mda', '.mdb', '.mde', '.mdt',
+  '.mdw', '.mdz', '.pcd', '.prf', '.prg', '.pst', '.scf', '.shb', '.shs',
+  '.tmp', '.url', '.vb', '.vbe', '.ws', '.wsc', '.wsf', '.wsh'
 ];
 
 // Whitelist of allowed extensions for enterprise files

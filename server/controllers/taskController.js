@@ -2,6 +2,8 @@ const mongoose = require('mongoose');
 const Task = require('../models/Task');
 const Project = require('../models/Project');
 const User = require('../models/User');
+const File = require('../models/File');
+const Comment = require('../models/Comment');
 const { recalculateProjectProgress } = require('../services/progressService');
 const { logActivity } = require('../services/activityService');
 const { sendNotification } = require('../services/notificationService');
@@ -9,10 +11,13 @@ const { sendNotification } = require('../services/notificationService');
 // Allowed status transitions mapping
 const Employee_ALLOWED_TRANSITIONS = {
   ASSIGNED: ['IN_PROGRESS'],
-  IN_PROGRESS: ['BLOCKED', 'IN_REVIEW'],
+  IN_PROGRESS: ['BLOCKED', 'IN_REVIEW', 'COMPLETED'],
   BLOCKED: ['IN_PROGRESS'],
   CHANGES_REQUESTED: ['IN_PROGRESS'],
-  TODO: ['IN_PROGRESS']
+  TODO: ['IN_PROGRESS'],
+  PENDING_APPROVAL: ['ASSIGNED', 'REJECTED'],
+  APPROVED: ['IN_PROGRESS', 'ASSIGNED'],
+  REJECTED: ['TODO', 'IN_PROGRESS']
 };
 
 const ADMIN_ALLOWED_TRANSITIONS = {
@@ -73,7 +78,7 @@ const getProjectTasks = async (req, res, next) => {
       query.status = req.query.status;
     }
 
-    const tasks = await Task.find(query)
+    let tasks = await Task.find(query)
       .populate('assignedTo', 'name email avatar title')
       .populate('createdBy', 'name email')
       .populate('milestone', 'title dueDate status')
@@ -112,16 +117,51 @@ const getPersonalTasks = async (req, res, next) => {
       query.priority = req.query.priority;
     }
 
-    const tasks = await Task.find(query)
+    let tasks = await Task.find(query)
       .populate('assignedTo', 'name email avatar title phone')
       .populate('createdBy', 'name email role')
       .populate('assignedBy', 'name email role')
-      .sort({ dueDate: 1, createdAt: -1 });
+      .sort({ dueDate: 1, createdAt: -1 })
+      .lean();
+
+    const taskIds = tasks.map((t) => t._id);
+    const files = await File.find({ task: { $in: taskIds }, status: { $ne: 'DELETED' } })
+      .select('_id task fileName fileUrl fileType mimeType fileSize storageProvider isLink linkUrl createdAt')
+      .lean();
+
+    const filesByTask = {};
+    files.forEach((f) => {
+      const tId = f.task ? f.task.toString() : '';
+      if (tId) {
+        if (!filesByTask[tId]) filesByTask[tId] = [];
+        filesByTask[tId].push(f);
+      }
+    });
+
+    const tasksWithFiles = tasks.map((t) => {
+      const linkedFiles = filesByTask[t._id.toString()] || [];
+      const attachments = (t.attachments && t.attachments.length > 0)
+        ? t.attachments
+        : linkedFiles.map((lf) => ({
+            _id: lf._id,
+            fileName: lf.fileName,
+            fileUrl: lf.fileUrl || lf.linkUrl,
+            fileSize: lf.fileSize || 0,
+            fileType: lf.fileType || lf.mimeType || 'application/octet-stream',
+            isLink: lf.isLink
+          }));
+
+      return {
+        ...t,
+        attachments,
+        files: linkedFiles
+      };
+    });
 
     res.status(200).json({
       success: true,
-      count: tasks.length,
-      tasks
+      count: tasksWithFiles.length,
+      tasks: tasksWithFiles
     });
   } catch (error) {
     next(error);
@@ -145,17 +185,52 @@ const getMyTasks = async (req, res, next) => {
       query.project = req.query.projectId;
     }
 
-    const tasks = await Task.find(query)
+    let tasks = await Task.find(query)
       .populate('project', 'name status stage client health')
       .populate('milestone', 'title dueDate status')
       .populate('createdBy', 'name email role')
       .populate('assignedBy', 'name email role')
-      .sort({ dueDate: 1, createdAt: -1 });
+      .sort({ dueDate: 1, createdAt: -1 })
+      .lean();
+
+    const taskIds = tasks.map((t) => t._id);
+    const files = await File.find({ task: { $in: taskIds }, status: { $ne: 'DELETED' } })
+      .select('_id task fileName fileUrl fileType mimeType fileSize storageProvider isLink linkUrl createdAt')
+      .lean();
+
+    const filesByTask = {};
+    files.forEach((f) => {
+      const tId = f.task ? f.task.toString() : '';
+      if (tId) {
+        if (!filesByTask[tId]) filesByTask[tId] = [];
+        filesByTask[tId].push(f);
+      }
+    });
+
+    const tasksWithFiles = tasks.map((t) => {
+      const linkedFiles = filesByTask[t._id.toString()] || [];
+      const attachments = (t.attachments && t.attachments.length > 0)
+        ? t.attachments
+        : linkedFiles.map((lf) => ({
+            _id: lf._id,
+            fileName: lf.fileName,
+            fileUrl: lf.fileUrl || lf.linkUrl,
+            fileSize: lf.fileSize || 0,
+            fileType: lf.fileType || lf.mimeType || 'application/octet-stream',
+            isLink: lf.isLink
+          }));
+
+      return {
+        ...t,
+        attachments,
+        files: linkedFiles
+      };
+    });
 
     res.status(200).json({
       success: true,
-      count: tasks.length,
-      tasks
+      count: tasksWithFiles.length,
+      tasks: tasksWithFiles
     });
   } catch (error) {
     next(error);
@@ -463,6 +538,20 @@ const updateTask = async (req, res, next) => {
             message: `Invalid state transition from '${oldStatus}' to '${status}' for role Employee. Allowed transitions: ${allowedNext.join(', ') || 'None'}.`
           });
         }
+
+        if (status === 'COMPLETED' && task.taskType === 'PERSONAL') {
+          const hasExistingAttachments = Array.isArray(task.attachments) && task.attachments.length > 0;
+          const hasExistingFiles = await File.exists({ task: task._id, status: { $ne: 'DELETED' } });
+          if (!hasExistingAttachments && !hasExistingFiles && !req.body.fileId && !req.body.attachment) {
+            return res.status(400).json({
+              success: false,
+              message: 'Please attach a completion document or proof of work before marking this company task as completed.'
+            });
+          }
+          task.completedAt = new Date();
+          task.progress = 100;
+        }
+
         task.status = status;
         if (status === 'IN_PROGRESS' && !task.startedAt) {
           task.startedAt = new Date();
@@ -811,9 +900,9 @@ const submitTaskForReview = async (req, res, next) => {
   }
 };
 
-// @desc    Admin / HR marks task as completed (IN_REVIEW -> COMPLETED)
+// @desc    Admin / HR / Employee marks task as completed
 // @route   POST /api/tasks/:id/complete
-// @access  Private (Admin, HR)
+// @access  Private (Admin, HR, or assigned Employee)
 const completeTask = async (req, res, next) => {
   try {
     const task = await Task.findById(req.params.id);
@@ -821,10 +910,86 @@ const completeTask = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Task not found.' });
     }
 
+    const { notes, fileId, attachment } = req.body;
+
+    // Check Employee permissions
+    if (req.user.role === 'Employee') {
+      const isAssigned = task.assignedTo && task.assignedTo.toString() === req.user._id.toString();
+      if (!isAssigned) {
+        return res.status(403).json({
+          success: false,
+          message: 'Only the assigned worker can complete this task.'
+        });
+      }
+
+      // If it's a personal company task, require explicit document attachment in this request
+      if (task.taskType === 'PERSONAL') {
+        if (!fileId && !attachment) {
+          return res.status(400).json({
+            success: false,
+            message: 'Please attach a completion document or proof of work before completing this company task.'
+          });
+        }
+      }
+    }
+
+    // Attach file if provided
+    let attachedDocName = '';
+    if (fileId) {
+      const fileDoc = await File.findById(fileId);
+      if (fileDoc) {
+        attachedDocName = fileDoc.fileName;
+        task.attachments = task.attachments || [];
+        const alreadyIn = task.attachments.some(
+          (a) => a.fileUrl === fileDoc.fileUrl
+        );
+        if (!alreadyIn) {
+          task.attachments.push({
+            fileName: fileDoc.fileName,
+            fileUrl: fileDoc.fileUrl,
+            fileSize: fileDoc.fileSize || 0,
+            fileType: fileDoc.fileType || fileDoc.mimeType || 'application/octet-stream'
+          });
+        }
+      }
+    } else if (attachment && attachment.fileName && attachment.fileUrl) {
+      attachedDocName = attachment.fileName;
+      task.attachments = task.attachments || [];
+      // Check for duplicate by fileUrl only
+      const alreadyIn = task.attachments.some(
+        (a) => a.fileUrl === attachment.fileUrl
+      );
+      if (!alreadyIn) {
+        task.attachments.push({
+          fileName: attachment.fileName,
+          fileUrl: attachment.fileUrl,
+          fileSize: attachment.fileSize || 0,
+          fileType: attachment.fileType || 'application/octet-stream'
+        });
+      }
+    } else if (task.attachments && task.attachments.length > 0) {
+      attachedDocName = task.attachments[task.attachments.length - 1].fileName;
+    }
+
     task.status = 'COMPLETED';
     task.progress = 100;
     task.completedAt = new Date();
     await task.save();
+
+    // Log completion comment if notes provided
+    if (notes && typeof notes === 'string' && notes.trim()) {
+      try {
+        await Comment.create({
+          task: task._id,
+          project: task.project || null,
+          user: req.user._id,
+          message: `Task completed. Completion Note: ${notes.trim()}`,
+          isInternal: true
+        });
+      } catch (err) {
+        console.error('Error creating completion comment:', err);
+      }
+    }
 
     let progressResult = null;
     if (task.project) {
@@ -841,15 +1006,48 @@ const completeTask = async (req, res, next) => {
       });
     }
 
-    if (task.assignedTo) {
-      await sendNotification({
-        userId: task.assignedTo,
-        projectId: task.project || undefined,
-        title: 'Task Approved',
-        type: 'TASK',
-        message: `Your task "${task.title}" has been approved and marked as completed!`,
-        link: `/Employee/tasks`
-      });
+    // Notifications
+    if (req.user.role === 'Employee') {
+      // Notify assigner or Admins that worker completed the company task with document
+      const recipientId = task.assignedBy || task.createdBy;
+      const docMsg = attachedDocName ? ` with attached document "${attachedDocName}"` : '';
+
+      // Use Set to deduplicate recipients
+      const recipientIds = new Set();
+
+      if (recipientId && recipientId.toString() !== req.user._id.toString()) {
+        recipientIds.add(recipientId.toString());
+      } else {
+        // Fallback: notify all active admins
+        const adminUsers = await User.find({ role: 'ADMIN', status: 'ACTIVE' }).select('_id');
+        for (const admin of adminUsers) {
+          recipientIds.add(admin._id.toString());
+        }
+      }
+
+      // Send notifications to unique recipients
+      for (const userId of recipientIds) {
+        await sendNotification({
+          userId,
+          projectId: task.project || undefined,
+          title: 'Company Task Completed',
+          type: 'TASK',
+          message: `Worker ${req.user.name} completed company task "${task.title}"${docMsg}.`,
+          link: '/admin/tasks'
+        });
+      }
+    } else {
+      // Admin / HR completed task -> Notify assigned Employee
+      if (task.assignedTo) {
+        await sendNotification({
+          userId: task.assignedTo,
+          projectId: task.project || undefined,
+          title: 'Task Approved & Completed',
+          type: 'TASK',
+          message: `Your task "${task.title}" has been approved and marked as completed!`,
+          link: '/Employee/tasks'
+        });
+      }
     }
 
     if (task.project) {

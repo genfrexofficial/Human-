@@ -22,6 +22,9 @@ import toast from 'react-hot-toast';
 import Badge from '../../components/common/Badge';
 import ProgressBar from '../../components/common/ProgressBar';
 import Button from '../../components/common/Button';
+import { fileService } from '../../services/fileService';
+import CompleteCompanyTaskModal from '../../components/tasks/CompleteCompanyTaskModal';
+import { Paperclip, Download, ExternalLink, FileText } from 'lucide-react';
 
 const CATEGORY_MAP = {
   INTERNAL_WORK: { label: 'Internal Work', icon: '📋', color: 'bg-blue-50 text-blue-700 border-blue-200' },
@@ -41,6 +44,33 @@ const EmployeeTasks = () => {
   const [categoryFilter, setCategoryFilter] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [actionLoading, setActionLoading] = useState({});
+  const [completeModalOpen, setCompleteModalOpen] = useState(false);
+  const [selectedTaskForComplete, setSelectedTaskForComplete] = useState(null);
+  const [downloadingId, setDownloadingId] = useState(null);
+
+  const handleDownloadAttachment = async (att) => {
+    try {
+      const isLink = att.isLink || att.fileType === 'LINK' || (att.fileUrl && att.fileUrl.startsWith('http'));
+      if (isLink) {
+        window.open(att.fileUrl, '_blank');
+        return;
+      }
+      let fileId = att._id;
+      if (!fileId && att.fileUrl && att.fileUrl.includes('/files/')) {
+        fileId = att.fileUrl.split('/')[3];
+      }
+      if (fileId) {
+        setDownloadingId(fileId);
+        await fileService.downloadBlob(fileId, att.fileName);
+      } else if (att.fileUrl) {
+        window.open(att.fileUrl, '_blank');
+      }
+    } catch (err) {
+      toast.error('Failed to download document.');
+    } finally {
+      setDownloadingId(null);
+    }
+  };
 
   const fetchTasks = async () => {
     try {
@@ -431,6 +461,7 @@ const EmployeeTasks = () => {
                     <th className="px-4 py-3.5">Priority</th>
                     <th className="px-4 py-3.5">Status</th>
                     <th className="px-4 py-3.5">Progress</th>
+                    <th className="px-4 py-3.5">Attached Documents</th>
                     <th className="px-4 py-3.5">Due Date</th>
                     <th className="px-5 py-3.5 text-right">Actions</th>
                   </tr>
@@ -444,9 +475,12 @@ const EmployeeTasks = () => {
                     return (
                       <tr key={task._id} className="hover:bg-slate-50/70 transition-colors">
                         <td className="px-5 py-4 max-w-xs">
-                          <span className="font-semibold text-slate-900 block text-xs line-clamp-1">
+                          <Link
+                            to={`/Employee/tasks/${task._id}`}
+                            className="font-semibold text-slate-900 hover:text-indigo-600 transition-colors block text-xs line-clamp-1"
+                          >
                             {task.title}
-                          </span>
+                          </Link>
                           {task.description && (
                             <p className="text-[11px] text-slate-500 line-clamp-2 mt-0.5">
                               {task.description}
@@ -484,7 +518,7 @@ const EmployeeTasks = () => {
                           </Badge>
                         </td>
 
-                        <td className="px-4 py-4 w-36 whitespace-nowrap">
+                        <td className="px-4 py-4 w-32 whitespace-nowrap">
                           <div className="flex items-center justify-between text-[10px] font-semibold text-slate-600 mb-1">
                             <span>{task.progress || 0}%</span>
                             {['ASSIGNED', 'IN_PROGRESS'].includes(task.status) && (
@@ -498,6 +532,38 @@ const EmployeeTasks = () => {
                             )}
                           </div>
                           <ProgressBar progress={task.progress || 0} />
+                        </td>
+
+                        {/* Attached Documents Column */}
+                        <td className="px-4 py-4 max-w-xs">
+                          {task.attachments && task.attachments.length > 0 ? (
+                            <div className="flex flex-wrap gap-1.5">
+                              {task.attachments.map((att, idx) => {
+                                const isLink = att.isLink || att.fileType === 'LINK' || (att.fileUrl && att.fileUrl.startsWith('http'));
+                                return (
+                                  <button
+                                    key={att._id || idx}
+                                    type="button"
+                                    onClick={() => handleDownloadAttachment(att)}
+                                    disabled={downloadingId === att._id}
+                                    title={att.fileName || 'View attachment'}
+                                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-slate-200 bg-slate-50 hover:bg-slate-100 text-[10px] font-medium text-slate-700 transition-colors max-w-[150px] truncate"
+                                  >
+                                    {downloadingId === att._id ? (
+                                      <Loader2 className="w-2.5 h-2.5 animate-spin text-slate-500 shrink-0" />
+                                    ) : isLink ? (
+                                      <ExternalLink className="w-2.5 h-2.5 text-indigo-500 shrink-0" />
+                                    ) : (
+                                      <Paperclip className="w-2.5 h-2.5 text-slate-500 shrink-0" />
+                                    )}
+                                    <span className="truncate">{att.fileName}</span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            <span className="text-[11px] text-slate-400 italic">No document</span>
+                          )}
                         </td>
 
                         <td className="px-4 py-4 whitespace-nowrap">
@@ -521,23 +587,32 @@ const EmployeeTasks = () => {
                               </Button>
                             )}
 
-                            {task.status === 'IN_PROGRESS' && (
+                            {['ASSIGNED', 'TODO', 'IN_PROGRESS'].includes(task.status) && (
                               <Button
                                 size="xs"
-                                variant="outline"
-                                disabled={isActing}
-                                onClick={() => handleSubmitReview(task._id)}
+                                variant="primary"
+                                className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                                onClick={() => {
+                                  setSelectedTaskForComplete(task);
+                                  setCompleteModalOpen(true);
+                                }}
                               >
-                                {isActing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3 mr-1" />}
-                                Submit
+                                <CheckCircle2 className="h-3 w-3 mr-1" />
+                                Complete
                               </Button>
                             )}
 
                             {task.status === 'COMPLETED' && (
-                              <span className="inline-flex items-center text-emerald-600 font-medium text-[11px] gap-1">
-                                <CheckCircle2 className="w-3.5 h-3.5" /> Done
+                              <span className="inline-flex items-center text-emerald-600 font-semibold text-[11px] gap-1 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200">
+                                <CheckCircle2 className="w-3.5 h-3.5" /> Completed
                               </span>
                             )}
+
+                            <Link to={`/Employee/tasks/${task._id}`}>
+                              <Button size="xs" variant="secondary">
+                                Open
+                              </Button>
+                            </Link>
                           </div>
                         </td>
                       </tr>
@@ -549,6 +624,17 @@ const EmployeeTasks = () => {
           </div>
         )
       )}
+
+      {/* Complete Company Task Modal */}
+      <CompleteCompanyTaskModal
+        isOpen={completeModalOpen}
+        onClose={() => {
+          setCompleteModalOpen(false);
+          setSelectedTaskForComplete(null);
+        }}
+        task={selectedTaskForComplete}
+        onCompleted={fetchTasks}
+      />
     </div>
   );
 };

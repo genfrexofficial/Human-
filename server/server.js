@@ -10,6 +10,9 @@ connectDB();
 
 const app = express();
 
+// Trust proxy for correct IP detection behind reverse proxies (nginx, Vercel, Render, etc.)
+app.set('trust proxy', true);
+
 // Enable CORS
 const allowedOrigins = [
   'http://localhost:5173',
@@ -22,10 +25,15 @@ app.use(
     origin: (origin, callback) => {
       // Allow requests with no origin (like mobile apps, curl, postman)
       if (!origin) return callback(null, true);
-      if (allowedOrigins.indexOf(origin) !== -1 || origin.startsWith('http://localhost:')) {
+      if (allowedOrigins.indexOf(origin) !== -1) {
         return callback(null, true);
       }
-      return callback(null, true); // Permissive for hackathon demos
+      // In production, reject unknown origins
+      if (process.env.NODE_ENV === 'production') {
+        return callback(new Error('Not allowed by CORS'), false);
+      }
+      // Development: allow localhost on known ports only
+      return callback(null, false);
     },
     credentials: true
   })
@@ -36,41 +44,6 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 const { authenticateToken } = require('./middleware/authMiddleware');
-const File = require('./models/File');
-const Task = require('./models/Task');
-
-// Secure static file serving for uploads (enforcing Auth & RBAC)
-app.use('/uploads', authenticateToken, async (req, res, next) => {
-  try {
-    const filename = path.basename(req.path);
-    const file = await File.findOne({ fileUrl: `/uploads/${filename}` }).populate('project task');
-
-    if (file) {
-      if (req.user.role === 'CLIENT') {
-        if (file.project && file.project.client.toString() !== req.user._id.toString()) {
-          return res.status(403).json({ success: false, message: 'Access denied to this file.' });
-        }
-        if (file.task && file.task.clientVisible === false) {
-          return res.status(403).json({ success: false, message: 'Access denied. Internal file.' });
-        }
-      } else if (req.user.role === 'Employee') {
-        const isAssigned = file.project?.assignedEmployees?.some(
-          (w) => w.toString() === req.user._id.toString()
-        );
-        const hasTask = await Task.exists({ project: file.project?._id, assignedTo: req.user._id });
-        if (!isAssigned && !hasTask) {
-          return res.status(403).json({ success: false, message: 'Access denied to this file.' });
-        }
-      }
-    } else if (req.user.role !== 'ADMIN' && req.user.role !== 'HR') {
-      return res.status(403).json({ success: false, message: 'Access denied.' });
-    }
-
-    express.static(path.join(__dirname, 'uploads'))(req, res, next);
-  } catch (err) {
-    next(err);
-  }
-});
 
 // Root endpoint
 app.get('/', (req, res) => {

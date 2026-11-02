@@ -18,7 +18,14 @@ const authenticateToken = async (req, res, next) => {
       });
     }
 
-    const secret = process.env.JWT_SECRET || 'clientflow_jwt_secret_super_secure_key_2026_hackathon';
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      console.error('[FATAL] JWT_SECRET environment variable is not set. Authentication cannot proceed.');
+      return res.status(500).json({
+        success: false,
+        message: 'Server configuration error: JWT secret not configured.'
+      });
+    }
     const decoded = jwt.verify(token, secret);
 
     const user = await User.findById(decoded.userId).select('-password');

@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Badge from '../common/Badge';
 import ProgressBar from '../common/ProgressBar';
 import Button from '../common/Button';
+import { fileService } from '../../services/fileService';
+import toast from 'react-hot-toast';
 import {
   Calendar,
   Clock,
@@ -10,7 +12,10 @@ import {
   CheckCircle2,
   Trash2,
   Edit2,
-  AlertCircle
+  AlertCircle,
+  Paperclip,
+  ExternalLink,
+  Loader2
 } from 'lucide-react';
 
 const CATEGORY_MAP = {
@@ -30,6 +35,31 @@ const PersonalTaskTable = ({
   onDeleteTask
 }) => {
   const now = new Date();
+  const [downloadingId, setDownloadingId] = useState(null);
+
+  const handleDownloadAttachment = async (att) => {
+    try {
+      const isLink = att.isLink || att.fileType === 'LINK' || (att.fileUrl && att.fileUrl.startsWith('http'));
+      if (isLink) {
+        window.open(att.fileUrl, '_blank');
+        return;
+      }
+      let fileId = att._id;
+      if (!fileId && att.fileUrl && att.fileUrl.includes('/files/')) {
+        fileId = att.fileUrl.split('/')[3];
+      }
+      if (fileId) {
+        setDownloadingId(fileId);
+        await fileService.downloadBlob(fileId, att.fileName);
+      } else if (att.fileUrl) {
+        window.open(att.fileUrl, '_blank');
+      }
+    } catch (err) {
+      toast.error('Failed to download document.');
+    } finally {
+      setDownloadingId(null);
+    }
+  };
 
   return (
     <div className="rounded-2xl border border-slate-200/80 bg-white shadow-subtle overflow-hidden">
@@ -43,6 +73,7 @@ const PersonalTaskTable = ({
               <th className="px-4 py-3.5">Priority</th>
               <th className="px-4 py-3.5">Status</th>
               <th className="px-4 py-3.5">Progress</th>
+              <th className="px-4 py-3.5">Attached Documents</th>
               <th className="px-4 py-3.5">Due Date</th>
               {isManager && <th className="px-5 py-3.5 text-right">Actions</th>}
             </tr>
@@ -145,6 +176,38 @@ const PersonalTaskTable = ({
                       <span>{task.progress || 0}%</span>
                     </div>
                     <ProgressBar progress={task.progress || 0} />
+                  </td>
+
+                  {/* Attached Documents */}
+                  <td className="px-4 py-4 max-w-xs">
+                    {task.attachments && task.attachments.length > 0 ? (
+                      <div className="flex flex-wrap gap-1.5">
+                        {task.attachments.map((att, idx) => {
+                          const isLink = att.isLink || att.fileType === 'LINK' || (att.fileUrl && att.fileUrl.startsWith('http'));
+                          return (
+                            <button
+                              key={att._id || idx}
+                              type="button"
+                              onClick={() => handleDownloadAttachment(att)}
+                              disabled={downloadingId === att._id}
+                              title={att.fileName || 'View attached document'}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-slate-200 bg-slate-50 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 text-[10px] font-medium text-slate-700 transition-colors max-w-[140px] truncate"
+                            >
+                              {downloadingId === att._id ? (
+                                <Loader2 className="w-2.5 h-2.5 animate-spin text-slate-500 shrink-0" />
+                              ) : isLink ? (
+                                <ExternalLink className="w-2.5 h-2.5 text-indigo-500 shrink-0" />
+                              ) : (
+                                <Paperclip className="w-2.5 h-2.5 text-slate-500 shrink-0" />
+                              )}
+                              <span className="truncate">{att.fileName}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <span className="text-[11px] text-slate-400 italic">None</span>
+                    )}
                   </td>
 
                   {/* Due date */}

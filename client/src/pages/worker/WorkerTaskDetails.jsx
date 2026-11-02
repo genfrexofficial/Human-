@@ -33,6 +33,7 @@ import Badge from '../../components/common/Badge';
 import ProgressBar from '../../components/common/ProgressBar';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
+import CompleteCompanyTaskModal from '../../components/tasks/CompleteCompanyTaskModal';
 
 const EmployeeTaskDetails = () => {
   const { id: taskId } = useParams();
@@ -47,6 +48,7 @@ const EmployeeTaskDetails = () => {
   const [progressValue, setProgressValue] = useState(0);
   const [updatingProgress, setUpdatingProgress] = useState(false);
   const [downloadingFileId, setDownloadingFileId] = useState(null);
+  const [completeCompanyModalOpen, setCompleteCompanyModalOpen] = useState(false);
 
   const handleDownloadFile = async (fileId, fileName) => {
     try {
@@ -365,6 +367,17 @@ const EmployeeTaskDetails = () => {
 
           {/* Action Transition Buttons */}
           <div className="flex flex-wrap items-center gap-2 shrink-0">
+            {task.taskType === 'PERSONAL' && ['ASSIGNED', 'TODO', 'IN_PROGRESS', 'CHANGES_REQUESTED'].includes(task.status) && (
+              <Button
+                variant="primary"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                onClick={() => setCompleteCompanyModalOpen(true)}
+              >
+                <CheckCircle2 className="h-4 w-4 mr-1" />
+                Complete Task & Attach Document
+              </Button>
+            )}
+
             {task.status === 'ASSIGNED' && (
               <Button
                 variant="primary"
@@ -429,9 +442,32 @@ const EmployeeTaskDetails = () => {
             )}
 
             {task.status === 'COMPLETED' && (
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 text-xs font-medium border border-emerald-200">
-                <CheckCircle2 className="h-4 w-4" />
-                <span>Completed & Approved</span>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 text-xs font-medium border border-emerald-200">
+                  <CheckCircle2 className="h-4 w-4" />
+                  <span>Completed & Approved</span>
+                </div>
+                {task.attachments && task.attachments.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {task.attachments.map((att, idx) => (
+                      <button
+                        key={att._id || idx}
+                        type="button"
+                        onClick={() => {
+                          if (att.isLink || att.fileType === 'LINK' || (att.fileUrl && att.fileUrl.startsWith('http'))) {
+                            window.open(att.fileUrl, '_blank');
+                          } else {
+                            handleDownloadFile(att._id || (att.fileUrl?.split('/')[3]), att.fileName);
+                          }
+                        }}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-[11px] font-semibold text-emerald-800 transition-colors"
+                      >
+                        <Paperclip className="w-3 h-3 text-emerald-600" />
+                        <span className="truncate max-w-[150px]">{att.fileName}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -787,6 +823,14 @@ const EmployeeTaskDetails = () => {
           </div>
         </form>
       </Modal>
+
+      {/* Complete Company Task Modal */}
+      <CompleteCompanyTaskModal
+        isOpen={completeCompanyModalOpen}
+        onClose={() => setCompleteCompanyModalOpen(false)}
+        task={task}
+        onCompleted={fetchTaskDetails}
+      />
 
       {/* Upload File / Link Modal */}
       <Modal

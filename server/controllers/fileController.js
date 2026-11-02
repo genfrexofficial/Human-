@@ -17,6 +17,7 @@ const {
 const { logActivity } = require('../services/activityService');
 const { sendNotification } = require('../services/notificationService');
 const { cloudinary } = require('../config/cloudinary');
+const { applyRoleFilters, canClientAccessFile, canEmployeeAccessFile } = require('../utils/fileQueryBuilder');
 
 /**
  * Log a storage audit event safely without secrets
@@ -121,40 +122,8 @@ const getProjectFiles = async (req, res, next) => {
       query.task = taskId;
     }
 
-    // Confidential files are hidden from non-admin/non-HR
-    if (req.user.role !== 'ADMIN' && req.user.role !== 'HR') {
-      query.isConfidential = { $ne: true };
-    }
-
-    // Client role enforcement: Only deliverables approved by Admin can be seen by Client!
-    if (req.user.role === 'CLIENT') {
-      query.$and = [
-        {
-          $or: [
-            {
-              isDeliverable: { $ne: true },
-              category: { $nin: ['DELIVERABLE'] }
-            },
-            {
-              $and: [
-                { $or: [{ isDeliverable: true }, { category: 'DELIVERABLE' }] },
-                {
-                  $or: [
-                    { adminApproved: true },
-                    { adminApprovalStatus: 'APPROVED' },
-                    {
-                      approvalStatus: 'APPROVED',
-                      adminApprovalStatus: { $ne: 'CHANGES_REQUESTED' },
-                      adminApproved: { $ne: false }
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        }
-      ];
-    }
+    // Apply role-based filters using centralized utility
+    query = applyRoleFilters(query, req.user, projectId);
 
     const files = await File.find(query)
       .populate('uploadedBy', 'name email avatar role title')
@@ -229,40 +198,8 @@ const getTaskFiles = async (req, res, next) => {
 
     let query = { task: taskId, status: { $ne: 'DELETED' } };
 
-    // Confidential files are hidden from non-admin/non-HR
-    if (req.user.role !== 'ADMIN' && req.user.role !== 'HR') {
-      query.isConfidential = { $ne: true };
-    }
-
-    // Client role enforcement: Only deliverables approved by Admin can be seen by Client!
-    if (req.user.role === 'CLIENT') {
-      query.$and = [
-        {
-          $or: [
-            {
-              isDeliverable: { $ne: true },
-              category: { $nin: ['DELIVERABLE'] }
-            },
-            {
-              $and: [
-                { $or: [{ isDeliverable: true }, { category: 'DELIVERABLE' }] },
-                {
-                  $or: [
-                    { adminApproved: true },
-                    { adminApprovalStatus: 'APPROVED' },
-                    {
-                      approvalStatus: 'APPROVED',
-                      adminApprovalStatus: { $ne: 'CHANGES_REQUESTED' },
-                      adminApproved: { $ne: false }
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        }
-      ];
-    }
+    // Apply role-based filters using centralized utility
+    query = applyRoleFilters(query, req.user);
 
     const files = await File.find(query)
       .populate('uploadedBy', 'name email avatar role title')
@@ -418,12 +355,33 @@ const uploadProjectFile = async (req, res, next) => {
         cleanLink = 'https://' + cleanLink;
       }
 
+      let parsedUrl;
       try {
-        new URL(cleanLink);
+        parsedUrl = new URL(cleanLink);
       } catch (_) {
         return res.status(400).json({
           success: false,
           message: 'Please provide a valid URL format (e.g. https://github.com/... or https://figma.com/...)'
+        });
+      }
+
+      // Security: Only allow http: and https: protocols to prevent XSS
+      const allowedProtocols = ['http:', 'https:'];
+      if (!allowedProtocols.includes(parsedUrl.protocol)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Only HTTP and HTTPS links are allowed for security reasons.'
+        });
+      }
+
+      // Additional SSRF protection: Block private/local IP ranges
+      const hostname = parsedUrl.hostname;
+      if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1' ||
+          hostname.startsWith('10.') || hostname.startsWith('192.168.') ||
+          hostname.match(/^172\.(1[6-9]|2[0-9]|3[0-1])\./)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Links to local or private network addresses are not allowed.'
         });
       }
 
@@ -479,41 +437,71 @@ const uploadProjectFile = async (req, res, next) => {
         fileName: cleanFileName
       });
 
-      fileDoc = await File.create({
-        project: project ? project._id : null,
-        task: task ? task._id : (taskId || null),
-        client: project?.client?._id || project?.client || null,
-        uploadedBy: req.user._id,
-        uploadedByRole: req.user.role,
-        fileName: cleanFileName,
-        originalFileName: req.file.originalname,
-        fileUrl: stored.fileUrl || `/api/files/download`,
-        publicId: stored.publicId || '',
-        storageProvider: stored.storageProvider || 'GOOGLE_DRIVE',
-        storageKey: stored.storageKey || stored.publicId || '',
-        driveFileId: stored.driveFileId || '',
-        driveFolderId: stored.driveFolderId || '',
-        mimeType: stored.mimeType || req.file.mimetype,
-        fileType: stored.mimeType || req.file.mimetype,
-        fileSize: stored.fileSize || req.file.size,
-        module: determinedModule,
-        relatedModule: determinedModule,
-        relatedEntityId: task ? task._id : (project ? project._id : req.user._id),
-        category: category || (isPersonalTask ? 'DOCUMENT' : 'DELIVERABLE'),
-        isDeliverable,
-        isConfidential: shouldBeConfidential,
-        status: 'ACTIVE',
-        adminApprovalStatus: initialAdminApprovalStatus,
-        adminApproved: initialAdminApproved,
-        adminApprovedBy: (isAdmin || isPersonalTask) ? req.user._id : null,
-        adminApprovedAt: (isAdmin || isPersonalTask) ? new Date() : null,
-        approvalStatus: initialApprovalStatus
-      });
+      let fileDoc;
+      try {
+        fileDoc = await File.create({
+          project: project ? project._id : null,
+          task: task ? task._id : (taskId || null),
+          client: project?.client?._id || project?.client || null,
+          uploadedBy: req.user._id,
+          uploadedByRole: req.user.role,
+          fileName: cleanFileName,
+          originalFileName: req.file.originalname,
+          fileUrl: stored.fileUrl || `/api/files/download`,
+          publicId: stored.publicId || '',
+          storageProvider: stored.storageProvider || 'GOOGLE_DRIVE',
+          storageKey: stored.storageKey || stored.publicId || '',
+          driveFileId: stored.driveFileId || '',
+          driveFolderId: stored.driveFolderId || '',
+          mimeType: stored.mimeType || req.file.mimetype,
+          fileType: stored.mimeType || req.file.mimetype,
+          fileSize: stored.fileSize || req.file.size,
+          module: determinedModule,
+          relatedModule: determinedModule,
+          relatedEntityId: task ? task._id : (project ? project._id : req.user._id),
+          category: category || (isPersonalTask ? 'DOCUMENT' : 'DELIVERABLE'),
+          isDeliverable,
+          isConfidential: shouldBeConfidential,
+          status: 'ACTIVE',
+          adminApprovalStatus: initialAdminApprovalStatus,
+          adminApproved: initialAdminApproved,
+          adminApprovedBy: (isAdmin || isPersonalTask) ? req.user._id : null,
+          adminApprovedAt: (isAdmin || isPersonalTask) ? new Date() : null,
+          approvalStatus: initialApprovalStatus
+        });
 
-      // Set permanent URL referencing backend streaming endpoint for local/drive, or retain CDN url for Cloudinary
-      if (fileDoc.storageProvider !== 'CLOUDINARY') {
-        fileDoc.fileUrl = `/api/files/${fileDoc._id}/download`;
-        await fileDoc.save();
+        // Set permanent URL referencing backend streaming endpoint for local/drive, or retain CDN url for Cloudinary
+        if (fileDoc.storageProvider !== 'CLOUDINARY') {
+          fileDoc.fileUrl = `/api/files/${fileDoc._id}/download`;
+          await fileDoc.save();
+        }
+      } catch (createError) {
+        // Clean up orphaned cloud file if DB creation fails
+        await removeFileStorage({
+          storageProvider: stored.storageProvider,
+          driveFileId: stored.driveFileId,
+          storageKey: stored.storageKey,
+          publicId: stored.publicId,
+          fileUrl: stored.fileUrl
+        });
+        throw createError;
+      }
+    }
+
+    // Synchronize attachment to Task document if linked to a task
+    if (task) {
+      task.attachments = task.attachments || [];
+      const alreadyExists = task.attachments.some(
+        (a) => a.fileUrl === fileDoc.fileUrl || a.fileName === fileDoc.fileName
+      );
+      if (!alreadyExists) {
+        task.attachments.push({
+          fileName: fileDoc.fileName,
+          fileUrl: fileDoc.fileUrl,
+          fileSize: fileDoc.fileSize || 0,
+          fileType: fileDoc.fileType || fileDoc.mimeType || 'application/octet-stream'
+        });
+        await task.save();
       }
     }
 
@@ -632,35 +620,48 @@ const uploadConfidentialHRFile = async (req, res, next) => {
       appointmentLetterId
     });
 
-    const fileDoc = await File.create({
-      candidate: candidateId || null,
-      appointmentLetter: appointmentLetterId || null,
-      uploadedBy: req.user._id,
-      uploadedByRole: req.user.role,
-      fileName: cleanFileName,
-      originalFileName: req.file.originalname,
-      fileUrl: stored.fileUrl || `/api/files/download`,
-      publicId: stored.publicId || '',
-      storageProvider: stored.storageProvider || 'GOOGLE_DRIVE',
-      storageKey: stored.storageKey || '',
-      driveFileId: stored.driveFileId || '',
-      driveFolderId: stored.driveFolderId || '',
-      mimeType: stored.mimeType || req.file.mimetype,
-      fileType: stored.mimeType || req.file.mimetype,
-      fileSize: stored.fileSize || req.file.size,
-      module: 'HR',
-      relatedModule: 'HR',
-      relatedEntityId: appointmentLetterId || candidateId || null,
-      category: category || 'HR_DOCUMENT',
-      isDeliverable: false,
-      isConfidential: true,
-      status: 'ACTIVE',
-      approvalStatus: 'APPROVED'
-    });
+    let fileDoc;
+    try {
+      fileDoc = await File.create({
+        candidate: candidateId || null,
+        appointmentLetter: appointmentLetterId || null,
+        uploadedBy: req.user._id,
+        uploadedByRole: req.user.role,
+        fileName: cleanFileName,
+        originalFileName: req.file.originalname,
+        fileUrl: stored.fileUrl || `/api/files/download`,
+        publicId: stored.publicId || '',
+        storageProvider: stored.storageProvider || 'GOOGLE_DRIVE',
+        storageKey: stored.storageKey || '',
+        driveFileId: stored.driveFileId || '',
+        driveFolderId: stored.driveFolderId || '',
+        mimeType: stored.mimeType || req.file.mimetype,
+        fileType: stored.mimeType || req.file.mimetype,
+        fileSize: stored.fileSize || req.file.size,
+        module: 'HR',
+        relatedModule: 'HR',
+        relatedEntityId: appointmentLetterId || candidateId || null,
+        category: category || 'HR_DOCUMENT',
+        isDeliverable: false,
+        isConfidential: true,
+        status: 'ACTIVE',
+        approvalStatus: 'APPROVED'
+      });
 
-    if (fileDoc.storageProvider !== 'CLOUDINARY') {
-      fileDoc.fileUrl = `/api/files/${fileDoc._id}/download`;
-      await fileDoc.save();
+      if (fileDoc.storageProvider !== 'CLOUDINARY') {
+        fileDoc.fileUrl = `/api/files/${fileDoc._id}/download`;
+        await fileDoc.save();
+      }
+    } catch (createError) {
+      // Clean up orphaned cloud file if DB creation fails
+      await removeFileStorage({
+        storageProvider: stored.storageProvider,
+        driveFileId: stored.driveFileId,
+        storageKey: stored.storageKey,
+        publicId: stored.publicId,
+        fileUrl: stored.fileUrl
+      });
+      throw createError;
     }
 
     // Audit log
@@ -819,8 +820,8 @@ const downloadFile = async (req, res, next) => {
 
     // 2. CLIENT ACCESS ENFORCEMENT
     if (req.user.role === 'CLIENT') {
-      // Must not access Employee, HR, or other modules
-      if (file.module === 'Employee' || file.module === 'HR') {
+      const clientAccess = canClientAccessFile(file, req.user._id);
+      if (!clientAccess.allowed) {
         await recordStorageAudit({
           performedBy: req.user._id,
           performedByRole: req.user.role,
@@ -828,137 +829,34 @@ const downloadFile = async (req, res, next) => {
           fileName: file.fileName,
           relatedModule: file.module,
           action: 'FILE_ACCESS_DENIED',
-          metadata: { reason: 'CLIENT_MODULE_BARRIER' }
+          metadata: { reason: clientAccess.reason }
         });
         return res.status(403).json({
           success: false,
-          message: 'Access denied. Unauthorized to view internal documents.'
-        });
-      }
-
-      // If file has client ownership
-      if (file.client && file.client.toString() !== req.user._id.toString()) {
-        await recordStorageAudit({
-          performedBy: req.user._id,
-          performedByRole: req.user.role,
-          fileId: file._id,
-          fileName: file.fileName,
-          relatedModule: file.module,
-          action: 'FILE_ACCESS_DENIED',
-          metadata: { reason: 'CROSS_CLIENT_BARRIER' }
-        });
-        return res.status(403).json({
-          success: false,
-          message: 'Access denied. You do not own this document.'
-        });
-      }
-
-      // If attached to project
-      if (file.project) {
-        const projectClient = file.project.client ? file.project.client.toString() : '';
-        if (projectClient !== req.user._id.toString()) {
-          await recordStorageAudit({
-            performedBy: req.user._id,
-            performedByRole: req.user.role,
-            fileId: file._id,
-            fileName: file.fileName,
-            relatedModule: file.module,
-            action: 'FILE_ACCESS_DENIED',
-            metadata: { reason: 'CROSS_PROJECT_CLIENT_BARRIER' }
-          });
-          return res.status(403).json({
-            success: false,
-            message: 'Unauthorized. You do not have access to files for this project.'
-          });
-        }
-
-        if (file.task && file.task.clientVisible === false) {
-          return res.status(403).json({
-            success: false,
-            message: 'Access denied. This file belongs to an internal task.'
-          });
-        }
-      }
-
-      // Client Deliverable Release Check:
-      // Client can ONLY open/download deliverables that have been approved by Admin!
-      const isDeliverableFile = file.isDeliverable === true || file.category === 'DELIVERABLE';
-      const isAdminApproved = file.adminApproved === true ||
-        file.adminApprovalStatus === 'APPROVED' ||
-        (file.approvalStatus === 'APPROVED' && file.adminApprovalStatus !== 'CHANGES_REQUESTED' && file.adminApproved !== false);
-
-      if (isDeliverableFile && !isAdminApproved) {
-        await recordStorageAudit({
-          performedBy: req.user._id,
-          performedByRole: req.user.role,
-          fileId: file._id,
-          fileName: file.fileName,
-          relatedModule: file.module,
-          action: 'FILE_ACCESS_DENIED',
-          metadata: { reason: 'DELIVERABLE_NOT_ADMIN_APPROVED' }
-        });
-
-        return res.status(403).json({
-          success: false,
-          message: 'Access denied. This deliverable is pending Admin approval and is not yet available to the client.'
+          message: clientAccess.reason === 'DELIVERABLE_NOT_ADMIN_APPROVED'
+            ? 'Access denied. This deliverable is pending Admin approval and is not yet available to the client.'
+            : 'Access denied. Unauthorized to view this document.'
         });
       }
     }
 
     // 3. Employee ACCESS ENFORCEMENT
     if (req.user.role === 'Employee') {
-      if (file.module === 'HR') {
+      const employeeAccess = canEmployeeAccessFile(file, req.user._id);
+      if (!employeeAccess.allowed) {
+        await recordStorageAudit({
+          performedBy: req.user._id,
+          performedByRole: req.user.role,
+          fileId: file._id,
+          fileName: file.fileName,
+          relatedModule: file.module,
+          action: 'FILE_ACCESS_DENIED',
+          metadata: { reason: employeeAccess.reason }
+        });
         return res.status(403).json({
           success: false,
-          message: 'Access denied. Employee cannot access HR files.'
+          message: 'Access denied. Unauthorized to view this document.'
         });
-      }
-
-      if (file.module === 'Employee' || file.module === 'TASK') {
-        const isEmployeeOwner = (file.relatedEntityId && file.relatedEntityId.toString() === req.user._id.toString()) ||
-          (file.uploadedBy && file.uploadedBy.toString() === req.user._id.toString());
-        const isTaskAssigned = file.task && file.task.assignedTo && file.task.assignedTo.toString() === req.user._id.toString();
-        const isTaskCreator = file.task && file.task.createdBy && file.task.createdBy.toString() === req.user._id.toString();
-
-        if (!isEmployeeOwner && !isTaskAssigned && !isTaskCreator) {
-          await recordStorageAudit({
-            performedBy: req.user._id,
-            performedByRole: req.user.role,
-            fileId: file._id,
-            fileName: file.fileName,
-            relatedModule: file.module,
-            action: 'FILE_ACCESS_DENIED',
-            metadata: { reason: 'CROSS_Employee_BARRIER' }
-          });
-          return res.status(403).json({
-            success: false,
-            message: 'Access denied to other Employee documents.'
-          });
-        }
-      }
-
-      if (file.project) {
-        const isAssigned = file.project.assignedEmployees && file.project.assignedEmployees.some(
-          (w) => w.toString() === req.user._id.toString()
-        );
-        const isTaskAssigned = file.task && file.task.assignedTo && file.task.assignedTo.toString() === req.user._id.toString();
-        const hasTaskInProject = await Task.exists({ project: file.project._id, assignedTo: req.user._id });
-
-        if (!isAssigned && !isTaskAssigned && !hasTaskInProject) {
-          await recordStorageAudit({
-            performedBy: req.user._id,
-            performedByRole: req.user.role,
-            fileId: file._id,
-            fileName: file.fileName,
-            relatedModule: file.module,
-            action: 'FILE_ACCESS_DENIED',
-            metadata: { reason: 'Employee_UNASSIGNED_PROJECT' }
-          });
-          return res.status(403).json({
-            success: false,
-            message: 'Unauthorized. You are not assigned to this project or its tasks.'
-          });
-        }
       }
     }
 
@@ -1027,24 +925,47 @@ const downloadFile = async (req, res, next) => {
         return driveStream.pipe(res);
       } catch (streamError) {
         console.error(`[Google Drive Stream Error] ${streamError.message}`);
-        // Fall through to fallback check if applicable
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to stream file from Google Drive. Please try again later.'
+        });
       }
     }
 
     // 2. S3 Private object -> redirect to short-lived signed URL
     if (file.storageProvider === 'S3') {
-      const signedUrl = await getAccessibleDownloadUrl(file);
-      if (signedUrl && !signedUrl.startsWith('s3://')) {
-        return res.redirect(signedUrl);
+      try {
+        const signedUrl = await getAccessibleDownloadUrl(file);
+        if (signedUrl && !signedUrl.startsWith('s3://')) {
+          return res.redirect(signedUrl);
+        }
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to generate download URL for S3 file.'
+        });
+      } catch (s3Error) {
+        console.error(`[S3 Download Error] ${s3Error.message}`);
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to access file from S3 storage.'
+        });
       }
     }
 
     // 3. Cloudinary -> redirect to secure URL
     if (file.storageProvider === 'CLOUDINARY') {
-      const targetUrl = (file.fileUrl && file.fileUrl.startsWith('http'))
-        ? file.fileUrl
-        : cloudinary.url(file.storageKey || file.publicId, { secure: true, resource_type: 'auto' });
-      return res.redirect(targetUrl);
+      try {
+        const targetUrl = (file.fileUrl && file.fileUrl.startsWith('http'))
+          ? file.fileUrl
+          : cloudinary.url(file.storageKey || file.publicId, { secure: true, resource_type: 'auto' });
+        return res.redirect(targetUrl);
+      } catch (cloudinaryError) {
+        console.error(`[Cloudinary Download Error] ${cloudinaryError.message}`);
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to access file from Cloudinary storage.'
+        });
+      }
     }
 
     // 4. Local disk file fallback
@@ -1419,42 +1340,8 @@ const browseFiles = async (req, res, next) => {
 
     let query = { status: { $ne: 'DELETED' } };
 
-    // RBAC filtering
-    if (req.user.role === 'CLIENT') {
-      query.client = req.user._id;
-      query.isConfidential = { $ne: true };
-      query.$and = [
-        {
-          $or: [
-            {
-              isDeliverable: { $ne: true },
-              category: { $nin: ['DELIVERABLE'] }
-            },
-            {
-              $and: [
-                { $or: [{ isDeliverable: true }, { category: 'DELIVERABLE' }] },
-                {
-                  $or: [
-                    { adminApproved: true },
-                    { adminApprovalStatus: 'APPROVED' },
-                    {
-                      approvalStatus: 'APPROVED',
-                      adminApprovalStatus: { $ne: 'CHANGES_REQUESTED' },
-                      adminApproved: { $ne: false }
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        }
-      ];
-    } else if (req.user.role === 'Employee') {
-      query.isConfidential = { $ne: true };
-      query.module = { $ne: 'HR' };
-    } else if (req.user.role === 'HR') {
-      // HR can view HR and general files
-    }
+    // Apply role-based filters using centralized utility
+    query = applyRoleFilters(query, req.user);
 
     // Name search
     if (search && search.trim()) {

@@ -131,7 +131,115 @@ const recalculateProjectProgress = async (projectId, actingUserId = null) => {
   }
 };
 
+/**
+ * Batch compute health for multiple projects using aggregation
+ * Eliminates N+1 query problem in admin analytics
+ */
+const determineProjectsHealthBatch = async (projectIds) => {
+  if (!projectIds || projectIds.length === 0) return {};
+
+  const now = new Date();
+  const threeDaysFromNow = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
+
+  // Get all tasks for these projects in a single aggregation
+  const taskStats = await Task.aggregate([
+    {
+      $match: {
+        project: { $in: projectIds },
+        status: { $ne: 'COMPLETED' }
+      }
+    },
+    {
+      $group: {
+        _id: '$project',
+        blockedCount: {
+          $sum: { $cond: [{ $eq: ['$status', 'BLOCKED'] }, 1, 0] }
+        },
+        overdueCount: {
+          $sum: {
+            $cond: [
+              { $and: [
+                { $ne: ['$dueDate', null] },
+                { $lt: ['$dueDate', now] }
+              ]},
+              1,
+              0
+            ]
+          }
+        },
+        urgentBlockedCount: {
+          $sum: {
+            $cond: [
+              { $and: [
+                { $eq: ['$status', 'BLOCKED'] },
+                { $in: ['$priority', ['HIGH', 'URGENT']] }
+              ]},
+              1,
+              0
+            ]
+          }
+        },
+        approachingDeadlineCount: {
+          $sum: {
+            $cond: [
+              { $and: [
+                { $ne: ['$dueDate', null] },
+                { $gte: ['$dueDate', now] },
+                { $lte: ['$dueDate', threeDaysFromNow] }
+              ]},
+              1,
+              0
+            ]
+          }
+        }
+      }
+    }
+  ]);
+
+  // Convert to map for quick lookup
+  const statsMap = {};
+  taskStats.forEach(stat => {
+    statsMap[stat._id.toString()] = stat;
+  });
+
+  // Get project end dates for project-overdue check
+  const projects = await Project.find({ _id: { $in: projectIds } }).select('endDate');
+  const endDateMap = {};
+  projects.forEach(p => {
+    endDateMap[p._id.toString()] = p.endDate;
+  });
+
+  // Compute health for each project
+  const healthMap = {};
+  for (const projectId of projectIds) {
+    const pid = projectId.toString();
+    const stats = statsMap[pid] || {
+      blockedCount: 0,
+      overdueCount: 0,
+      urgentBlockedCount: 0,
+      approachingDeadlineCount: 0
+    };
+
+    const projectEndDate = endDateMap[pid];
+    const projectOverdue = projectEndDate && new Date(projectEndDate) < now;
+
+    let health;
+    if (stats.overdueCount > 0 || stats.urgentBlockedCount > 0 || projectOverdue) {
+      health = 'OVERDUE_BLOCKED';
+    } else if (stats.blockedCount > 0 || stats.approachingDeadlineCount > 0) {
+      health = 'AT_RISK';
+    } else {
+      health = 'ON_TRACK';
+    }
+
+    healthMap[pid] = health;
+  }
+
+  return healthMap;
+};
+
 module.exports = {
   determineProjectHealth,
-  recalculateProjectProgress
+  recalculateProjectProgress,
+  determineProjectsHealthBatch
 };

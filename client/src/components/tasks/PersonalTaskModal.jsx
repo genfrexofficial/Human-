@@ -3,7 +3,8 @@ import Modal from '../common/Modal';
 import Input from '../common/Input';
 import Button from '../common/Button';
 import { EmployeeService } from '../../services/EmployeeService';
-import { UserCheck, Tag, Calendar, Clock, AlertCircle } from 'lucide-react';
+import { UserCheck, Tag, Calendar, Clock, AlertCircle, Paperclip, ExternalLink, Download } from 'lucide-react';
+import { fileService } from '../../services/fileService';
 import toast from 'react-hot-toast';
 
 const CATEGORIES = [
@@ -240,6 +241,52 @@ const PersonalTaskModal = ({ isOpen, onClose, task = null, onSaved, preselectedE
             onChange={handleChange}
           />
         </div>
+
+        {/* Attached Worker Documents */}
+        {task?.attachments && task.attachments.length > 0 && (
+          <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3 space-y-2">
+            <span className="font-semibold text-slate-800 text-xs block">
+              Attached Worker Documents ({task.attachments.length})
+            </span>
+            <div className="space-y-1.5">
+              {task.attachments.map((att, idx) => {
+                const isLink = att.isLink || att.fileType === 'LINK' || (att.fileUrl && att.fileUrl.startsWith('http'));
+                return (
+                  <div key={att._id || idx} className="flex items-center justify-between p-2 rounded-lg bg-white border border-slate-200 text-xs">
+                    <div className="flex items-center gap-2 truncate">
+                      {isLink ? <ExternalLink className="w-3.5 h-3.5 text-indigo-500 shrink-0" /> : <Paperclip className="w-3.5 h-3.5 text-slate-400 shrink-0" />}
+                      <span className="font-medium text-slate-800 truncate">{att.fileName}</span>
+                    </div>
+                    {isLink ? (
+                      <a href={att.fileUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline font-semibold text-[11px] inline-flex items-center gap-1">
+                        Open Link <ExternalLink className="w-3 h-3" />
+                      </a>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            const fileId = att._id || att.fileUrl?.split('/')[3];
+                            if (fileId) {
+                              await fileService.downloadBlob(fileId, att.fileName);
+                            } else if (att.fileUrl) {
+                              window.open(att.fileUrl, '_blank');
+                            }
+                          } catch (err) {
+                            toast.error('Failed to download document.');
+                          }
+                        }}
+                        className="text-indigo-600 hover:underline font-semibold text-[11px] inline-flex items-center gap-1"
+                      >
+                        Download <Download className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Footer actions */}
         <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-100">

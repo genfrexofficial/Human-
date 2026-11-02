@@ -42,7 +42,7 @@ router.post('/:id/start', authorizeRoles('Employee', 'ADMIN', 'HR'), startTask);
 router.post('/:id/progress', authorizeRoles('Employee', 'ADMIN', 'HR'), updateTaskProgress);
 router.post('/:id/submit-review', authorizeRoles('Employee', 'ADMIN', 'HR'), submitTaskForReview);
 router.post('/:id/block', authorizeRoles('Employee', 'ADMIN', 'HR'), blockTask);
-router.post('/:id/complete', authorizeRoles('ADMIN', 'HR'), completeTask);
+router.post('/:id/complete', authorizeRoles('ADMIN', 'HR', 'Employee'), completeTask);
 
 // Delete task (Admin & HR)
 router.delete('/:id', authorizeRoles('ADMIN', 'HR'), deleteTask);

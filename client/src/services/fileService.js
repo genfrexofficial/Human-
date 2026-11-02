@@ -30,20 +30,14 @@ export const fileService = {
 
   uploadFile: async (payload) => {
     const isFormData = payload instanceof FormData;
-    const response = await api.post('/files/upload', payload, isFormData ? {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
-    } : {});
+    // Don't set Content-Type for FormData - browser sets it with boundary automatically
+    const response = await api.post('/files/upload', payload, isFormData ? {} : {});
     return response.data;
   },
 
   uploadConfidential: async (formData) => {
-    const response = await api.post('/files/upload-confidential', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
-    });
+    // Don't set Content-Type for FormData - browser sets it with boundary automatically
+    const response = await api.post('/files/upload-confidential', formData, {});
     return response.data;
   },
 
@@ -73,7 +67,9 @@ export const fileService = {
       document.body.appendChild(link);
       link.click();
       link.remove();
-      setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+      // Revoke after 30 seconds to ensure download has started
+      // Browser will also clean up on page unload
+      setTimeout(() => window.URL.revokeObjectURL(url), 30000);
       return true;
     } catch (err) {
       if (err.response?.data instanceof Blob) {
@@ -98,7 +94,9 @@ export const fileService = {
     const blob = new Blob([response.data], { type: contentType });
     const url = window.URL.createObjectURL(blob);
     window.open(url, '_blank');
-    setTimeout(() => window.URL.revokeObjectURL(url), 10000);
+    // Revoke after 60 seconds to ensure PDF has loaded in new tab
+    // Browser will also clean up on page unload
+    setTimeout(() => window.URL.revokeObjectURL(url), 60000);
     return true;
   },
 

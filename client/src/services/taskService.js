@@ -49,8 +49,8 @@ export const taskService = {
     return response.data;
   },
 
-  completeTask: async (id) => {
-    const response = await api.post(`/tasks/${id}/complete`);
+  completeTask: async (id, data = {}) => {
+    const response = await api.post(`/tasks/${id}/complete`, data);
     return response.data;
   },
 

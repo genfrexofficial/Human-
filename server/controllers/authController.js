@@ -2,7 +2,10 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
 const generateToken = (user) => {
-  const secret = process.env.JWT_SECRET || 'clientflow_jwt_secret_super_secure_key_2026_hackathon';
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error('JWT_SECRET environment variable is not set. Cannot generate token.');
+  }
   return jwt.sign(
     {
       userId: user._id,
@@ -147,13 +150,15 @@ const login = async (req, res, next) => {
       });
     }
 
-    // Automated Attendance Tracking on Login (For Employees/Employees/HR/Admin)
+    // Automated Attendance Tracking on Login (For Employees/HR/Admin)
     if (['Employee', 'HR', 'ADMIN'].includes(user.role)) {
       try {
         const Attendance = require('../models/Attendance');
         const todayStr = new Date().toISOString().split('T')[0];
         const now = new Date();
         let att = await Attendance.findOne({ user: user._id, date: todayStr });
+        // Get client IP - works with trust proxy setting
+        const clientIp = req.ip || req.headers['x-forwarded-for'] || 'unknown';
         if (!att) {
           att = new Attendance({
             user: user._id,
@@ -162,7 +167,7 @@ const login = async (req, res, next) => {
             lastLogin: now,
             sessions: [{ loginAt: now }],
             status: 'PRESENT',
-            ipAddress: req.ip || req.connection?.remoteAddress,
+            ipAddress: clientIp,
             userAgent: req.headers['user-agent']
           });
           await att.save();
