@@ -315,7 +315,9 @@ const updateProject = async (req, res, next) => {
     if (budget !== undefined) project.budget = budget;
     if (status) project.status = status;
     if (stage) project.stage = stage;
-    if (assignedEmployees) project.assignedEmployees = assignedEmployees;
+    if (assignedEmployees !== undefined) {
+      project.assignedEmployees = Array.isArray(assignedEmployees) ? assignedEmployees : [];
+    }
 
     await project.save();
 

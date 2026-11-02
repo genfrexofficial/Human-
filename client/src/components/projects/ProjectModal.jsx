@@ -3,6 +3,8 @@ import Modal from '../common/Modal';
 import Input from '../common/Input';
 import Button from '../common/Button';
 import { clientService } from '../../services/clientService';
+import { EmployeeService } from '../../services/EmployeeService';
+import { Users, Check } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const ProjectModal = ({ isOpen, onClose, project = null, onSaved }) => {
@@ -13,11 +15,14 @@ const ProjectModal = ({ isOpen, onClose, project = null, onSaved }) => {
     startDate: '',
     endDate: '',
     budget: '',
-    status: 'PLANNING'
+    status: 'PLANNING',
+    assignedEmployees: []
   });
   const [clients, setClients] = useState([]);
+  const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(false);
   const [loadingClients, setLoadingClients] = useState(false);
+  const [loadingEmployees, setLoadingEmployees] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -37,6 +42,22 @@ const ProjectModal = ({ isOpen, onClose, project = null, onSaved }) => {
       };
       loadClients();
 
+      // Load existing workers / employees
+      const loadEmployees = async () => {
+        try {
+          setLoadingEmployees(true);
+          const res = await EmployeeService.getEmployees();
+          if (res.success) {
+            setEmployees(res.Employees || []);
+          }
+        } catch (err) {
+          console.error('Failed to load workers list:', err);
+        } finally {
+          setLoadingEmployees(false);
+        }
+      };
+      loadEmployees();
+
       if (project) {
         setFormData({
           name: project.name || '',
@@ -45,7 +66,10 @@ const ProjectModal = ({ isOpen, onClose, project = null, onSaved }) => {
           startDate: project.startDate ? new Date(project.startDate).toISOString().split('T')[0] : '',
           endDate: project.endDate ? new Date(project.endDate).toISOString().split('T')[0] : '',
           budget: project.budget || '',
-          status: project.status || 'PLANNING'
+          status: project.status || 'PLANNING',
+          assignedEmployees: Array.isArray(project.assignedEmployees)
+            ? project.assignedEmployees.map((e) => (e._id ? e._id : e))
+            : []
         });
       } else {
         setFormData({
@@ -55,7 +79,8 @@ const ProjectModal = ({ isOpen, onClose, project = null, onSaved }) => {
           startDate: new Date().toISOString().split('T')[0],
           endDate: '',
           budget: '',
-          status: 'PLANNING'
+          status: 'PLANNING',
+          assignedEmployees: []
         });
       }
     }
@@ -64,6 +89,28 @@ const ProjectModal = ({ isOpen, onClose, project = null, onSaved }) => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleToggleEmployee = (employeeId) => {
+    setFormData((prev) => {
+      const exists = prev.assignedEmployees.includes(employeeId);
+      return {
+        ...prev,
+        assignedEmployees: exists
+          ? prev.assignedEmployees.filter((id) => id !== employeeId)
+          : [...prev.assignedEmployees, employeeId]
+      };
+    });
+  };
+
+  const handleToggleAllEmployees = () => {
+    setFormData((prev) => ({
+      ...prev,
+      assignedEmployees:
+        prev.assignedEmployees.length === employees.length
+          ? []
+          : employees.map((e) => e._id)
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -77,7 +124,8 @@ const ProjectModal = ({ isOpen, onClose, project = null, onSaved }) => {
       setLoading(true);
       await onSaved({
         ...formData,
-        endDate: formData.endDate ? formData.endDate : null
+        endDate: formData.endDate ? formData.endDate : null,
+        assignedEmployees: formData.assignedEmployees
       }, project?._id);
       onClose();
     } catch (err) {
@@ -140,6 +188,74 @@ const ProjectModal = ({ isOpen, onClose, project = null, onSaved }) => {
           )}
         </div>
 
+        {/* Assign Workers / Employees */}
+        <div>
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="block text-xs font-medium text-slate-700">
+              Assign Workers / Team Members{' '}
+              <span className="text-slate-400 font-normal">
+                ({formData.assignedEmployees.length} selected)
+              </span>
+            </label>
+            {employees.length > 0 && (
+              <button
+                type="button"
+                onClick={handleToggleAllEmployees}
+                className="text-[11px] font-semibold text-indigo-600 hover:text-indigo-800 transition"
+              >
+                {formData.assignedEmployees.length === employees.length ? 'Deselect All' : 'Select All'}
+              </button>
+            )}
+          </div>
+
+          {loadingEmployees ? (
+            <div className="p-3 text-center text-xs text-slate-400 bg-slate-50 border border-slate-200 rounded-lg">
+              Loading available workers...
+            </div>
+          ) : employees.length === 0 ? (
+            <div className="p-3 text-center text-xs text-slate-400 bg-slate-50 border border-slate-200 rounded-lg">
+              No workers created yet. You can create workers in the HR / Workers section.
+            </div>
+          ) : (
+            <div className="max-h-44 overflow-y-auto space-y-1.5 p-2 bg-slate-50/70 border border-slate-200 rounded-lg">
+              {employees.map((emp) => {
+                const isSelected = formData.assignedEmployees.includes(emp._id);
+                return (
+                  <label
+                    key={emp._id}
+                    className={`flex items-center justify-between p-2 rounded-lg border text-xs cursor-pointer transition-all ${
+                      isSelected
+                        ? 'bg-indigo-50/80 border-indigo-300 text-indigo-900 font-medium shadow-xs'
+                        : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => handleToggleEmployee(emp._id)}
+                        className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5 shrink-0"
+                      />
+                      <div className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 font-bold text-[10px] flex items-center justify-center shrink-0">
+                        {emp.name?.charAt(0) || 'W'}
+                      </div>
+                      <div className="truncate">
+                        <span className="block truncate font-medium">{emp.name}</span>
+                        <span className="block text-[10px] text-slate-400 truncate">{emp.email}</span>
+                      </div>
+                    </div>
+                    {emp.title && (
+                      <span className="text-[10px] text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded shrink-0">
+                        {emp.title}
+                      </span>
+                    )}
+                  </label>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Input
             label="Start Date"
@@ -186,12 +302,12 @@ const ProjectModal = ({ isOpen, onClose, project = null, onSaved }) => {
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-100">
-          <Button variant="secondary" onClick={onClose} disabled={loading}>
+        <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+          <Button variant="outline" onClick={onClose} type="button">
             Cancel
           </Button>
           <Button type="submit" loading={loading}>
-            {project ? 'Save Changes' : 'Create Project'}
+            {project ? 'Update Project' : 'Create Project'}
           </Button>
         </div>
       </form>

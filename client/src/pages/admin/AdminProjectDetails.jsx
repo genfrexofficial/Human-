@@ -50,6 +50,7 @@ import {
   ExternalLink,
   Users,
   CheckCircle2,
+  ArrowRight,
   X
 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -721,7 +722,15 @@ const AdminProjectDetails = () => {
               }
             >
               {!project.assignedEmployees || project.assignedEmployees.length === 0 ? (
-                <p className="text-xs text-slate-400 py-2">No Employees assigned to this project yet.</p>
+                <div className="py-2 flex items-center justify-between text-xs text-slate-400">
+                  <span>No Employees assigned to this project yet.</span>
+                  <button
+                    onClick={() => setProjectModalOpen(true)}
+                    className="text-xs font-semibold text-blue-600 hover:text-blue-700"
+                  >
+                    + Assign Workers
+                  </button>
+                </div>
               ) : (
                 <div className="space-y-2.5 text-xs">
                   {project.assignedEmployees.map((Employee) => (
@@ -880,20 +889,39 @@ const AdminProjectDetails = () => {
               </p>
             </div>
 
-            <Button
-              size="sm"
-              variant="primary"
-              onClick={() => handleOpenCreateAppt()}
-              icon={FileCheck}
-            >
-              Create HR Appointment
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setProjectModalOpen(true)}
+                icon={UserCheck}
+              >
+                Assign / Manage Workers
+              </Button>
+
+              <Button
+                size="sm"
+                variant="primary"
+                onClick={() => handleOpenCreateAppt()}
+                icon={FileCheck}
+              >
+                Create HR Appointment
+              </Button>
+            </div>
           </div>
 
           {!project.assignedEmployees || project.assignedEmployees.length === 0 ? (
             <div className="bg-white rounded-xl border border-slate-200 p-8 text-center text-xs text-slate-400">
               <Users className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-              <p>No Employees assigned to this project yet.</p>
+              <p className="mb-3">No Employees assigned to this project yet.</p>
+              <Button
+                size="sm"
+                variant="primary"
+                onClick={() => setProjectModalOpen(true)}
+                icon={UserCheck}
+              >
+                Assign Existing Workers
+              </Button>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
