@@ -15,7 +15,8 @@ const getAllUsers = async (req, res, next) => {
     const query = {};
 
     if (role && role !== 'ALL') {
-      query.role = role.toUpperCase();
+      const uRole = role.toUpperCase();
+      query.role = uRole === 'EMPLOYEE' ? 'Employee' : uRole;
     }
 
     if (status && status !== 'ALL') {

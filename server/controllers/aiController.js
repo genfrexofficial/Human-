@@ -25,7 +25,8 @@ const generateProjectSummary = async (req, res, next) => {
     }
 
     // Role check
-    if (req.user.role === 'CLIENT' && project.client._id.toString() !== req.user._id.toString()) {
+    const clientUserId = project.client?._id ? project.client._id.toString() : project.client?.toString();
+    if (req.user.role === 'CLIENT' && clientUserId !== req.user._id.toString()) {
       return res.status(403).json({
         success: false,
         message: 'Unauthorized.'

@@ -325,7 +325,7 @@ const AdminHRTeam = () => {
             <Button
               className="w-full"
               icon={Copy}
-              onClick={() => copyToClipboard(`GENFREX HR Portal Credentials:\nEmail: ${createdHRInfo.email}\nPassword: ${createdHRInfo.temporaryPassword}\nLogin: http://localhost:5173/login`)}
+              onClick={() => copyToClipboard(`GENFREX HR Portal Credentials:\nEmail: ${createdHRInfo.email}\nPassword: ${createdHRInfo.temporaryPassword}\nLogin: ${window.location.origin}/login`)}
             >
               Copy Credentials
             </Button>

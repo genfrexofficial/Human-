@@ -416,8 +416,16 @@ const getPayrollById = async (req, res, next) => {
       });
     }
 
-    // Role check: Employee can only access their own slip
-    if (req.user.role === 'Employee' && slip.user._id.toString() !== req.user._id.toString()) {
+    // Role check: Only ADMIN, HR, or the Employee who owns the slip
+    if (req.user.role === 'CLIENT') {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied to payslip.'
+      });
+    }
+
+    const slipUserId = slip.user?._id ? slip.user._id.toString() : slip.user?.toString();
+    if (req.user.role === 'Employee' && slipUserId !== req.user._id.toString()) {
       return res.status(403).json({
         success: false,
         message: 'Access denied to this payslip.'
@@ -731,7 +739,12 @@ const downloadPaymentVoucher = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Payroll record not found.' });
     }
 
-    if (req.user.role === 'Employee' && slip.user._id.toString() !== req.user._id.toString()) {
+    if (req.user.role === 'CLIENT') {
+      return res.status(403).json({ success: false, message: 'Access denied to this voucher.' });
+    }
+
+    const slipUserId = slip.user?._id ? slip.user._id.toString() : slip.user?.toString();
+    if (req.user.role === 'Employee' && slipUserId !== req.user._id.toString()) {
       return res.status(403).json({ success: false, message: 'Access denied to this voucher.' });
     }
 

@@ -14,30 +14,60 @@ const app = express();
 app.set('trust proxy', true);
 
 // Enable CORS
-const allowedOrigins = [
+const configuredClientUrls = (process.env.CLIENT_URL || '')
+  .split(',')
+  .map((url) => url.trim().replace(/\/+$/, ''))
+  .filter(Boolean);
+
+const defaultAllowedOrigins = [
   'http://localhost:5173',
   'http://localhost:3000',
-  process.env.CLIENT_URL
-].filter(Boolean);
+  'http://localhost:5000',
+  'https://hrms.genfrex.com',
+  'http://hrms.genfrex.com',
+  'https://genfrex.com',
+  'https://www.genfrex.com'
+];
 
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps, curl, postman)
-      if (!origin) return callback(null, true);
-      if (allowedOrigins.indexOf(origin) !== -1) {
+const allowedOrigins = [...new Set([...defaultAllowedOrigins, ...configuredClientUrls])];
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps, curl, postman, server-to-server)
+    if (!origin) return callback(null, true);
+
+    const cleanOrigin = origin.replace(/\/+$/, '');
+
+    // 1. Check exact allowed list
+    if (allowedOrigins.includes(cleanOrigin)) {
+      return callback(null, true);
+    }
+
+    // 2. Allow any subdomain of genfrex.com
+    try {
+      const parsed = new URL(cleanOrigin);
+      if (parsed.hostname === 'genfrex.com' || parsed.hostname.endsWith('.genfrex.com')) {
         return callback(null, true);
       }
-      // In production, reject unknown origins
-      if (process.env.NODE_ENV === 'production') {
-        return callback(new Error('Not allowed by CORS'), false);
-      }
-      // Development: allow localhost on known ports only
-      return callback(null, false);
-    },
-    credentials: true
-  })
-);
+    } catch (e) {
+      // Ignore URL parse error
+    }
+
+    // 3. Development: allow localhost on known ports
+    if (process.env.NODE_ENV !== 'production' && /^https?:\/\/localhost(:\d+)?$/.test(cleanOrigin)) {
+      return callback(null, true);
+    }
+
+    // Reject unknown origins cleanly without throwing 500 error
+    return callback(null, false);
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 
 // Body parser
 app.use(express.json({ limit: '10mb' }));

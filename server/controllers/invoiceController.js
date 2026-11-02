@@ -68,7 +68,8 @@ const getInvoiceById = async (req, res, next) => {
       return res.status(403).json({ success: false, message: 'Forbidden. Role not authorized to access invoices.' });
     }
 
-    if (req.user.role === 'CLIENT' && invoice.client._id.toString() !== req.user._id.toString()) {
+    const clientUserId = invoice.client?._id ? invoice.client._id.toString() : invoice.client?.toString();
+    if (req.user.role === 'CLIENT' && clientUserId !== req.user._id.toString()) {
       return res.status(403).json({ success: false, message: 'Access denied to this invoice.' });
     }
 
@@ -219,7 +220,8 @@ const generateInvoicePDF = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Invoice not found.' });
     }
 
-    if (req.user.role === 'CLIENT' && invoice.client._id.toString() !== req.user._id.toString()) {
+    const clientUserId = invoice.client?._id ? invoice.client._id.toString() : invoice.client?.toString();
+    if (req.user.role === 'CLIENT' && clientUserId !== req.user._id.toString()) {
       return res.status(403).json({ success: false, message: 'Access denied.' });
     }
 

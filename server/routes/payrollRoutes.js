@@ -21,9 +21,9 @@ router.use(authenticateToken);
 // Employee routes
 router.get('/my-payrolls', authorizeRoles('Employee'), getMyPayrolls);
 
-// Shared / Role-checked detail view & PDF download
-router.get('/slip/:id', getPayrollById);
-router.get('/slip/:id/download-pdf', downloadPaymentVoucher);
+// Shared / Role-checked detail view & PDF download (Admin, HR, or the Employee themselves)
+router.get('/slip/:id', authorizeRoles('ADMIN', 'HR', 'Employee'), getPayrollById);
+router.get('/slip/:id/download-pdf', authorizeRoles('ADMIN', 'HR', 'Employee'), downloadPaymentVoucher);
 
 // Admin & HR management routes
 router.get('/all', authorizeRoles('ADMIN', 'HR'), getPayrolls);

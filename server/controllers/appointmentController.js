@@ -511,7 +511,7 @@ const submitForApproval = async (req, res, next) => {
       actorId: req.user._id,
       action: 'APPOINTMENT_SUBMITTED',
       appointmentLetterId: appointment._id,
-      candidateId: appointment.candidateId._id,
+      candidateId: appointment.candidateId?._id || appointment.candidateId,
       previousStatus,
       newStatus: 'PENDING_APPROVAL'
     });
@@ -575,7 +575,7 @@ const approveAppointment = async (req, res, next) => {
       actorId: req.user._id,
       action: 'APPOINTMENT_APPROVED',
       appointmentLetterId: appointment._id,
-      candidateId: appointment.candidateId._id,
+      candidateId: appointment.candidateId?._id || appointment.candidateId,
       previousStatus,
       newStatus: 'APPROVED',
       metadata: { comment: req.body.comment }
@@ -643,7 +643,7 @@ const rejectAppointment = async (req, res, next) => {
       actorId: req.user._id,
       action: 'APPOINTMENT_REJECTED',
       appointmentLetterId: appointment._id,
-      candidateId: appointment.candidateId._id,
+      candidateId: appointment.candidateId?._id || appointment.candidateId,
       previousStatus,
       newStatus: 'REJECTED',
       metadata: { reason }
@@ -944,10 +944,14 @@ const updateAcceptanceStatus = async (req, res, next) => {
     const prevAcceptance = appointment.acceptanceStatus;
     appointment.acceptanceStatus = status;
 
+    const candidateId = appointment.candidateId?._id || appointment.candidateId;
+
     if (status === 'ACCEPTED') {
       appointment.status = 'ACCEPTED';
       appointment.acceptedAt = new Date();
-      await Candidate.findByIdAndUpdate(appointment.candidateId._id, { candidateStatus: 'ONBOARDED' });
+      if (candidateId) {
+        await Candidate.findByIdAndUpdate(candidateId, { candidateStatus: 'ONBOARDED' });
+      }
     } else if (status === 'DECLINED') {
       appointment.status = 'DECLINED';
       appointment.declinedAt = new Date();
@@ -962,7 +966,7 @@ const updateAcceptanceStatus = async (req, res, next) => {
       actorId: req.user._id,
       action: `ACCEPTANCE_${status}`,
       appointmentLetterId: appointment._id,
-      candidateId: appointment.candidateId._id,
+      candidateId,
       previousStatus: prevAcceptance,
       newStatus: status,
       metadata: { reason }
@@ -973,7 +977,7 @@ const updateAcceptanceStatus = async (req, res, next) => {
         actorId: req.user._id,
         action: 'CANDIDATE_ACCEPTED',
         appointmentLetterId: appointment._id,
-        candidateId: appointment.candidateId._id,
+        candidateId,
         metadata: { referenceNumber: appointment.referenceNumber }
       });
     }
