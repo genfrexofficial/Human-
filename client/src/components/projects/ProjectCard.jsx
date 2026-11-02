@@ -64,7 +64,7 @@ const ProjectCard = ({ project, basePath = '/admin/projects' }) => {
 
           <div className="flex items-center gap-1.5">
             <Calendar className="w-3.5 h-3.5 text-slate-400" />
-            <span className="truncate">Due: <strong className="text-slate-700">{formatDate(project.endDate)}</strong></span>
+            <span className="truncate">Due: <strong className="text-slate-700">{project.endDate ? formatDate(project.endDate) : 'Ongoing'}</strong></span>
           </div>
         </div>
       </div>

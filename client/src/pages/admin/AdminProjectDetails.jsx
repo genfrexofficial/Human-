@@ -457,7 +457,7 @@ const AdminProjectDetails = () => {
 
               <div className="flex items-center gap-1.5">
                 <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                <span>Target: <strong>{formatDate(project.endDate)}</strong></span>
+                <span>Target: <strong>{project.endDate ? formatDate(project.endDate) : 'Ongoing'}</strong></span>
               </div>
 
               <div className="flex items-center gap-1.5">

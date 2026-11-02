@@ -144,8 +144,8 @@ const ClientInvoices = () => {
                       <td className="py-3 px-4">
                         <span
                           className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${inv.status === 'PAID'
-                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                              : 'bg-amber-50 text-amber-700 border border-amber-200'
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                            : 'bg-amber-50 text-amber-700 border border-amber-200'
                             }`}
                         >
                           {inv.status}
@@ -193,8 +193,8 @@ const ClientInvoices = () => {
                 <img src="/logo.png" alt="GENFREX" className="h-7 w-auto object-contain" />
                 <span
                   className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${selectedInvoice.status === 'PAID'
-                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                      : 'bg-amber-50 text-amber-700 border border-amber-200'
+                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                    : 'bg-amber-50 text-amber-700 border border-amber-200'
                     }`}
                 >
                   {selectedInvoice.status}
@@ -250,13 +250,13 @@ const ClientInvoices = () => {
                 <span className="text-slate-400">Account:</span> GENFREX
               </p>
               <p>
-                <span className="text-slate-400">A/C No:</span> 987654321098
+                <span className="text-slate-400">A/C No:</span> 45584184408
               </p>
               <p>
-                <span className="text-slate-400">IFSC:</span> HDFC0001234 (HDFC Bank)
+                <span className="text-slate-400">IFSC:</span> SBIN0010493 (State Bank of India)
               </p>
               <p>
-                <span className="text-slate-400">UPI ID:</span> genfrex@hdfcbank
+                <span className="text-slate-400">UPI ID:</span> yb.genfrex0001@sbi
               </p>
             </div>
 

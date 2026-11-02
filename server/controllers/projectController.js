@@ -311,7 +311,7 @@ const updateProject = async (req, res, next) => {
     if (description !== undefined) project.description = description;
     if (client) project.client = client;
     if (startDate) project.startDate = startDate;
-    if (endDate !== undefined) project.endDate = endDate;
+    if (endDate !== undefined) project.endDate = endDate ? endDate : null;
     if (budget !== undefined) project.budget = budget;
     if (status) project.status = status;
     if (stage) project.stage = stage;

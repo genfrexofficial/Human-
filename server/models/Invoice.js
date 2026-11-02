@@ -65,10 +65,10 @@ const invoiceSchema = new mongoose.Schema(
     },
     bankDetails: {
       accountName: { type: String, default: 'GENFREX' },
-      accountNumber: { type: String, default: '987654321098' },
+      accountNumber: { type: String, default: '45584184408' },
       ifscCode: { type: String, default: 'HDFC0001234' },
       bankName: { type: String, default: 'HDFC Bank, Karur' },
-      upiId: { type: String, default: 'genfrex@hdfcbank' }
+      upiId: { type: String, default: 'yb.genfrex0001@sbi' }
     },
     paymentDetails: {
       paidAt: { type: Date },

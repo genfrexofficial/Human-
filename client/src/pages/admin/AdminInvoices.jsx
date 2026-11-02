@@ -819,9 +819,9 @@ const AdminInvoices = () => {
                 <div className="bg-slate-50 p-3.5 rounded-xl space-y-1 font-mono text-[11px] text-slate-700">
                   <p className="font-bold text-slate-900 font-sans">Payment Instructions:</p>
                   <p>A/C: {previewInvoiceModalData.bankDetails?.accountName || 'GENFREX'}</p>
-                  <p>A/C No: {previewInvoiceModalData.bankDetails?.accountNumber || '987654321098'}</p>
+                  <p>A/C No: {previewInvoiceModalData.bankDetails?.accountNumber || '45584184408'}</p>
                   <p>IFSC: {previewInvoiceModalData.bankDetails?.ifscCode || 'HDFC0001234'} ({previewInvoiceModalData.bankDetails?.bankName || 'HDFC Bank'})</p>
-                  <p>UPI: {previewInvoiceModalData.bankDetails?.upiId || 'genfrex@hdfcbank'}</p>
+                  <p>UPI: {previewInvoiceModalData.bankDetails?.upiId || 'yb.genfrex0001@sbi'}</p>
                 </div>
 
                 <div className="flex flex-col justify-end items-end text-right p-3.5">

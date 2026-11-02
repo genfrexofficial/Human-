@@ -66,6 +66,22 @@ export const formatWorkingHours = (recordOrHours) => {
 
   // If passed an attendance record or summary object
   if (typeof recordOrHours === 'object') {
+    // If firstLogin and lastLogout exist, verify that the duration reflects the true active span
+    if (recordOrHours.firstLogin && recordOrHours.lastLogout) {
+      const start = new Date(recordOrHours.firstLogin).getTime();
+      const end = new Date(recordOrHours.lastLogout).getTime();
+      if (end > start) {
+        const spanMins = Math.round((end - start) / 60000);
+        // If stored totalMinutes was 0 or significantly smaller due to unclosed sessions
+        if (!recordOrHours.totalMinutes || spanMins > recordOrHours.totalMinutes) {
+          const h = Math.floor(spanMins / 60);
+          const m = spanMins % 60;
+          const mm = m.toString().padStart(2, '0');
+          return `${h} hrs ${mm} mins`;
+        }
+      }
+    }
+
     if (recordOrHours.displayHours) return recordOrHours.displayHours;
     if (recordOrHours.timeFormat) return `${recordOrHours.timeFormat} hrs`;
 

@@ -196,7 +196,7 @@ const ClientProjectDetails = () => {
 
               <div className="flex items-center gap-1.5">
                 <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                <span>Estimated Delivery: <strong>{formatDate(project.endDate)}</strong></span>
+                <span>Estimated Delivery: <strong>{project.endDate ? formatDate(project.endDate) : 'Ongoing / Flexible'}</strong></span>
               </div>
             </div>
           </div>

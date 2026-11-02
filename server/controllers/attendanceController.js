@@ -12,33 +12,68 @@ const calculateRecordMetrics = (record, now = new Date()) => {
   let totalMinutes = 0;
   let hasActiveSession = false;
 
+  // 1. Calculate duration from all sessions with session bridging for unclosed sessions
   if (Array.isArray(isPlain.sessions) && isPlain.sessions.length > 0) {
-    isPlain.sessions.forEach((s) => {
+    for (let i = 0; i < isPlain.sessions.length; i++) {
+      const s = isPlain.sessions[i];
       if (s.durationMinutes && s.durationMinutes > 0) {
         totalMinutes += s.durationMinutes;
-      } else if (s.loginAt && s.logoutAt) {
-        const diff = Math.max(0, Math.round((new Date(s.logoutAt).getTime() - new Date(s.loginAt).getTime()) / 60000));
-        totalMinutes += diff;
-      } else if (s.loginAt && !s.logoutAt) {
-        hasActiveSession = true;
-        const endTime = isToday
-          ? now.getTime()
-          : (isPlain.lastLogout ? new Date(isPlain.lastLogout).getTime() : new Date(s.loginAt).getTime());
-        const diff = Math.max(0, Math.round((endTime - new Date(s.loginAt).getTime()) / 60000));
-        // Cap open unclosed session at 16 hrs max
-        totalMinutes += Math.min(diff, 16 * 60);
+      } else if (s.loginAt) {
+        const start = new Date(s.loginAt).getTime();
+        if (s.logoutAt) {
+          const end = new Date(s.logoutAt).getTime();
+          const diff = Math.max(0, Math.round((end - start) / 60000));
+          totalMinutes += diff;
+        } else {
+          // If session has no logoutAt, check if followed by another login session
+          const nextSession = isPlain.sessions[i + 1];
+          if (nextSession && nextSession.loginAt) {
+            const nextStart = new Date(nextSession.loginAt).getTime();
+            const diff = Math.max(0, Math.round((nextStart - start) / 60000));
+            totalMinutes += diff;
+          } else {
+            // Last session and currently open
+            if (isToday) {
+              hasActiveSession = true;
+              const diff = Math.max(0, Math.round((now.getTime() - start) / 60000));
+              totalMinutes += Math.min(diff, 16 * 60);
+            } else if (isPlain.lastLogout) {
+              const end = new Date(isPlain.lastLogout).getTime();
+              const diff = Math.max(0, Math.round((end - start) / 60000));
+              totalMinutes += Math.min(diff, 16 * 60);
+            }
+          }
+        }
       }
-    });
-  } else if (isPlain.totalMinutes && isPlain.totalMinutes > 0) {
-    totalMinutes = isPlain.totalMinutes;
-  } else if (isPlain.firstLogin) {
-    const start = new Date(isPlain.firstLogin).getTime();
-    const end = isPlain.lastLogout ? new Date(isPlain.lastLogout).getTime() : (isToday ? now.getTime() : start);
-    const diff = Math.max(0, Math.round((end - start) / 60000));
-    totalMinutes = Math.min(diff, 16 * 60);
+    }
   }
 
-  // Fallback to legacy totalHours if minutes were 0
+  // 2. Validate against full time span from firstLogin to lastLogout
+  // If user logged in at firstLogin and logged out at lastLogout, the actual span cannot be smaller
+  if (isPlain.firstLogin) {
+    const firstLoginTime = new Date(isPlain.firstLogin).getTime();
+    let effectiveEndTime = null;
+
+    if (isPlain.lastLogout) {
+      effectiveEndTime = new Date(isPlain.lastLogout).getTime();
+    } else if (isToday) {
+      effectiveEndTime = now.getTime();
+      hasActiveSession = true;
+    }
+
+    if (effectiveEndTime && effectiveEndTime > firstLoginTime) {
+      const spanMinutes = Math.max(0, Math.round((effectiveEndTime - firstLoginTime) / 60000));
+      // Cap at 16 hrs max
+      if (spanMinutes > totalMinutes && spanMinutes <= 16 * 60) {
+        totalMinutes = spanMinutes;
+      }
+    }
+  }
+
+  // 3. Fallback to stored totalMinutes or totalHours if available
+  if (totalMinutes === 0 && isPlain.totalMinutes && isPlain.totalMinutes > 0) {
+    totalMinutes = isPlain.totalMinutes;
+  }
   if (totalMinutes === 0 && isPlain.totalHours && isPlain.totalHours > 0) {
     totalMinutes = Math.round(isPlain.totalHours * 60);
   }

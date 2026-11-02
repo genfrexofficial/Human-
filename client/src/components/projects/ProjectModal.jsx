@@ -75,7 +75,10 @@ const ProjectModal = ({ isOpen, onClose, project = null, onSaved }) => {
 
     try {
       setLoading(true);
-      await onSaved(formData, project?._id);
+      await onSaved({
+        ...formData,
+        endDate: formData.endDate ? formData.endDate : null
+      }, project?._id);
       onClose();
     } catch (err) {
       // Error handled by parent or toast
@@ -147,7 +150,7 @@ const ProjectModal = ({ isOpen, onClose, project = null, onSaved }) => {
           />
 
           <Input
-            label="Deadline / End Date"
+            label="Deadline / End Date (Optional)"
             name="endDate"
             type="date"
             value={formData.endDate}
