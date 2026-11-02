@@ -272,26 +272,32 @@ const EmployeeTaskDetails = () => {
 
     try {
       setUploadingFile(true);
-      const formData = new FormData();
-      if (task?.project?._id) {
-        formData.append('projectId', task.project._id);
-      } else {
-        formData.append('module', 'Employee');
-      }
-      formData.append('taskId', taskId);
-      formData.append('category', fileCategory);
-
+      let res;
       if (uploadType === 'FILE') {
+        const formData = new FormData();
+        if (task?.project?._id) {
+          formData.append('projectId', task.project._id);
+        } else {
+          formData.append('module', 'Employee');
+        }
+        formData.append('taskId', taskId);
+        formData.append('category', fileCategory);
         formData.append('file', selectedFile);
         formData.append('fileName', selectedFile.name);
+        res = await fileService.uploadFile(formData);
       } else {
         const cleanUrl = linkUrl.trim().startsWith('http') ? linkUrl.trim() : `https://${linkUrl.trim()}`;
-        formData.append('uploadType', 'LINK');
-        formData.append('linkUrl', cleanUrl);
-        formData.append('fileName', linkTitle.trim() || cleanUrl);
+        res = await fileService.uploadFile({
+          projectId: task?.project?._id || undefined,
+          module: !task?.project?._id ? 'Employee' : undefined,
+          taskId,
+          category: fileCategory,
+          uploadType: 'LINK',
+          linkUrl: cleanUrl,
+          fileName: linkTitle.trim() || cleanUrl,
+          title: linkTitle.trim() || cleanUrl
+        });
       }
-
-      const res = await fileService.uploadFile(formData);
       if (res.success) {
         toast.success(uploadType === 'FILE' ? 'File uploaded successfully!' : 'Deliverable link saved successfully!');
         setSelectedFile(null);

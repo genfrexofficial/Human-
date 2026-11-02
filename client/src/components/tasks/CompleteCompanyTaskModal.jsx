@@ -102,23 +102,29 @@ const CompleteCompanyTaskModal = ({ isOpen, onClose, task, onCompleted }) => {
 
       // Upload if new document
       if (!useExisting) {
-        const formData = new FormData();
-        formData.append('taskId', task._id);
-        formData.append('module', 'Employee');
-        formData.append('category', 'DOCUMENT');
-
+        let uploadRes;
         if (uploadType === 'FILE') {
+          const formData = new FormData();
+          formData.append('taskId', task._id);
+          formData.append('module', 'Employee');
+          formData.append('category', 'DOCUMENT');
           formData.append('file', selectedFile);
           formData.append('fileName', selectedFile.name);
+          uploadRes = await fileService.uploadFile(formData);
         } else {
           const cleanUrl = linkUrl.trim().startsWith('http') ? linkUrl.trim() : `https://${linkUrl.trim()}`;
-          formData.append('uploadType', 'LINK');
-          formData.append('linkUrl', cleanUrl);
-          formData.append('fileName', linkTitle.trim() || cleanUrl);
+          uploadRes = await fileService.uploadFile({
+            taskId: task._id,
+            module: 'Employee',
+            category: 'DOCUMENT',
+            uploadType: 'LINK',
+            linkUrl: cleanUrl,
+            fileName: linkTitle.trim() || cleanUrl,
+            title: linkTitle.trim() || cleanUrl
+          });
         }
 
-        const uploadRes = await fileService.uploadFile(formData);
-        if (uploadRes.success && uploadRes.file) {
+        if (uploadRes && uploadRes.success && uploadRes.file) {
           uploadedFileId = uploadRes.file._id;
         }
       }

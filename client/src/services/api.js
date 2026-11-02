@@ -7,13 +7,25 @@ const api = axios.create({
   }
 });
 
-// Request interceptor: attach JWT token if available
+// Request interceptor: attach JWT token if available & properly handle FormData
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    // Crucial: When sending FormData, delete the default 'Content-Type: application/json'
+    // header so Axios and the browser will automatically compute 'multipart/form-data; boundary=...'
+    if (config.data instanceof FormData) {
+      if (typeof config.headers?.delete === 'function') {
+        config.headers.delete('Content-Type');
+        config.headers.delete('content-type');
+      }
+      delete config.headers['Content-Type'];
+      delete config.headers['content-type'];
+    }
+
     return config;
   },
   (error) => Promise.reject(error)

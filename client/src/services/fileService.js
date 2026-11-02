@@ -30,14 +30,18 @@ export const fileService = {
 
   uploadFile: async (payload) => {
     const isFormData = payload instanceof FormData;
-    // Don't set Content-Type for FormData - browser sets it with boundary automatically
-    const response = await api.post('/files/upload', payload, isFormData ? {} : {});
+    const response = await api.post('/files/upload', payload, isFormData ? {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    } : {
+      headers: { 'Content-Type': 'application/json' }
+    });
     return response.data;
   },
 
   uploadConfidential: async (formData) => {
-    // Don't set Content-Type for FormData - browser sets it with boundary automatically
-    const response = await api.post('/files/upload-confidential', formData, {});
+    const response = await api.post('/files/upload-confidential', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
     return response.data;
   },
 
