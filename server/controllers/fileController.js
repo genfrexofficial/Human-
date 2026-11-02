@@ -1431,47 +1431,6 @@ const getWorkReviews = async (req, res, next) => {
     next(error);
   }
 };
-        projectId: project._id,
-        userId: req.user._id,
-        action,
-        description,
-        entityType: 'FILE',
-        entityId: file._id,
-        clientVisible: true
-      });
-
-      // Notify Admins of client response
-      const adminUsers = await User.find({ role: 'ADMIN', status: 'ACTIVE' }).select('_id');
-      for (const admin of adminUsers) {
-        await sendNotification({
-          userId: admin._id,
-          title: status === 'APPROVED' ? 'Client Signed Off Deliverable' : 'Client Requested Changes',
-          message: description,
-          type: 'APPROVAL',
-          entityId: file._id
-        });
-      }
-    }
-
-    const populatedFile = await File.findById(file._id)
-      .populate('uploadedBy', 'name email avatar role title')
-      .populate('reviewedBy', 'name email')
-      .populate('adminApprovedBy', 'name email')
-      .populate('task', 'title status');
-
-    res.status(200).json({
-      success: true,
-      message: isAdmin
-        ? (status === 'APPROVED'
-            ? 'Deliverable approved and opened to client.'
-            : 'Revisions requested. Deliverable remains hidden from client.')
-        : `Deliverable marked as ${status.replace('_', ' ')}.`,
-      file: populatedFile
-    });
-  } catch (error) {
-    next(error);
-  }
-};
 
 // @desc    Get live Storage Diagnostics, Usage Metrics & Audit ledger (Admin only)
 // @route   GET /api/files/storage-stats
