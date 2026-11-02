@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { attendanceService } from '../../services/attendanceService';
 import { leaveService } from '../../services/leaveService';
+import { formatWorkingHours } from '../../utils/formatters';
 import toast from 'react-hot-toast';
 import {
   Clock,
@@ -162,7 +163,9 @@ const EmployeeAttendance = () => {
             </span>
           </div>
           <div className="mt-3">
-            <div className="text-2xl font-bold text-slate-900">{summary.totalHours} hrs</div>
+            <div className="text-2xl font-bold text-slate-900">
+              {summary.displayHours || (summary.totalHours ? formatWorkingHours(summary.totalHours) : '0 hrs 00 mins')}
+            </div>
             <p className="text-[11px] text-slate-400 mt-1">Logged across this period</p>
           </div>
         </div>
@@ -269,7 +272,15 @@ const EmployeeAttendance = () => {
                             : 'Auto-closed'}
                       </td>
                       <td className="py-3 px-4 font-semibold text-slate-900">
-                        {record.totalHours} hrs
+                        <div className="flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                          <span>{record.displayHours || formatWorkingHours(record)}</span>
+                          {record.hasActiveSession && (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-700 animate-pulse">
+                              Live
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="py-3 px-4">
                         <span

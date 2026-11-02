@@ -173,7 +173,21 @@ const login = async (req, res, next) => {
           await att.save();
         } else {
           att.lastLogin = now;
+          // Close previous unclosed session if any
+          if (att.sessions && att.sessions.length > 0) {
+            const lastSession = att.sessions[att.sessions.length - 1];
+            if (lastSession && !lastSession.logoutAt) {
+              lastSession.logoutAt = now;
+              lastSession.durationMinutes = Math.max(1, Math.round((now - new Date(lastSession.loginAt)) / 60000));
+            }
+          }
           att.sessions.push({ loginAt: now });
+          let totalMins = 0;
+          for (const s of att.sessions) {
+            totalMins += (s.durationMinutes || 0);
+          }
+          att.totalMinutes = totalMins;
+          att.totalHours = parseFloat((totalMins / 60).toFixed(2));
           if (att.status === 'ABSENT') att.status = 'PRESENT';
           await att.save();
         }

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { attendanceService } from '../../services/attendanceService';
 import { leaveService } from '../../services/leaveService';
+import { formatWorkingHours } from '../../utils/formatters';
 import toast from 'react-hot-toast';
 import {
   Clock,
@@ -243,7 +244,17 @@ const HRAttendanceLeaves = () => {
                           ? <span className="text-emerald-600 font-medium">Session Active</span>
                           : 'Auto-closed'}
                       </td>
-                      <td className="py-3 px-4 font-semibold text-slate-900">{r.totalHours} hrs</td>
+                      <td className="py-3 px-4 font-semibold text-slate-900">
+                        <div className="flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                          <span>{r.displayHours || formatWorkingHours(r)}</span>
+                          {r.hasActiveSession && (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-700 animate-pulse">
+                              Live
+                            </span>
+                          )}
+                        </div>
+                      </td>
                       <td className="py-3 px-4">
                         <span
                           className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${

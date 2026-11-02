@@ -55,3 +55,42 @@ export const formatCurrency = (amount) => {
     maximumFractionDigits: 0
   }).format(num);
 };
+
+/**
+ * Format working minutes or attendance record into clean "X hrs Y mins" (Hour : minutes)
+ */
+export const formatWorkingHours = (recordOrHours) => {
+  if (recordOrHours === undefined || recordOrHours === null || recordOrHours === '') {
+    return '0 hrs 00 mins';
+  }
+
+  // If passed an attendance record or summary object
+  if (typeof recordOrHours === 'object') {
+    if (recordOrHours.displayHours) return recordOrHours.displayHours;
+    if (recordOrHours.timeFormat) return `${recordOrHours.timeFormat} hrs`;
+
+    let mins = recordOrHours.totalMinutes;
+    if (typeof mins !== 'number') {
+      if (typeof recordOrHours.totalHours === 'number') {
+        mins = Math.round(recordOrHours.totalHours * 60);
+      } else {
+        mins = 0;
+      }
+    }
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    const mm = m.toString().padStart(2, '0');
+    return `${h} hrs ${mm} mins`;
+  }
+
+  // If passed totalHours as number (float like 7.5 or 0.25)
+  if (typeof recordOrHours === 'number') {
+    const mins = Math.max(0, Math.round(recordOrHours * 60));
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    const mm = m.toString().padStart(2, '0');
+    return `${h} hrs ${mm} mins`;
+  }
+
+  return String(recordOrHours);
+};
