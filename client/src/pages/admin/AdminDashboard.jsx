@@ -24,6 +24,7 @@ import {
   Activity,
   Calendar,
   FileText,
+  FileCheck,
   ShieldCheck,
   UserPlus,
   HardDrive,
@@ -148,6 +149,12 @@ const AdminDashboard = () => {
             <Button size="sm" variant="secondary">
               <UserPlus className="h-3.5 w-3.5 mr-1 text-cyan-600" />
               <span>Add HR Officer</span>
+            </Button>
+          </Link>
+          <Link to="/admin/work-reviews">
+            <Button size="sm" variant="secondary">
+              <FileCheck className="h-3.5 w-3.5 mr-1 text-indigo-600" />
+              <span>Review Submissions</span>
             </Button>
           </Link>
           <Button size="sm" onClick={() => setProjectModalOpen(true)}>

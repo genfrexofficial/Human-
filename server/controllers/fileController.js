@@ -1079,6 +1079,56 @@ const deleteProjectFile = async (req, res, next) => {
 const reviewDeliverable = async (req, res, next) => {
   try {
     const { status, reason } = req.body;
+
+    // Handle task-attached deliverable reviews directly
+    if (req.params.id && req.params.id.startsWith('task_')) {
+      const parts = req.params.id.split('_');
+      const taskId = parts[1];
+      const task = await Task.findById(taskId);
+      if (!task) {
+        return res.status(404).json({ success: false, message: 'Associated task not found.' });
+      }
+
+      if (status === 'APPROVED') {
+        task.status = 'COMPLETED';
+        task.progress = 100;
+        task.completedAt = new Date();
+      } else {
+        task.status = 'CHANGES_REQUESTED';
+      }
+      await task.save();
+
+      if (reason && reason.trim()) {
+        try {
+          await Comment.create({
+            task: task._id,
+            project: task.project || null,
+            user: req.user._id,
+            message: `Admin Deliverable Review: ${reason.trim()}`,
+            isInternal: false
+          });
+        } catch (_) {}
+      }
+
+      if (task.assignedTo) {
+        await sendNotification({
+          userId: task.assignedTo,
+          projectId: task.project || undefined,
+          title: status === 'APPROVED' ? 'Deliverable Approved' : 'Deliverable Changes Requested',
+          message: status === 'APPROVED'
+            ? `Admin approved your deliverable for task "${task.title}".`
+            : `Admin requested changes on task "${task.title}": "${reason}".`,
+          type: 'TASK',
+          link: '/worker/tasks'
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: status === 'APPROVED' ? 'Deliverable approved successfully.' : 'Revision request submitted.'
+      });
+    }
+
     const file = await File.findById(req.params.id);
 
     if (!file || file.status === 'DELETED') {
@@ -1088,16 +1138,19 @@ const reviewDeliverable = async (req, res, next) => {
       });
     }
 
-    const project = await Project.findById(file.project);
-    if (!project) {
-      return res.status(404).json({
-        success: false,
-        message: 'Associated project not found.'
-      });
+    let project = null;
+    if (file.project) {
+      project = await Project.findById(file.project);
     }
 
     // Role check: client can review their project's deliverables only
     if (req.user.role === 'CLIENT') {
+      if (!project) {
+        return res.status(404).json({
+          success: false,
+          message: 'Associated project not found.'
+        });
+      }
       if (project.client.toString() !== req.user._id.toString()) {
         return res.status(403).json({
           success: false,
@@ -1164,11 +1217,40 @@ const reviewDeliverable = async (req, res, next) => {
 
     await file.save();
 
+    // If associated with a Task, synchronize task status
+    if (file.task) {
+      try {
+        const task = await Task.findById(file.task);
+        if (task) {
+          if (status === 'APPROVED') {
+            task.status = 'COMPLETED';
+            task.progress = 100;
+            task.completedAt = new Date();
+          } else {
+            task.status = 'CHANGES_REQUESTED';
+          }
+          await task.save();
+
+          if (reason && reason.trim()) {
+            await Comment.create({
+              task: task._id,
+              project: task.project || null,
+              user: req.user._id,
+              message: `Admin Deliverable Review: ${reason.trim()}`,
+              isInternal: false
+            });
+          }
+        }
+      } catch (tErr) {
+        console.error('Error syncing task on deliverable review:', tErr.message);
+      }
+    }
+
     // Audit and notifications
     if (isAdmin) {
       if (status === 'APPROVED') {
         // 1. Notify Client: deliverable is now unlocked & ready
-        if (project.client) {
+        if (project && project.client) {
           await sendNotification({
             userId: project.client._id || project.client,
             title: 'Deliverable Approved & Ready',
@@ -1183,21 +1265,23 @@ const reviewDeliverable = async (req, res, next) => {
           await sendNotification({
             userId: file.uploadedBy,
             title: 'Deliverable Approved by Admin',
-            message: `Your deliverable "${file.fileName}" for project "${project.name}" was approved by Admin and released to the client.`,
+            message: `Your deliverable "${file.fileName}"${project ? ` for project "${project.name}"` : ''} was approved by Admin.`,
             type: 'APPROVAL',
             entityId: file._id
           });
         }
 
-        await logActivity({
-          projectId: project._id,
-          userId: req.user._id,
-          action: 'DELIVERABLE_APPROVED',
-          description: `Admin ${req.user.name} approved deliverable "${file.fileName}" for client access.`,
-          entityType: 'FILE',
-          entityId: file._id,
-          clientVisible: true
-        });
+        if (project) {
+          await logActivity({
+            projectId: project._id,
+            userId: req.user._id,
+            action: 'DELIVERABLE_APPROVED',
+            description: `Admin ${req.user.name} approved deliverable "${file.fileName}" for client access.`,
+            entityType: 'FILE',
+            entityId: file._id,
+            clientVisible: true
+          });
+        }
       } else {
         // Changes requested by Admin
         if (file.uploadedBy && file.uploadedBy.toString() !== req.user._id.toString()) {
@@ -1210,24 +1294,143 @@ const reviewDeliverable = async (req, res, next) => {
           });
         }
 
-        await logActivity({
-          projectId: project._id,
-          userId: req.user._id,
-          action: 'CHANGES_REQUESTED',
-          description: `Admin ${req.user.name} requested changes on deliverable "${file.fileName}": "${reason}".`,
-          entityType: 'FILE',
-          entityId: file._id,
-          clientVisible: false
-        });
+        if (project) {
+          await logActivity({
+            projectId: project._id,
+            userId: req.user._id,
+            action: 'CHANGES_REQUESTED',
+            description: `Admin ${req.user.name} requested changes on deliverable "${file.fileName}": "${reason}".`,
+            entityType: 'FILE',
+            entityId: file._id,
+            clientVisible: false
+          });
+        }
       }
     } else {
       // Client reviewed deliverable
-      const action = status === 'APPROVED' ? 'DELIVERABLE_APPROVED' : 'CHANGES_REQUESTED';
-      const description = status === 'APPROVED'
-        ? `Client ${req.user.name} signed off deliverable "${file.fileName}".`
-        : `Client ${req.user.name} requested changes on deliverable "${file.fileName}": "${reason}".`;
+      if (project) {
+        const action = status === 'APPROVED' ? 'DELIVERABLE_APPROVED' : 'CHANGES_REQUESTED';
+        const description = status === 'APPROVED'
+          ? `Client ${req.user.name} signed off deliverable "${file.fileName}".`
+          : `Client ${req.user.name} requested changes on deliverable "${file.fileName}": "${reason}".`;
 
-      await logActivity({
+        await logActivity({
+          projectId: project._id,
+          userId: req.user._id,
+          action,
+          description,
+          entityType: 'FILE',
+          entityId: file._id,
+          clientVisible: true
+        });
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `Deliverable ${status === 'APPROVED' ? 'approved' : 'changes requested'} successfully.`,
+      file
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Get all worker submissions (Deliverables, documents, websites/links) for Admin review
+// @route   GET /api/files/work-reviews
+// @access  Private (Admin, HR)
+const getWorkReviews = async (req, res, next) => {
+  try {
+    const files = await File.find({
+      status: { $ne: 'DELETED' },
+      isConfidential: { $ne: true },
+      $or: [
+        { isDeliverable: true },
+        { category: { $in: ['DELIVERABLE', 'DOCUMENT', 'DESIGN'] } },
+        { module: { $in: ['Employee', 'TASK', 'PROJECT'] } },
+        { isLink: true },
+        { task: { $exists: true, $ne: null } }
+      ]
+    })
+      .populate('uploadedBy', 'name email role title avatar')
+      .populate('project', 'name client status')
+      .populate('task', 'title taskType personalCategory status progress dueDate')
+      .populate('client', 'name email companyName')
+      .populate('adminApprovedBy', 'name email')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // Query tasks that have attachments
+    const tasksWithAttachments = await Task.find({
+      $or: [
+        { attachments: { $exists: true, $not: { $size: 0 } } },
+        { status: { $in: ['COMPLETED', 'IN_REVIEW', 'CHANGES_REQUESTED'] } }
+      ]
+    })
+      .populate('assignedTo', 'name email role title avatar')
+      .populate('project', 'name client status')
+      .populate('createdBy', 'name email role')
+      .sort({ updatedAt: -1 })
+      .lean();
+
+    const existingUrls = new Set(files.map((f) => f.fileUrl || f.linkUrl).filter(Boolean));
+    const extraSubmissions = [];
+
+    for (const task of tasksWithAttachments) {
+      if (Array.isArray(task.attachments) && task.attachments.length > 0) {
+        for (const att of task.attachments) {
+          const url = att.fileUrl;
+          if (url && !existingUrls.has(url)) {
+            existingUrls.add(url);
+            const isLink = att.fileType === 'LINK' || (url && url.startsWith('http') && !url.includes('/files/'));
+            extraSubmissions.push({
+              _id: `task_${task._id}_${att._id || Math.random().toString(36).substring(7)}`,
+              isTaskAttachment: true,
+              taskId: task._id,
+              task: {
+                _id: task._id,
+                title: task.title,
+                taskType: task.taskType,
+                personalCategory: task.personalCategory,
+                status: task.status,
+                progress: task.progress,
+                dueDate: task.dueDate
+              },
+              project: task.project ? { _id: task.project._id, name: task.project.name } : null,
+              uploadedBy: task.assignedTo || task.createdBy,
+              fileName: att.fileName || 'Attached Document',
+              fileUrl: url,
+              linkUrl: isLink ? url : '',
+              isLink: isLink,
+              storageProvider: isLink ? 'EXTERNAL_LINK' : 'GOOGLE_DRIVE',
+              fileSize: att.fileSize || 0,
+              fileType: att.fileType || 'application/octet-stream',
+              adminApprovalStatus: task.status === 'COMPLETED' ? 'APPROVED' : task.status === 'CHANGES_REQUESTED' ? 'CHANGES_REQUESTED' : 'PENDING',
+              adminApproved: task.status === 'COMPLETED',
+              approvalStatus: task.status === 'COMPLETED' ? 'APPROVED' : task.status === 'CHANGES_REQUESTED' ? 'CHANGES_REQUESTED' : 'PENDING_REVIEW',
+              createdAt: task.completedAt || task.updatedAt || task.createdAt,
+              updatedAt: task.updatedAt || task.createdAt,
+              isDeliverable: true,
+              category: 'DOCUMENT'
+            });
+          }
+        }
+      }
+    }
+
+    const submissions = [...files, ...extraSubmissions].sort(
+      (a, b) => new Date(b.createdAt || b.updatedAt) - new Date(a.createdAt || a.updatedAt)
+    );
+
+    res.status(200).json({
+      success: true,
+      count: submissions.length,
+      submissions
+    });
+  } catch (error) {
+    next(error);
+  }
+};
         projectId: project._id,
         userId: req.user._id,
         action,
@@ -1421,5 +1624,6 @@ module.exports = {
   reviewDeliverable,
   downloadFile,
   getStorageStats,
-  browseFiles
+  browseFiles,
+  getWorkReviews
 };

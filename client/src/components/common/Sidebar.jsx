@@ -53,8 +53,9 @@ const Sidebar = ({ isOpen, onClose }) => {
       items: [
         { label: 'Projects', path: '/admin/projects', icon: FolderKanban },
         { label: 'Tasks & Milestones', path: '/admin/tasks', icon: CheckSquare },
+        { label: 'Worker Submissions', path: '/admin/work-reviews', icon: FileCheck },
         { label: 'Task Requests', path: '/admin/task-requests', icon: Inbox },
-        { label: 'Deliverables', path: '/admin/files', icon: Files },
+        { label: 'Deliverables & Files', path: '/admin/files', icon: Files },
         { label: 'Invoices & Finance', path: '/admin/invoices', icon: FileText }
       ]
     },

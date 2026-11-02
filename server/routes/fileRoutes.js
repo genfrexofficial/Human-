@@ -11,11 +11,15 @@ const {
   reviewDeliverable,
   downloadFile,
   getStorageStats,
-  browseFiles
+  browseFiles,
+  getWorkReviews
 } = require('../controllers/fileController');
 const { authenticateToken, authorizeRoles } = require('../middleware/authMiddleware');
 
 router.use(authenticateToken);
+
+// Admin & HR Work Reviews (Dedicated endpoint for reviewing all worker deliverables, documents & links)
+router.get('/work-reviews', authorizeRoles('ADMIN', 'HR'), getWorkReviews);
 
 // Admin Storage Diagnostics & Usage Metrics
 router.get('/storage-stats', authorizeRoles('ADMIN'), getStorageStats);

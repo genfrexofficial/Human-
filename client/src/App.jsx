@@ -22,6 +22,7 @@ import AdminClients from './pages/admin/AdminClients';
 import AdminHRTeam from './pages/admin/AdminHRTeam';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminTasks from './pages/admin/AdminTasks';
+import AdminWorkReviews from './pages/admin/AdminWorkReviews';
 import AdminFiles from './pages/admin/AdminFiles';
 import AdminReports from './pages/admin/AdminReports';
 import AdminActivities from './pages/admin/AdminActivities';
@@ -124,6 +125,7 @@ function App() {
             <Route path="hr-team" element={<AdminHRTeam />} />
             <Route path="users" element={<AdminUsers />} />
             <Route path="tasks" element={<AdminTasks />} />
+            <Route path="work-reviews" element={<AdminWorkReviews />} />
             <Route path="files" element={<AdminFiles />} />
             <Route path="invoices" element={<AdminInvoices />} />
             <Route path="attendance-leaves" element={<HRAttendanceLeaves />} />

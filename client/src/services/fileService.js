@@ -117,5 +117,10 @@ export const fileService = {
   reviewDeliverable: async (id, status, reason = '') => {
     const response = await api.put(`/files/${id}/review`, { status, reason });
     return response.data;
+  },
+
+  getWorkReviews: async () => {
+    const response = await api.get('/files/work-reviews');
+    return response.data;
   }
 };
