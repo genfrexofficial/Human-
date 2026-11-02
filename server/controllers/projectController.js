@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Project = require('../models/Project');
 const Task = require('../models/Task');
 const TaskRequest = require('../models/TaskRequest');
@@ -234,21 +235,45 @@ const createProject = async (req, res, next) => {
   try {
     const { name, description, client, startDate, endDate, budget, status, stage, assignedEmployees } = req.body;
 
-    if (!name || !client) {
+    if (!name || !name.trim()) {
       return res.status(400).json({
         success: false,
-        message: 'Project name and assigned client are required.'
+        message: 'Project name is required.'
       });
     }
 
+    if (!client) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please assign a client to this project.'
+      });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(client)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid client selection. Please select a valid registered client.'
+      });
+    }
+
+    const clientUser = await User.findById(client);
+    if (!clientUser) {
+      return res.status(400).json({
+        success: false,
+        message: 'Selected client user does not exist in the database.'
+      });
+    }
+
+    const parsedBudget = budget !== undefined && budget !== '' && !isNaN(budget) ? Number(budget) : 0;
+
     const project = await Project.create({
       name: name.trim(),
-      description: description || '',
+      description: description ? description.trim() : '',
       client,
       createdBy: req.user._id,
       startDate: startDate || Date.now(),
       endDate: endDate || null,
-      budget: budget || 0,
+      budget: parsedBudget,
       status: status || 'PLANNING',
       stage: stage || 'PLANNING',
       health: 'ON_TRACK',
@@ -309,10 +334,20 @@ const updateProject = async (req, res, next) => {
 
     if (name) project.name = name.trim();
     if (description !== undefined) project.description = description;
-    if (client) project.client = client;
+    if (client) {
+      if (!mongoose.Types.ObjectId.isValid(client)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid client selection.'
+        });
+      }
+      project.client = client;
+    }
     if (startDate) project.startDate = startDate;
     if (endDate !== undefined) project.endDate = endDate ? endDate : null;
-    if (budget !== undefined) project.budget = budget;
+    if (budget !== undefined) {
+      project.budget = budget !== '' && !isNaN(budget) ? Number(budget) : 0;
+    }
     if (status) project.status = status;
     if (stage) project.stage = stage;
     if (assignedEmployees !== undefined) {

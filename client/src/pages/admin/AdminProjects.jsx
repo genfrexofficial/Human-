@@ -141,6 +141,7 @@ const AdminProjects = () => {
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
         onSaved={handleCreateProject}
+        onSubmit={handleCreateProject}
       />
     </div>
   );

@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import Modal from '../common/Modal';
 import Input from '../common/Input';
 import Button from '../common/Button';
 import { clientService } from '../../services/clientService';
 import { EmployeeService } from '../../services/EmployeeService';
-import { Users, Check } from 'lucide-react';
+import { Users, Check, AlertTriangle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-const ProjectModal = ({ isOpen, onClose, project = null, onSaved }) => {
+const ProjectModal = ({ isOpen, onClose, project = null, onSaved, onSubmit }) => {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -115,21 +116,44 @@ const ProjectModal = ({ isOpen, onClose, project = null, onSaved }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.name.trim() || !formData.client) {
-      toast.error('Please fill in project name and assign a client.');
+    if (!formData.name.trim()) {
+      toast.error('Project Name is required.', { id: 'project-validation-error' });
+      return;
+    }
+    if (!formData.client) {
+      if (clients.length === 0) {
+        toast.error('No clients found. Please create a client account in the Clients section first.', { id: 'project-validation-error' });
+      } else {
+        toast.error('Please assign a client to this project.', { id: 'project-validation-error' });
+      }
+      return;
+    }
+
+    const saveHandler = onSaved || onSubmit;
+    if (!saveHandler) {
+      console.error('ProjectModal: Neither onSaved nor onSubmit prop was provided.');
+      toast.error('Configuration error: No save handler provided.', { id: 'project-error' });
       return;
     }
 
     try {
       setLoading(true);
-      await onSaved({
-        ...formData,
-        endDate: formData.endDate ? formData.endDate : null,
-        assignedEmployees: formData.assignedEmployees
-      }, project?._id);
+      await saveHandler(
+        {
+          ...formData,
+          name: formData.name.trim(),
+          description: formData.description ? formData.description.trim() : '',
+          budget: formData.budget !== '' && !isNaN(formData.budget) ? Number(formData.budget) : 0,
+          endDate: formData.endDate ? formData.endDate : null,
+          assignedEmployees: formData.assignedEmployees
+        },
+        project?._id
+      );
       onClose();
     } catch (err) {
-      // Error handled by parent or toast
+      console.error('Project save error:', err);
+      const errMsg = err.response?.data?.message || err.message || 'Failed to save project.';
+      toast.error(errMsg, { id: 'project-error' });
     } finally {
       setLoading(false);
     }
@@ -141,7 +165,7 @@ const ProjectModal = ({ isOpen, onClose, project = null, onSaved }) => {
       onClose={onClose}
       title={project ? 'Edit Project' : 'Create New Project'}
     >
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} noValidate className="space-y-4">
         <Input
           label="Project Name"
           name="name"
@@ -182,9 +206,22 @@ const ProjectModal = ({ isOpen, onClose, project = null, onSaved }) => {
             ))}
           </select>
           {clients.length === 0 && !loadingClients && (
-            <p className="text-[11px] text-amber-600 mt-1">
-              No clients found. You can add one in the Clients section.
-            </p>
+            <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-2.5">
+              <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+              <div className="text-xs text-amber-800">
+                <span className="font-semibold">No clients registered yet.</span>
+                <p className="mt-0.5 text-amber-700">
+                  Every project must be assigned to a registered client. Please add a client first from the{' '}
+                  <Link
+                    to="/admin/clients"
+                    className="underline font-semibold text-amber-900 hover:text-amber-950"
+                    onClick={onClose}
+                  >
+                    Clients section
+                  </Link>.
+                </p>
+              </div>
+            </div>
           )}
         </div>
 

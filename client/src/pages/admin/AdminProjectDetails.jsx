@@ -145,6 +145,7 @@ const AdminProjectDetails = () => {
       }
     } catch (err) {
       toast.error(err.response?.data?.message || 'Update failed.');
+      throw err;
     }
   };
 

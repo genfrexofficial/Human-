@@ -671,6 +671,7 @@ const AdminDashboard = () => {
       <ProjectModal
         isOpen={projectModalOpen}
         onClose={() => setProjectModalOpen(false)}
+        onSaved={handleCreateProject}
         onSubmit={handleCreateProject}
       />
     </div>
