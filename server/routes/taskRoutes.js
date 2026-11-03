@@ -31,10 +31,10 @@ router.get('/project', (req, res) => res.status(200).json({ success: true, count
 // Single task details
 router.get('/:id', getTaskById);
 
-// Admin & HR task creation
-router.post('/', authorizeRoles('ADMIN', 'HR'), createTask);
+// Admin task creation (Only Admin can create & assign tasks)
+router.post('/', authorizeRoles('ADMIN'), createTask);
 
-// Update task (Admin, HR, or assigned Employee with transition validation)
+// Update task (Admin or assigned Employee/HR with transition validation)
 router.put('/:id', authorizeRoles('ADMIN', 'HR', 'Employee'), updateTask);
 
 // Dedicated action endpoints
@@ -44,7 +44,7 @@ router.post('/:id/submit-review', authorizeRoles('Employee', 'ADMIN', 'HR'), sub
 router.post('/:id/block', authorizeRoles('Employee', 'ADMIN', 'HR'), blockTask);
 router.post('/:id/complete', authorizeRoles('ADMIN', 'HR', 'Employee'), completeTask);
 
-// Delete task (Admin & HR)
-router.delete('/:id', authorizeRoles('ADMIN', 'HR'), deleteTask);
+// Delete task (Only Admin)
+router.delete('/:id', authorizeRoles('ADMIN'), deleteTask);
 
 module.exports = router;

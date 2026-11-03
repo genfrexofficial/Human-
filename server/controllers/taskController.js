@@ -323,9 +323,16 @@ const getTaskById = async (req, res, next) => {
 
 // @desc    Create a new task (Project or Personal Company Task)
 // @route   POST /api/tasks
-// @access  Private (Admin, HR)
+// @access  Private (Admin only)
 const createTask = async (req, res, next) => {
   try {
+    if (req.user.role !== 'ADMIN') {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Only Admin can create and assign tasks.'
+      });
+    }
+
     const {
       project: projectId,
       taskType = 'PROJECT',
@@ -522,7 +529,7 @@ const updateTask = async (req, res, next) => {
 
     // ASSIGNEE ACCESS CHECK & STATE MACHINE VALIDATION
     const isAssignee = task.assignedTo && task.assignedTo.toString() === req.user._id.toString();
-    if (req.user.role === 'Employee' || (req.user.role === 'HR' && isAssignee && task.createdBy?.toString() !== req.user._id.toString())) {
+    if (req.user.role !== 'ADMIN') {
       if (!isAssignee) {
         return res.status(403).json({
           success: false,
@@ -574,8 +581,8 @@ const updateTask = async (req, res, next) => {
       if (actualHours !== undefined) task.actualHours = Number(actualHours) || task.actualHours;
       if (description !== undefined) task.description = description;
 
-    } else if (req.user.role === 'ADMIN' || req.user.role === 'HR') {
-      // Admin / HR update
+    } else if (req.user.role === 'ADMIN') {
+      // Admin update
       if (title) task.title = title.trim();
       if (description !== undefined) task.description = description;
       if (personalCategory || category) task.personalCategory = personalCategory || category;
@@ -1141,9 +1148,16 @@ const blockTask = async (req, res, next) => {
 
 // @desc    Delete task
 // @route   DELETE /api/tasks/:id
-// @access  Private (Admin, HR)
+// @access  Private (Admin only)
 const deleteTask = async (req, res, next) => {
   try {
+    if (req.user.role !== 'ADMIN') {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Only Admin can delete tasks.'
+      });
+    }
+
     const task = await Task.findById(req.params.id);
     if (!task) {
       return res.status(404).json({
