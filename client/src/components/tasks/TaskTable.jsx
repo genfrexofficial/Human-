@@ -76,6 +76,16 @@ const TaskTable = ({
                             {task.description}
                           </p>
                         )}
+                        {task.assignedTo && (
+                          <p className="text-[10px] text-slate-400 mt-0.5">
+                            Assigned to: <span className="text-slate-600 font-medium">{task.assignedTo.name}</span>
+                            {task.assignedTo.role === 'HR' && (
+                              <span className="ml-1 text-[9px] font-semibold text-purple-700 bg-purple-50 border border-purple-200 px-1 rounded">
+                                HR
+                              </span>
+                            )}
+                          </p>
+                        )}
                       </div>
                     </div>
                   </td>

@@ -49,7 +49,7 @@ router.get('/Employees', authorizeRoles('ADMIN', 'HR'), getEmployees);
 router.post('/Employees', authorizeRoles('ADMIN'), createEmployee);
 router.get('/Employees/:id', authorizeRoles('ADMIN', 'HR'), getEmployeeById);
 
-router.get('/hr', authorizeRoles('ADMIN'), getHRUsers);
+router.get('/hr', authorizeRoles('ADMIN', 'HR'), getHRUsers);
 router.post('/hr', authorizeRoles('ADMIN'), createHRUser);
 router.delete('/hr/:id', authorizeRoles('ADMIN'), deleteHRUser);
 

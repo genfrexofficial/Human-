@@ -35,10 +35,11 @@ import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
 import CompleteCompanyTaskModal from '../../components/tasks/CompleteCompanyTaskModal';
 
-const EmployeeTaskDetails = () => {
+const EmployeeTaskDetails = ({ backPath }) => {
   const { id: taskId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const backRoute = backPath || (user?.role === 'HR' ? '/hr/my-tasks' : '/Employee/tasks');
 
   const [task, setTask] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -104,7 +105,7 @@ const EmployeeTaskDetails = () => {
       }
     } catch (err) {
       toast.error('Failed to load task details.');
-      navigate('/Employee/tasks');
+      navigate(backRoute);
     } finally {
       setLoading(false);
     }
@@ -328,7 +329,7 @@ const EmployeeTaskDetails = () => {
     <div className="space-y-6 max-w-5xl mx-auto">
       {/* Back button */}
       <Link
-        to="/Employee/tasks"
+        to={backRoute}
         className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-slate-800 transition-colors"
       >
         <ArrowLeft className="h-3.5 w-3.5" />

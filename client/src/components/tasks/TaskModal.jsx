@@ -3,6 +3,7 @@ import Modal from '../common/Modal';
 import Input from '../common/Input';
 import Button from '../common/Button';
 import { EmployeeService } from '../../services/EmployeeService';
+import { userService } from '../../services/userService';
 import toast from 'react-hot-toast';
 
 const TaskModal = ({ isOpen, onClose, task = null, projectId, onSaved }) => {
@@ -17,13 +18,18 @@ const TaskModal = ({ isOpen, onClose, task = null, projectId, onSaved }) => {
     clientVisible: true
   });
   const [Employees, setEmployees] = useState([]);
+  const [hrUsers, setHrUsers] = useState([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
-      // Fetch Employees
-      EmployeeService.getEmployees().then((res) => {
-        if (res.success) setEmployees(res.Employees || []);
+      // Fetch Employees & HR users
+      Promise.all([
+        EmployeeService.getEmployees().catch(() => ({ success: false, Employees: [] })),
+        userService.getHRUsers().catch(() => ({ success: false, users: [] }))
+      ]).then(([empRes, hrRes]) => {
+        if (empRes?.success) setEmployees(empRes.Employees || []);
+        if (hrRes?.success) setHrUsers(hrRes.users || []);
       }).catch(console.error);
 
       if (task) {
@@ -110,7 +116,7 @@ const TaskModal = ({ isOpen, onClose, task = null, projectId, onSaved }) => {
 
         <div>
           <label className="block font-semibold text-slate-800 mb-1">
-            Assign Employee / Engineer
+            Assign Team Member (Engineer or HR)
           </label>
           <select
             name="assignedTo"
@@ -119,11 +125,24 @@ const TaskModal = ({ isOpen, onClose, task = null, projectId, onSaved }) => {
             className="w-full rounded-lg border border-slate-200 p-2 text-xs text-slate-800 focus:border-indigo-500 focus:outline-none"
           >
             <option value="">-- Unassigned (TODO) --</option>
-            {Employees.map((w) => (
-              <option key={w._id} value={w._id}>
-                {w.name} — {w.title || 'Engineer'} ({w.workload?.totalActive || 0} active)
-              </option>
-            ))}
+            {hrUsers.length > 0 && (
+              <optgroup label="🏢 HR Team Members">
+                {hrUsers.map((hr) => (
+                  <option key={hr._id} value={hr._id}>
+                    {hr.name} — {hr.title || 'HR Officer'} (HR)
+                  </option>
+                ))}
+              </optgroup>
+            )}
+            {Employees.length > 0 && (
+              <optgroup label="👷 Engineers & Employees">
+                {Employees.map((w) => (
+                  <option key={w._id} value={w._id}>
+                    {w.name} — {w.title || 'Engineer'} ({w.workload?.totalActive || 0} active)
+                  </option>
+                ))}
+              </optgroup>
+            )}
           </select>
         </div>
 

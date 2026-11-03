@@ -101,7 +101,8 @@ const Sidebar = ({ isOpen, onClose }) => {
       group: 'HR WORKSPACE',
       items: [
         { label: 'Dashboard', path: '/hr/dashboard', icon: LayoutDashboard },
-        { label: 'Worker Tasks', path: '/hr/tasks', icon: CheckSquare },
+        { label: 'My Assigned Tasks', path: '/hr/my-tasks', icon: CheckSquare },
+        { label: 'Worker Tasks', path: '/hr/tasks', icon: FolderKanban },
         { label: 'Attendance & Leaves', path: '/hr/attendance-leaves', icon: Clock },
         { label: 'Payroll & Salaries', path: '/hr/payroll', icon: Banknote },
         { label: 'Candidates', path: '/hr/candidates', icon: UserPlus },

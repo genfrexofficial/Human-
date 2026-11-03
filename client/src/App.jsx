@@ -160,6 +160,8 @@ function App() {
           >
             <Route index element={<Navigate to="/hr/dashboard" replace />} />
             <Route path="dashboard" element={<HRDashboard />} />
+            <Route path="my-tasks" element={<EmployeeTasks basePath="/hr/my-tasks" />} />
+            <Route path="my-tasks/:id" element={<EmployeeTaskDetails backPath="/hr/my-tasks" />} />
             <Route path="attendance-leaves" element={<HRAttendanceLeaves />} />
             <Route path="payroll" element={<AdminPayroll />} />
             <Route path="candidates" element={<Candidates />} />

@@ -5,6 +5,7 @@ import Input from '../common/Input';
 import Button from '../common/Button';
 import { clientService } from '../../services/clientService';
 import { EmployeeService } from '../../services/EmployeeService';
+import { userService } from '../../services/userService';
 import { Users, Check, AlertTriangle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -43,16 +44,19 @@ const ProjectModal = ({ isOpen, onClose, project = null, onSaved, onSubmit }) =>
       };
       loadClients();
 
-      // Load existing workers / employees
+      // Load team members (Employees + HR)
       const loadEmployees = async () => {
         try {
           setLoadingEmployees(true);
-          const res = await EmployeeService.getEmployees();
-          if (res.success) {
-            setEmployees(res.Employees || []);
-          }
+          const [empRes, hrRes] = await Promise.all([
+            EmployeeService.getEmployees().catch(() => ({ success: false, Employees: [] })),
+            userService.getHRUsers().catch(() => ({ success: false, users: [] }))
+          ]);
+          const emps = (empRes?.success ? empRes.Employees : []) || [];
+          const hrs = (hrRes?.success ? hrRes.users : []) || [];
+          setEmployees([...emps, ...hrs]);
         } catch (err) {
-          console.error('Failed to load workers list:', err);
+          console.error('Failed to load team members:', err);
         } finally {
           setLoadingEmployees(false);
         }
@@ -273,11 +277,20 @@ const ProjectModal = ({ isOpen, onClose, project = null, onSaved, onSubmit }) =>
                         onChange={() => handleToggleEmployee(emp._id)}
                         className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5 shrink-0"
                       />
-                      <div className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 font-bold text-[10px] flex items-center justify-center shrink-0">
-                        {emp.name?.charAt(0) || 'W'}
+                      <div className={`w-6 h-6 rounded-full font-bold text-[10px] flex items-center justify-center shrink-0 ${
+                        emp.role === 'HR' ? 'bg-purple-100 text-purple-700' : 'bg-indigo-100 text-indigo-700'
+                      }`}>
+                        {emp.name?.charAt(0) || (emp.role === 'HR' ? 'H' : 'W')}
                       </div>
                       <div className="truncate">
-                        <span className="block truncate font-medium">{emp.name}</span>
+                        <div className="flex items-center gap-1.5 truncate">
+                          <span className="block truncate font-medium">{emp.name}</span>
+                          {emp.role === 'HR' && (
+                            <span className="text-[9px] font-semibold text-purple-700 bg-purple-100 border border-purple-200 px-1 rounded shrink-0">
+                              HR
+                            </span>
+                          )}
+                        </div>
                         <span className="block text-[10px] text-slate-400 truncate">{emp.email}</span>
                       </div>
                     </div>

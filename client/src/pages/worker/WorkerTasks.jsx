@@ -23,6 +23,7 @@ import Badge from '../../components/common/Badge';
 import ProgressBar from '../../components/common/ProgressBar';
 import Button from '../../components/common/Button';
 import { fileService } from '../../services/fileService';
+import { useAuth } from '../../context/AuthContext';
 import CompleteCompanyTaskModal from '../../components/tasks/CompleteCompanyTaskModal';
 import { Paperclip, Download, ExternalLink, FileText } from 'lucide-react';
 
@@ -35,7 +36,9 @@ const CATEGORY_MAP = {
   OTHER: { label: 'Internal Task', icon: '📌', color: 'bg-slate-50 text-slate-700 border-slate-200' }
 };
 
-const EmployeeTasks = () => {
+const EmployeeTasks = ({ basePath }) => {
+  const { user } = useAuth();
+  const taskDetailBase = basePath || (user?.role === 'HR' ? '/hr/my-tasks' : '/Employee/tasks');
   const [activeTab, setActiveTab] = useState('PROJECT'); // 'PROJECT' | 'PERSONAL'
   const [allTasks, setAllTasks] = useState([]);
   const [personalTasks, setPersonalTasks] = useState([]);
@@ -77,7 +80,7 @@ const EmployeeTasks = () => {
       setLoading(true);
       const [myTasksRes, personalRes] = await Promise.all([
         taskService.getMyTasks(),
-        taskService.getPersonalTasks()
+        taskService.getPersonalTasks({ assignedTo: 'me' })
       ]);
 
       if (myTasksRes.success) {
@@ -354,7 +357,7 @@ const EmployeeTasks = () => {
                       <tr key={task._id} className="hover:bg-slate-50/70 transition-colors">
                         <td className="px-5 py-3.5 max-w-xs">
                           <Link
-                            to={`/Employee/tasks/${task._id}`}
+                            to={`${taskDetailBase}/${task._id}`}
                             className="font-semibold text-slate-900 hover:text-indigo-600 transition-colors line-clamp-1"
                           >
                             {task.title}
@@ -422,7 +425,7 @@ const EmployeeTasks = () => {
                               </Button>
                             )}
 
-                            <Link to={`/Employee/tasks/${task._id}`}>
+                            <Link to={`${taskDetailBase}/${task._id}`}>
                               <Button size="xs" variant="secondary">
                                 Open
                               </Button>
@@ -476,7 +479,7 @@ const EmployeeTasks = () => {
                       <tr key={task._id} className="hover:bg-slate-50/70 transition-colors">
                         <td className="px-5 py-4 max-w-xs">
                           <Link
-                            to={`/Employee/tasks/${task._id}`}
+                            to={`${taskDetailBase}/${task._id}`}
                             className="font-semibold text-slate-900 hover:text-indigo-600 transition-colors block text-xs line-clamp-1"
                           >
                             {task.title}
@@ -608,7 +611,7 @@ const EmployeeTasks = () => {
                               </span>
                             )}
 
-                            <Link to={`/Employee/tasks/${task._id}`}>
+                            <Link to={`${taskDetailBase}/${task._id}`}>
                               <Button size="xs" variant="secondary">
                                 Open
                               </Button>

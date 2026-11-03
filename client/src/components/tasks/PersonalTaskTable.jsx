@@ -110,17 +110,28 @@ const PersonalTaskTable = ({
                     </span>
                   </td>
 
-                  {/* Assigned Employee */}
+                  {/* Assigned Employee / HR */}
                   <td className="px-4 py-4 whitespace-nowrap">
                     {task.assignedTo ? (
                       <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 text-white font-bold flex items-center justify-center text-[11px] shadow-sm flex-shrink-0">
-                          {task.assignedTo.name?.charAt(0).toUpperCase() || 'W'}
+                        <div className={`w-7 h-7 rounded-full text-white font-bold flex items-center justify-center text-[11px] shadow-sm flex-shrink-0 ${
+                          task.assignedTo.role === 'HR'
+                            ? 'bg-gradient-to-tr from-purple-500 to-pink-600'
+                            : 'bg-gradient-to-tr from-indigo-500 to-purple-600'
+                        }`}>
+                          {task.assignedTo.name?.charAt(0).toUpperCase() || (task.assignedTo.role === 'HR' ? 'H' : 'W')}
                         </div>
                         <div>
-                          <span className="font-semibold text-slate-900 block text-xs leading-tight">
-                            {task.assignedTo.name}
-                          </span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-semibold text-slate-900 block text-xs leading-tight">
+                              {task.assignedTo.name}
+                            </span>
+                            {task.assignedTo.role === 'HR' && (
+                              <span className="text-[9px] font-semibold text-purple-700 bg-purple-50 border border-purple-200 px-1 rounded">
+                                HR
+                              </span>
+                            )}
+                          </div>
                           <span className="text-[10px] text-slate-500 block">
                             {task.assignedTo.title || task.assignedTo.email}
                           </span>

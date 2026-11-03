@@ -3,6 +3,7 @@ import Modal from '../common/Modal';
 import Input from '../common/Input';
 import Button from '../common/Button';
 import { EmployeeService } from '../../services/EmployeeService';
+import { userService } from '../../services/userService';
 import { UserCheck, Tag, Calendar, Clock, AlertCircle, Paperclip, ExternalLink, Download } from 'lucide-react';
 import { fileService } from '../../services/fileService';
 import toast from 'react-hot-toast';
@@ -28,16 +29,21 @@ const PersonalTaskModal = ({ isOpen, onClose, task = null, onSaved, preselectedE
     estimatedHours: 0
   });
   const [employees, setEmployees] = useState([]);
+  const [hrUsers, setHrUsers] = useState([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
-      EmployeeService.getEmployees()
-        .then((res) => {
-          if (res.success) setEmployees(res.Employees || []);
+      Promise.all([
+        EmployeeService.getEmployees().catch(() => ({ success: false, Employees: [] })),
+        userService.getHRUsers().catch(() => ({ success: false, users: [] }))
+      ])
+        .then(([empRes, hrRes]) => {
+          if (empRes?.success) setEmployees(empRes.Employees || []);
+          if (hrRes?.success) setHrUsers(hrRes.users || []);
         })
         .catch((err) => {
-          console.error('Error fetching employees:', err);
+          console.error('Error fetching assignees:', err);
         });
 
       if (task) {
@@ -110,15 +116,15 @@ const PersonalTaskModal = ({ isOpen, onClose, task = null, onSaved, preselectedE
           <div>
             <span className="font-semibold text-indigo-900 block text-xs">Internal Company Assignment</span>
             <span className="text-[11px] text-indigo-700/80">
-              Personal tasks are directly assigned to workers (internal work, training, compliance). They are not visible to external clients.
+              Personal tasks are directly assigned to employees or HR officers (internal work, training, compliance, onboarding). They are not visible to external clients.
             </span>
           </div>
         </div>
 
-        {/* Worker selection */}
+        {/* Assignee selection */}
         <div>
           <label className="block font-semibold text-slate-800 mb-1">
-            Assign To Worker / Employee <span className="text-rose-500">*</span>
+            Assign To Team Member (Employee or HR) <span className="text-rose-500">*</span>
           </label>
           <select
             name="assignedTo"
@@ -127,12 +133,25 @@ const PersonalTaskModal = ({ isOpen, onClose, task = null, onSaved, preselectedE
             required
             className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs text-slate-800 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
           >
-            <option value="">-- Select Worker --</option>
-            {employees.map((w) => (
-              <option key={w._id} value={w._id}>
-                {w.name} — {w.title || 'Team Member'} ({w.email})
-              </option>
-            ))}
+            <option value="">-- Select Assignee --</option>
+            {hrUsers.length > 0 && (
+              <optgroup label="🏢 HR Officers & Team">
+                {hrUsers.map((hr) => (
+                  <option key={hr._id} value={hr._id}>
+                    {hr.name} — {hr.title || 'HR Officer'} (HR) &bull; {hr.email}
+                  </option>
+                ))}
+              </optgroup>
+            )}
+            {employees.length > 0 && (
+              <optgroup label="👷 Employees & Workers">
+                {employees.map((w) => (
+                  <option key={w._id} value={w._id}>
+                    {w.name} — {w.title || 'Worker'} &bull; {w.email}
+                  </option>
+                ))}
+              </optgroup>
+            )}
           </select>
         </div>
 

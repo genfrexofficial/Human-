@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { projectService } from '../../services/projectService';
 import { taskService } from '../../services/taskService';
 import { EmployeeService } from '../../services/EmployeeService';
+import { userService } from '../../services/userService';
 import TaskTable from '../../components/tasks/TaskTable';
 import TaskModal from '../../components/tasks/TaskModal';
 import PersonalTaskTable from '../../components/tasks/PersonalTaskTable';
@@ -69,12 +70,15 @@ const AdminTasks = () => {
   const fetchPersonalTasks = async () => {
     try {
       setPersonalLoading(true);
-      const [pRes, empRes] = await Promise.all([
+      const [pRes, empRes, hrRes] = await Promise.all([
         taskService.getPersonalTasks(),
-        EmployeeService.getEmployees()
+        EmployeeService.getEmployees().catch(() => ({ success: false, Employees: [] })),
+        userService.getHRUsers().catch(() => ({ success: false, users: [] }))
       ]);
       if (pRes.success) setPersonalTasks(pRes.tasks || []);
-      if (empRes.success) setEmployees(empRes.Employees || []);
+      const emps = (empRes?.success ? empRes.Employees : []) || [];
+      const hrs = (hrRes?.success ? hrRes.users : []) || [];
+      setEmployees([...emps, ...hrs]);
     } catch (err) {
       toast.error('Failed to load personal company tasks.');
     } finally {
@@ -415,10 +419,10 @@ const AdminTasks = () => {
                 onChange={(e) => setEmployeeFilter(e.target.value)}
                 className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 focus:border-indigo-500 focus:outline-none"
               >
-                <option value="ALL">All Workers</option>
+                <option value="ALL">All Assignees (Employees & HR)</option>
                 {employees.map((w) => (
                   <option key={w._id} value={w._id}>
-                    {w.name}
+                    {w.name} {w.role === 'HR' ? '(HR)' : ''}
                   </option>
                 ))}
               </select>

@@ -64,12 +64,12 @@ const getProjectTasks = async (req, res, next) => {
         });
       }
       query.clientVisible = true; // Client only sees clientVisible tasks
-    } else if (req.user.role === 'Employee') {
-      // Employee can see all project tasks if assigned to project, or just assigned tasks
+    } else if (req.user.role === 'Employee' || req.user.role === 'HR') {
+      // Employee or HR can see all project tasks if assigned to project, or just their assigned tasks
       const isAssigned = project.assignedEmployees && project.assignedEmployees.some(
         (w) => w.toString() === req.user._id.toString()
       );
-      if (!isAssigned) {
+      if (!isAssigned && req.user.role === 'Employee') {
         query.assignedTo = req.user._id;
       }
     }
@@ -79,7 +79,7 @@ const getProjectTasks = async (req, res, next) => {
     }
 
     let tasks = await Task.find(query)
-      .populate('assignedTo', 'name email avatar title')
+      .populate('assignedTo', 'name email avatar title role')
       .populate('createdBy', 'name email')
       .populate('milestone', 'title dueDate status')
       .sort({ createdAt: -1 });
@@ -101,9 +101,9 @@ const getPersonalTasks = async (req, res, next) => {
   try {
     let query = { taskType: 'PERSONAL' };
 
-    if (req.user.role === 'Employee') {
+    if (req.user.role === 'Employee' || req.query.assignedTo === 'me') {
       query.assignedTo = req.user._id;
-    } else if (req.query.assignedTo) {
+    } else if (req.query.assignedTo && req.query.assignedTo !== 'ALL') {
       query.assignedTo = req.query.assignedTo;
     }
 
@@ -520,9 +520,10 @@ const updateTask = async (req, res, next) => {
     const oldStatus = task.status;
     const oldProgress = task.progress;
 
-    // Employee ACCESS CHECK & STATE MACHINE VALIDATION
-    if (req.user.role === 'Employee') {
-      if (!task.assignedTo || task.assignedTo.toString() !== req.user._id.toString()) {
+    // ASSIGNEE ACCESS CHECK & STATE MACHINE VALIDATION
+    const isAssignee = task.assignedTo && task.assignedTo.toString() === req.user._id.toString();
+    if (req.user.role === 'Employee' || (req.user.role === 'HR' && isAssignee && task.createdBy?.toString() !== req.user._id.toString())) {
+      if (!isAssignee) {
         return res.status(403).json({
           success: false,
           message: 'You are only authorized to update your own assigned tasks.'
@@ -660,8 +661,8 @@ const updateTask = async (req, res, next) => {
         });
       }
 
-      // If Employee submitted for review, notify Admin or assigner
-      if (task.status === 'IN_REVIEW' && req.user.role === 'Employee') {
+      // If Employee or HR submitted for review, notify Admin or assigner
+      if (task.status === 'IN_REVIEW' && req.user.role !== 'ADMIN') {
         let recipientId = null;
         if (task.project) {
           const project = await Project.findById(task.project);
@@ -745,7 +746,7 @@ const startTask = async (req, res, next) => {
     }
 
     if (!task.assignedTo || task.assignedTo.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ success: false, message: 'Only the assigned Employee can start this task.' });
+      return res.status(403).json({ success: false, message: 'Only the assigned team member can start this task.' });
     }
 
     if (!['ASSIGNED', 'TODO', 'BLOCKED', 'CHANGES_REQUESTED'].includes(task.status)) {
@@ -801,9 +802,9 @@ const updateTaskProgress = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Task not found.' });
     }
 
-    if (req.user.role === 'Employee') {
+    if (req.user.role !== 'ADMIN') {
       if (!task.assignedTo || task.assignedTo.toString() !== req.user._id.toString()) {
-        return res.status(403).json({ success: false, message: 'Only the assigned Employee can update progress.' });
+        return res.status(403).json({ success: false, message: 'Only the assigned team member can update progress.' });
       }
     }
 
@@ -844,8 +845,10 @@ const submitTaskForReview = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Task not found.' });
     }
 
-    if (!task.assignedTo || task.assignedTo.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ success: false, message: 'Only assigned Employee can submit this task for review.' });
+    if (req.user.role !== 'ADMIN') {
+      if (!task.assignedTo || task.assignedTo.toString() !== req.user._id.toString()) {
+        return res.status(403).json({ success: false, message: 'Only the assigned team member can submit this task for review.' });
+      }
     }
 
     if (!['IN_PROGRESS', 'CHANGES_REQUESTED'].includes(task.status)) {
@@ -912,13 +915,13 @@ const completeTask = async (req, res, next) => {
 
     const { notes, fileId, attachment } = req.body;
 
-    // Check Employee permissions
-    if (req.user.role === 'Employee') {
+    // Check assignee permissions
+    if (req.user.role !== 'ADMIN') {
       const isAssigned = task.assignedTo && task.assignedTo.toString() === req.user._id.toString();
       if (!isAssigned) {
         return res.status(403).json({
           success: false,
-          message: 'Only the assigned worker can complete this task.'
+          message: 'Only the assigned team member can complete this task.'
         });
       }
 
@@ -1007,8 +1010,8 @@ const completeTask = async (req, res, next) => {
     }
 
     // Notifications
-    if (req.user.role === 'Employee') {
-      // Notify assigner or Admins that worker completed the company task with document
+    if (req.user.role !== 'ADMIN') {
+      // Notify assigner or Admins that worker/HR completed the company task with document
       const recipientId = task.assignedBy || task.createdBy;
       const docMsg = attachedDocName ? ` with attached document "${attachedDocName}"` : '';
 
@@ -1032,7 +1035,7 @@ const completeTask = async (req, res, next) => {
           projectId: task.project || undefined,
           title: 'Company Task Completed',
           type: 'TASK',
-          message: `Worker ${req.user.name} completed company task "${task.title}"${docMsg}.`,
+          message: `${req.user.name} (${req.user.role}) completed company task "${task.title}"${docMsg}.`,
           link: '/admin/tasks'
         });
       }
@@ -1087,7 +1090,7 @@ const blockTask = async (req, res, next) => {
     }
 
     if (!task.assignedTo || task.assignedTo.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ success: false, message: 'Only assigned Employee can report a blocker.' });
+      return res.status(403).json({ success: false, message: 'Only assigned team member can report a blocker.' });
     }
 
     task.status = 'BLOCKED';
@@ -1100,7 +1103,7 @@ const blockTask = async (req, res, next) => {
         projectId: task.project,
         userId: req.user._id,
         action: 'TASK_BLOCKED',
-        description: `Employee ${req.user.name} marked task "${task.title}" as blocked: ${reason || 'Technical obstacle'}`,
+        description: `${req.user.role} ${req.user.name} marked task "${task.title}" as blocked: ${reason || 'Technical obstacle'}`,
         entityType: 'TASK',
         entityId: task._id,
         clientVisible: false
