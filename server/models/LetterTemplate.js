@@ -9,7 +9,7 @@ const letterTemplateSchema = new mongoose.Schema(
     },
     roleCategory: {
       type: String,
-      enum: ['WEB_DEV', 'DEVOPS', 'FULL_STACK', 'UI_UX', 'QA_TESTING', 'FULL_TIME_ENG', 'INTERNSHIP', 'GENERAL'],
+      enum: ['WEB_DEV', 'DEVOPS', 'FULL_STACK', 'UI_UX', 'QA_TESTING', 'FULL_TIME_ENG', 'INTERNSHIP', 'GENERAL', 'CUSTOM'],
       default: 'GENERAL'
     },
     targetRole: {
@@ -96,7 +96,7 @@ const letterTemplateSchema = new mongoose.Schema(
         name: { type: String, default: 'Anisha' },
         designation: { type: String, default: 'People Operations' },
         title: { type: String, default: 'People Operations, GENFREX' },
-        signatureUrl: { type: String, default: '' }
+        signatureUrl: { type: String, default: '/anisha-signature.png' }
       }
     ],
     version: {

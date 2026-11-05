@@ -51,7 +51,7 @@ const hrSettingsSchema = new mongoose.Schema(
         name: { type: String, default: 'Anisha' },
         designation: { type: String, default: 'People Operations' },
         title: { type: String, default: 'People Operations, GENFREX' },
-        signatureUrl: { type: String, default: '' },
+        signatureUrl: { type: String, default: '/anisha-signature.png' },
         isDefault: { type: Boolean, default: true }
       }
     ],

@@ -265,7 +265,14 @@ const LetterPreviewModal = ({ isOpen, onClose, appointment, candidate }) => {
             {/* Signatories & Official Seal Grid */}
             <div className="grid grid-cols-2 gap-4 pt-6 border-t border-slate-200 mt-8">
               <div className="border border-slate-200 rounded-lg p-3 bg-slate-50/50 flex flex-col justify-between">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-6">Authorized Signatory</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Authorized Signatory</p>
+                <div className="h-11 flex items-center mb-1">
+                  <img
+                    src="/anisha-signature.png"
+                    alt="Signature of Anisha"
+                    className="h-10 object-contain select-none"
+                  />
+                </div>
                 <div>
                   <div className="border-b border-slate-200 pb-1 mb-1.5" />
                   <p className="font-bold text-slate-900 text-xs">Anisha</p>

@@ -23,7 +23,8 @@ import {
   Layers,
   Building2,
   HelpCircle,
-  UserCheck
+  UserCheck,
+  Sparkles
 } from 'lucide-react';
 import Button from '../../components/common/Button';
 import Card from '../../components/common/Card';
@@ -62,6 +63,9 @@ const CreateAppointment = () => {
   const [step, setStep] = useState(1);
   const [editingAppointment, setEditingAppointment] = useState(null);
   const [isCustomDept, setIsCustomDept] = useState(false);
+  const [isCustomTemplate, setIsCustomTemplate] = useState(false);
+  const [customTemplateName, setCustomTemplateName] = useState('');
+  const [savingTemplate, setSavingTemplate] = useState(false);
   const [candidates, setCandidates] = useState([]);
   const [projects, setProjects] = useState([]);
   const [clients, setClients] = useState([]);
@@ -108,6 +112,7 @@ const CreateAppointment = () => {
 
   const applyTemplate = (tmpl, overrideDetails = false) => {
     if (!tmpl) return;
+    setIsCustomTemplate(false);
     setSelectedTemplateId(tmpl._id);
     setTemplate(tmpl);
 
@@ -217,6 +222,10 @@ const CreateAppointment = () => {
           });
           if (app.department && !STANDARD_DEPARTMENTS.includes(app.department)) {
             setIsCustomDept(true);
+          }
+          if (app.letterContentSnapshot?.customTemplateName) {
+            setIsCustomTemplate(true);
+            setCustomTemplateName(app.letterContentSnapshot.customTemplateName);
           }
           setStep(2); // Jump directly to details since candidate is already set
         }
@@ -328,6 +337,46 @@ const CreateAppointment = () => {
     setFormData((prev) => ({ ...prev, terms: updated }));
   };
 
+  const handleSaveCustomTemplate = async () => {
+    if (!customTemplateName.trim()) {
+      toast.error('Please enter a name for the custom template.');
+      return;
+    }
+    try {
+      setSavingTemplate(true);
+      const res = await hrService.createLetterTemplate({
+        name: customTemplateName.trim(),
+        targetRole: customTemplateName.trim(),
+        department: formData.department || 'Engineering',
+        appointmentType: formData.appointmentType || 'TRAINEE',
+        roleCategory: 'CUSTOM',
+        title: formData.title || `${customTemplateName.trim().toUpperCase()} APPOINTMENT LETTER`,
+        roleAndResponsibilities: formData.responsibilities.filter((r) => r && r.trim()),
+        termsAndConditions: formData.terms.filter((t) => t && t.trim()),
+        confidentialityClause: formData.confidentialityTerms,
+        professionalConductClause: formData.professionalConductTerms
+      });
+
+      if (res.success && res.template) {
+        toast.success(`Template "${res.template.targetRole || res.template.name}" saved to Master Templates!`);
+        setTemplates((prev) => [...prev, res.template]);
+        setTemplate(res.template);
+        setSelectedTemplateId(res.template._id);
+        setIsCustomTemplate(false);
+        setFormData((prev) => ({
+          ...prev,
+          templateId: res.template._id
+        }));
+      } else {
+        toast.error(res.message || 'Failed to save template.');
+      }
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Failed to save custom template.');
+    } finally {
+      setSavingTemplate(false);
+    }
+  };
+
   const handleSave = async (submitNow = false) => {
     if (!formData.candidateId) {
       toast.error('Please select a candidate in Step 1.');
@@ -342,25 +391,23 @@ const CreateAppointment = () => {
 
     try {
       setSubmitting(true);
+      const payload = {
+        ...formData,
+        isCustomTemplate,
+        customTemplateName: isCustomTemplate ? customTemplateName : null,
+        templateId: isCustomTemplate ? null : formData.templateId,
+        client: formData.clientId || null,
+        project: formData.projectId || null,
+        requirement: formData.requirementId || null,
+        assignedEmployee: formData.EmployeeId || null,
+        submitNow
+      };
+
       let res;
       if (isEditing) {
-        res = await hrService.updateAppointment(editId, {
-          ...formData,
-          client: formData.clientId || null,
-          project: formData.projectId || null,
-          requirement: formData.requirementId || null,
-          assignedEmployee: formData.EmployeeId || null,
-          submitNow
-        });
+        res = await hrService.updateAppointment(editId, payload);
       } else {
-        res = await hrService.createAppointment({
-          ...formData,
-          client: formData.clientId || null,
-          project: formData.projectId || null,
-          requirement: formData.requirementId || null,
-          assignedEmployee: formData.EmployeeId || null,
-          submitNow
-        });
+        res = await hrService.createAppointment(payload);
       }
 
       if (res.success) {
@@ -559,65 +606,202 @@ const CreateAppointment = () => {
           </div>
 
           {/* Master Role-Based Template Picker */}
-          <div className="p-4 bg-gradient-to-r from-blue-50/80 via-indigo-50/50 to-slate-50 border border-blue-200/90 rounded-2xl space-y-3">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-blue-600 text-white shadow-sm shadow-blue-500/20">
-                  <Layers className="w-4 h-4" />
+          {!isCustomTemplate ? (
+            <div className="p-4 bg-gradient-to-r from-blue-50/80 via-indigo-50/50 to-slate-50 border border-blue-200/90 rounded-2xl space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-blue-600 text-white shadow-sm shadow-blue-500/20">
+                    <Layers className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-bold text-slate-900">
+                      Master Letter Template by Company Role
+                    </h3>
+                    <p className="text-[11px] text-slate-500">
+                      Different company roles require specific responsibilities, terms, and clauses. Select a role template to auto-populate.
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-xs font-bold text-slate-900">
-                    Master Letter Template by Company Role
-                  </h3>
-                  <p className="text-[11px] text-slate-500">
-                    Different company roles require specific responsibilities, terms, and clauses. Select a role template to auto-populate.
-                  </p>
+                <div className="flex items-center gap-2 shrink-0">
+                  {template && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-200">
+                      <CheckCircle2 className="w-3 h-3 text-blue-600" />
+                      <span>Applied: {template.targetRole || template.name}</span>
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsCustomTemplate(true);
+                      setSelectedTemplateId('__CUSTOM__');
+                      if (!customTemplateName && formData.designation) {
+                        setCustomTemplateName(formData.designation);
+                      }
+                    }}
+                    className="text-xs text-blue-600 hover:text-blue-800 font-medium hover:underline cursor-pointer"
+                  >
+                    + Add custom / manual
+                  </button>
                 </div>
               </div>
-              {template && (
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-200 shrink-0">
-                  <CheckCircle2 className="w-3 h-3 text-blue-600" />
-                  <span>Applied: {template.targetRole || template.name}</span>
-                </span>
-              )}
-            </div>
 
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-1">
-              <div className="relative flex-1">
-                <select
-                  value={selectedTemplateId}
-                  onChange={(e) => {
-                    const found = templates.find((t) => t._id === e.target.value);
-                    if (found) {
-                      applyTemplate(found, true);
-                      toast.success(`Applied template: ${found.targetRole || found.name}`);
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-1">
+                <div className="relative flex-1">
+                  <select
+                    value={selectedTemplateId}
+                    onChange={(e) => {
+                      if (e.target.value === '__CUSTOM__') {
+                        setIsCustomTemplate(true);
+                        setSelectedTemplateId('__CUSTOM__');
+                        if (!customTemplateName && formData.designation) {
+                          setCustomTemplateName(formData.designation);
+                        }
+                      } else {
+                        const found = templates.find((t) => t._id === e.target.value);
+                        if (found) {
+                          applyTemplate(found, true);
+                          toast.success(`Applied template: ${found.targetRole || found.name}`);
+                        }
+                      }
+                    }}
+                    className="w-full p-2.5 rounded-xl border border-blue-200 bg-white text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 shadow-sm"
+                  >
+                    {templates.map((t) => (
+                      <option key={t._id} value={t._id}>
+                        {t.targetRole || t.name} • [{t.department}] • {t.appointmentType}
+                      </option>
+                    ))}
+                    <option value="__CUSTOM__">+ Enter Other / Custom Role Template (Manual)...</option>
+                  </select>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const current = templates.find((t) => t._id === selectedTemplateId) || templates[0];
+                    if (current) {
+                      applyTemplate(current, true);
+                      toast.success(`Re-applied master clauses for ${current.targetRole || current.name}`);
                     }
                   }}
-                  className="w-full p-2.5 rounded-xl border border-blue-200 bg-white text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 shadow-sm"
+                  className="px-3.5 py-2.5 rounded-xl bg-white border border-blue-200 hover:bg-blue-50 text-blue-700 text-xs font-semibold shadow-sm transition-colors flex items-center justify-center gap-1.5 shrink-0"
                 >
-                  {templates.map((t) => (
-                    <option key={t._id} value={t._id}>
-                      {t.targetRole || t.name} • [{t.department}] • {t.appointmentType}
-                    </option>
-                  ))}
-                </select>
+                  <span>Re-apply Role Clauses</span>
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="p-4 bg-gradient-to-r from-amber-50/80 via-blue-50/40 to-slate-50 border border-amber-300 rounded-2xl space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-amber-600 text-white shadow-sm shadow-amber-500/20">
+                    <Sparkles className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-bold text-slate-900">
+                      Custom / Manual Role Template
+                    </h3>
+                    <p className="text-[11px] text-slate-500">
+                      Manual template mode active. Define your own role title and customize duties, terms, and clauses in Step 4.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                    <Sparkles className="w-3 h-3 text-amber-600" />
+                    <span>Manual / Custom Template</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsCustomTemplate(false);
+                      const defaultTmpl = templates.find((t) => t._id === selectedTemplateId) || templates[0];
+                      if (defaultTmpl) {
+                        applyTemplate(defaultTmpl, false);
+                      }
+                    }}
+                    className="text-xs text-blue-600 hover:text-blue-800 font-medium hover:underline cursor-pointer"
+                  >
+                    ← Select from preset templates
+                  </button>
+                </div>
               </div>
 
-              <button
-                type="button"
-                onClick={() => {
-                  const current = templates.find((t) => t._id === selectedTemplateId) || templates[0];
-                  if (current) {
-                    applyTemplate(current, true);
-                    toast.success(`Re-applied master clauses for ${current.targetRole || current.name}`);
-                  }
-                }}
-                className="px-3.5 py-2.5 rounded-xl bg-white border border-blue-200 hover:bg-blue-50 text-blue-700 text-xs font-semibold shadow-sm transition-colors flex items-center justify-center gap-1.5 shrink-0"
-              >
-                <span>Re-apply Role Clauses</span>
-              </button>
+              <div className="space-y-2 pt-1">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                  <input
+                    type="text"
+                    value={customTemplateName}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setCustomTemplateName(val);
+                      setFormData((prev) => ({
+                        ...prev,
+                        title: val ? `${val.toUpperCase()} APPOINTMENT LETTER` : prev.title,
+                        designation: prev.designation || val
+                      }));
+                    }}
+                    placeholder="Type custom role or template name (e.g. AI Prompt Engineer, Growth Lead, Business Analyst...)"
+                    className="flex-1 p-2.5 rounded-xl border border-amber-400 bg-white text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500/20 shadow-sm"
+                    autoFocus
+                  />
+
+                  {customTemplateName.trim() && (
+                    <button
+                      type="button"
+                      onClick={handleSaveCustomTemplate}
+                      disabled={savingTemplate}
+                      className="px-3.5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-sm transition-colors flex items-center justify-center gap-1.5 shrink-0 disabled:opacity-50 cursor-pointer"
+                    >
+                      <span>{savingTemplate ? 'Saving...' : '💾 Save to Master Templates'}</span>
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500 pt-0.5">
+                  <span>
+                    Manual template enabled: You can freely customize duties & obligations in <strong>Step 4</strong> without preset overrides.
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFormData((prev) => ({
+                          ...prev,
+                          responsibilities: [''],
+                          terms: ['']
+                        }));
+                        toast.success('Clauses cleared for fresh manual entry in Step 4');
+                      }}
+                      className="text-xs text-rose-600 hover:text-rose-800 font-medium hover:underline cursor-pointer"
+                    >
+                      Clear clauses (Start blank)
+                    </button>
+                    <span>•</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const baseline = templates[0];
+                        if (baseline) {
+                          setFormData((prev) => ({
+                            ...prev,
+                            responsibilities: [...(baseline.roleAndResponsibilities || [])],
+                            terms: [...(baseline.termsAndConditions || [])],
+                            confidentialityTerms: baseline.confidentialityClause || prev.confidentialityTerms,
+                            professionalConductTerms: baseline.professionalConductClause || prev.professionalConductTerms
+                          }));
+                          toast.success('Loaded baseline clauses as draft');
+                        }
+                      }}
+                      className="text-xs text-blue-600 hover:text-blue-800 font-medium hover:underline cursor-pointer"
+                    >
+                      Load baseline clauses
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
             <div>
@@ -1161,15 +1345,34 @@ const CreateAppointment = () => {
 
               {/* Signatories */}
               <div className="grid grid-cols-2 gap-4 pt-6 border-t border-slate-200">
-                <div className="p-2 border rounded bg-slate-50 text-[11px]">
-                  <p className="text-[9px] font-bold text-slate-400 uppercase">Authorized Signatory</p>
-                  <p className="font-bold text-slate-900 mt-4">Anisha</p>
-                  <p className="text-slate-600">People Operations, GENFREX</p>
+                <div className="p-3 border rounded-lg bg-slate-50 text-[11px] flex flex-col justify-between">
+                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-2">Authorized Signatory</p>
+                  <div className="h-10 flex items-center mb-1">
+                    <img
+                      src="/anisha-signature.png"
+                      alt="Signature of Anisha"
+                      className="h-9 object-contain select-none"
+                    />
+                  </div>
+                  <div>
+                    <div className="border-b border-slate-200 pb-1 mb-1.5" />
+                    <p className="font-bold text-slate-900 text-xs">Anisha</p>
+                    <p className="text-slate-600">People Operations, GENFREX</p>
+                  </div>
                 </div>
-                <div className="p-2 border rounded bg-slate-50 text-[11px]">
-                  <p className="text-[9px] font-bold text-slate-400 uppercase">Company Seal</p>
-                  <p className="font-bold text-slate-900 mt-4">GENFREX Official Seal</p>
-                  <p className="text-slate-600">Karur • 639113</p>
+                <div className="p-3 border rounded-lg bg-slate-50 text-[11px] flex flex-col items-center justify-between text-center">
+                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider w-full text-left">Company Seal</p>
+                  <div className="my-1 flex items-center justify-center">
+                    <img
+                      src="/company-seal.png"
+                      alt="GENFREX Official Seal"
+                      className="w-14 h-14 object-contain drop-shadow-sm select-none"
+                    />
+                  </div>
+                  <div>
+                    <p className="font-bold text-slate-900 text-xs">GENFREX</p>
+                    <p className="text-slate-500 text-[10px]">Karur • 639113</p>
+                  </div>
                 </div>
               </div>
             </div>

@@ -135,7 +135,7 @@ const DEFAULT_ROLE_TEMPLATES = [
     acceptanceTerms:
       'Please signify your acceptance of this Trainee Appointment Letter and its incorporated terms by signing and returning the duplicate copy on or before the acceptance deadline mentioned herein.',
     signatories: [
-      { name: 'Anisha', designation: 'People Operations', title: 'People Operations, GENFREX' }
+      { name: 'Anisha', designation: 'People Operations', title: 'People Operations, GENFREX', signatureUrl: '/anisha-signature.png' }
     ]
   },
   {
@@ -168,7 +168,7 @@ const DEFAULT_ROLE_TEMPLATES = [
     acceptanceTerms:
       'Please sign and return this DevOps Appointment Letter on or before the acceptance deadline to formally secure your enrollment.',
     signatories: [
-      { name: 'Anisha', designation: 'People Operations', title: 'People Operations, GENFREX' }
+      { name: 'Anisha', designation: 'People Operations', title: 'People Operations, GENFREX', signatureUrl: '/anisha-signature.png' }
     ]
   },
   {
@@ -201,7 +201,7 @@ const DEFAULT_ROLE_TEMPLATES = [
     acceptanceTerms:
       'Kindly acknowledge receipt and return the signed duplicate copy on or before the acceptance deadline.',
     signatories: [
-      { name: 'Anisha', designation: 'People Operations', title: 'People Operations, GENFREX' }
+      { name: 'Anisha', designation: 'People Operations', title: 'People Operations, GENFREX', signatureUrl: '/anisha-signature.png' }
     ]
   },
   {
@@ -234,7 +234,7 @@ const DEFAULT_ROLE_TEMPLATES = [
     acceptanceTerms:
       'Please sign and return the duplicate copy on or before the acceptance deadline to initiate your onboarding.',
     signatories: [
-      { name: 'Anisha', designation: 'People Operations', title: 'People Operations, GENFREX' }
+      { name: 'Anisha', designation: 'People Operations', title: 'People Operations, GENFREX', signatureUrl: '/anisha-signature.png' }
     ]
   },
   {
@@ -267,7 +267,7 @@ const DEFAULT_ROLE_TEMPLATES = [
     acceptanceTerms:
       'Please sign and return this letter on or before the acceptance deadline to confirm your appointment.',
     signatories: [
-      { name: 'Anisha', designation: 'People Operations', title: 'People Operations, GENFREX' }
+      { name: 'Anisha', designation: 'People Operations', title: 'People Operations, GENFREX', signatureUrl: '/anisha-signature.png' }
     ]
   },
   {
@@ -300,28 +300,43 @@ const DEFAULT_ROLE_TEMPLATES = [
     acceptanceTerms:
       'Please sign and return this internship agreement on or before the stated deadline.',
     signatories: [
-      { name: 'Anisha', designation: 'People Operations', title: 'People Operations, GENFREX' }
+      { name: 'Anisha', designation: 'People Operations', title: 'People Operations, GENFREX', signatureUrl: '/anisha-signature.png' }
     ]
   }
 ];
+
+let isMasterRoleTemplatesSeeded = false;
 
 /**
  * Seed or verify master role templates
  */
 const seedMasterRoleTemplates = async () => {
-  for (const tmpl of DEFAULT_ROLE_TEMPLATES) {
-    const existing = await LetterTemplate.findOne({
-      $or: [{ name: tmpl.name }, { roleCategory: tmpl.roleCategory }]
-    });
-    if (!existing) {
-      await LetterTemplate.create({
-        ...tmpl,
-        active: true
+  if (isMasterRoleTemplatesSeeded) return;
+  try {
+    for (const tmpl of DEFAULT_ROLE_TEMPLATES) {
+      const existing = await LetterTemplate.findOne({
+        $or: [{ name: tmpl.name }, { roleCategory: tmpl.roleCategory }]
       });
-    } else {
-      existing.signatories = tmpl.signatories;
-      await existing.save();
+      if (!existing) {
+        await LetterTemplate.create({
+          ...tmpl,
+          active: true
+        });
+      } else {
+        const hasAnisha = existing.signatories?.some(
+          (s) => s.name === 'Anisha' && s.signatureUrl === '/anisha-signature.png'
+        );
+        if (!hasAnisha) {
+          await LetterTemplate.updateOne(
+            { _id: existing._id },
+            { $set: { signatories: tmpl.signatories } }
+          );
+        }
+      }
     }
+    isMasterRoleTemplatesSeeded = true;
+  } catch (err) {
+    console.error('Error seeding master role templates:', err.message);
   }
 };
 

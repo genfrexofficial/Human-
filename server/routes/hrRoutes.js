@@ -82,9 +82,9 @@ router.put('/settings', authorizeRoles('ADMIN'), updateHRSettings);
 
 // Master Role Templates
 router.get('/templates', getLetterTemplates);
-router.post('/templates', authorizeRoles('ADMIN'), createLetterTemplate);
-router.put('/templates/:id', authorizeRoles('ADMIN'), updateLetterTemplate);
+router.post('/templates', authorizeRoles('ADMIN', 'HR'), createLetterTemplate);
+router.put('/templates/:id', authorizeRoles('ADMIN', 'HR'), updateLetterTemplate);
 router.delete('/templates/:id', authorizeRoles('ADMIN'), deleteLetterTemplate);
-router.put('/template', authorizeRoles('ADMIN'), updateLetterTemplate);
+router.put('/template', authorizeRoles('ADMIN', 'HR'), updateLetterTemplate);
 
 module.exports = router;

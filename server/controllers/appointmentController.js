@@ -1,6 +1,8 @@
+const mongoose = require('mongoose');
 const AppointmentLetter = require('../models/AppointmentLetter');
 const Candidate = require('../models/Candidate');
 const HRApproval = require('../models/HRApproval');
+const LetterTemplate = require('../models/LetterTemplate');
 const File = require('../models/File');
 const {
   generateReferenceNumber,
@@ -206,6 +208,9 @@ const createAppointment = async (req, res, next) => {
       requirementId,
       assignedEmployee,
       EmployeeId,
+      templateId,
+      customTemplateName,
+      isCustomTemplate,
       submitNow
     } = req.body;
 
@@ -249,10 +254,20 @@ const createAppointment = async (req, res, next) => {
     // Allocate atomic reference number
     const referenceNumber = await generateReferenceNumber();
 
-    // Get active template for snapshot
-    const activeTemplate = await getActiveTemplate();
+    // Get active template for snapshot / baseline
+    let activeTemplate = null;
+    if (templateId && mongoose.Types.ObjectId.isValid(templateId)) {
+      activeTemplate = await LetterTemplate.findById(templateId);
+    }
+    if (!activeTemplate) {
+      activeTemplate = await getActiveTemplate();
+    }
 
     const initialStatus = submitNow ? 'PENDING_APPROVAL' : 'DRAFT';
+
+    const defaultTitle = isCustomTemplate && customTemplateName
+      ? `${customTemplateName.toUpperCase()} APPOINTMENT LETTER`
+      : (activeTemplate?.title || 'TRAINEE APPOINTMENT LETTER');
 
     const appointment = await AppointmentLetter.create({
       referenceNumber,
@@ -268,7 +283,7 @@ const createAppointment = async (req, res, next) => {
       assignedEmployee: assignedEmployee || EmployeeId || candidate.assignedEmployee || candidate.EmployeeId || null,
       employmentType: employmentType || appointmentType || 'Trainee',
       appointmentType: appointmentType || (employmentType === 'Full-time' ? 'FULL_TIME' : employmentType === 'Internship' ? 'INTERNSHIP' : 'TRAINEE'),
-      title: title || activeTemplate.title || 'TRAINEE APPOINTMENT LETTER',
+      title: title || defaultTitle,
       designation,
       department: department || candidate.department || 'Engineering',
       appointmentDate: appointmentDate || new Date(),
@@ -279,19 +294,20 @@ const createAppointment = async (req, res, next) => {
       compensationFrequency: compensationFrequency || 'STIPEND_MONTHLY',
       responsibilities: responsibilities && responsibilities.length > 0
         ? responsibilities
-        : activeTemplate.roleAndResponsibilities,
-      terms: terms && terms.length > 0 ? terms : activeTemplate.termsAndConditions,
-      confidentialityTerms: confidentialityTerms || activeTemplate.confidentialityClause,
-      professionalConductTerms: professionalConductTerms || activeTemplate.professionalConductClause,
+        : (activeTemplate?.roleAndResponsibilities || []),
+      terms: terms && terms.length > 0 ? terms : (activeTemplate?.termsAndConditions || []),
+      confidentialityTerms: confidentialityTerms || activeTemplate?.confidentialityClause || '',
+      professionalConductTerms: professionalConductTerms || activeTemplate?.professionalConductClause || '',
       acceptanceDeadline,
       status: initialStatus,
-      templateId: activeTemplate._id,
-      templateVersion: activeTemplate.version || 1,
+      templateId: (templateId && mongoose.Types.ObjectId.isValid(templateId)) ? templateId : (activeTemplate?._id || null),
+      templateVersion: activeTemplate?.version || 1,
       letterContentSnapshot: {
-        title: title || activeTemplate.title,
-        subtitle: activeTemplate.subtitle,
-        aboutGenfrex: activeTemplate.aboutGenfrex,
-        signatories: activeTemplate.signatories
+        title: title || defaultTitle,
+        subtitle: activeTemplate?.subtitle || 'DIGITAL SERVICES & TALENT ECOSYSTEM',
+        aboutGenfrex: activeTemplate?.aboutGenfrex,
+        signatories: activeTemplate?.signatories,
+        customTemplateName: isCustomTemplate ? (customTemplateName || null) : null
       },
       createdBy: req.user._id,
       submittedAt: submitNow ? new Date() : null
@@ -422,6 +438,14 @@ const updateAppointment = async (req, res, next) => {
         appointment[field] = req.body[field];
       }
     });
+
+    if (req.body.customTemplateName !== undefined) {
+      if (!appointment.letterContentSnapshot) {
+        appointment.letterContentSnapshot = {};
+      }
+      appointment.letterContentSnapshot.customTemplateName = req.body.customTemplateName;
+      appointment.markModified('letterContentSnapshot');
+    }
 
     if (req.body.submitNow) {
       appointment.status = 'PENDING_APPROVAL';

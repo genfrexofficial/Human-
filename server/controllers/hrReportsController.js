@@ -176,7 +176,7 @@ const getHRSettings = async (req, res, next) => {
             name: 'Anisha',
             designation: 'People Operations',
             title: 'People Operations, GENFREX',
-            signatureUrl: '',
+            signatureUrl: '/anisha-signature.png',
             isDefault: true
           }
         ]
@@ -184,18 +184,22 @@ const getHRSettings = async (req, res, next) => {
     } else if (
       !settings.signatories ||
       settings.signatories.length === 0 ||
-      settings.signatories.some((s) => s.name === 'P.S. Dharshan' || s.name === 'Deepak P')
+      settings.signatories.some((s) => s.name === 'P.S. Dharshan' || s.name === 'Deepak P' || !s.signatureUrl)
     ) {
-      settings.signatories = [
+      const updatedSignatories = [
         {
           name: 'Anisha',
           designation: 'People Operations',
           title: 'People Operations, GENFREX',
-          signatureUrl: '',
+          signatureUrl: '/anisha-signature.png',
           isDefault: true
         }
       ];
-      await settings.save();
+      await HRSettings.updateOne(
+        { _id: settings._id },
+        { $set: { signatories: updatedSignatories } }
+      );
+      settings.signatories = updatedSignatories;
     }
 
     const templates = await getMasterRoleTemplates();
@@ -257,8 +261,8 @@ const getLetterTemplates = async (req, res, next) => {
  */
 const createLetterTemplate = async (req, res, next) => {
   try {
-    if (req.user.role !== 'ADMIN') {
-      return res.status(403).json({ success: false, message: 'Only Admins can create Letter Templates.' });
+    if (req.user.role !== 'ADMIN' && req.user.role !== 'HR') {
+      return res.status(403).json({ success: false, message: 'Only Admins and HR can create Letter Templates.' });
     }
 
     const newTemplate = await LetterTemplate.create({
@@ -282,8 +286,8 @@ const createLetterTemplate = async (req, res, next) => {
  */
 const updateLetterTemplate = async (req, res, next) => {
   try {
-    if (req.user.role !== 'ADMIN') {
-      return res.status(403).json({ success: false, message: 'Only Admins can modify Letter Templates.' });
+    if (req.user.role !== 'ADMIN' && req.user.role !== 'HR') {
+      return res.status(403).json({ success: false, message: 'Only Admins and HR can modify Letter Templates.' });
     }
 
     const templateId = req.params.id;

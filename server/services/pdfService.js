@@ -333,6 +333,21 @@ const generateAppointmentPDF = async (appointment, candidate = {}, template = nu
       doc.roundedRect(x1, sigCardY, cardW, sigCardH, 4).fill(cBgCard);
       doc.roundedRect(x1, sigCardY, cardW, sigCardH, 4).strokeColor(cBorder).lineWidth(0.75).stroke();
       doc.fontSize(7.5).font('Helvetica-Bold').fillColor(cSlate400).text('AUTHORIZED SIGNATORY', x1 + 14, sigCardY + 12);
+
+      // Render Anisha's official signature image
+      const sigPath = path.join(__dirname, '../assets/anisha-signature.png');
+      const sigW = 95;
+      const sigH = 36;
+      const sigX = x1 + 14;
+      const sigY = sigCardY + 28;
+      if (fs.existsSync(sigPath)) {
+        try {
+          doc.image(sigPath, sigX, sigY, { width: sigW, height: sigH });
+        } catch {
+          // fallback
+        }
+      }
+
       doc.strokeColor(cBorder).lineWidth(0.5).moveTo(x1 + 14, sigCardY + 68).lineTo(x1 + cardW - 14, sigCardY + 68).stroke();
       doc.fontSize(9.5).font('Helvetica-Bold').fillColor(cSlate900).text('Anisha', x1 + 14, sigCardY + 76);
       doc.fontSize(8).font('Helvetica').fillColor(cSlate600).text('People Operations', x1 + 14, sigCardY + 90);
