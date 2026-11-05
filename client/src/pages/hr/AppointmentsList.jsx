@@ -302,6 +302,19 @@ const AppointmentsList = ({ defaultStatus = '' }) => {
 
                       <td className="py-3.5 px-4 text-right">
                         <div className="flex items-center justify-end gap-1.5">
+                          {(app.status === 'REJECTED' || app.status === 'DRAFT') && (
+                            <Link
+                              to={location.pathname.includes('/admin/') ? `/admin/hr/appointments/edit/${app._id}` : `/hr/appointments/edit/${app._id}`}
+                              className={`px-2.5 py-1 rounded font-semibold text-[11px] border transition-colors ${
+                                app.status === 'REJECTED'
+                                  ? 'bg-rose-50 hover:bg-rose-100 text-rose-800 border-rose-200'
+                                  : 'bg-amber-50 hover:bg-amber-100 text-amber-800 border-amber-200'
+                              }`}
+                              title={app.status === 'REJECTED' ? 'Fix & Update Rejection' : 'Edit Draft'}
+                            >
+                              {app.status === 'REJECTED' ? 'Fix / Update' : 'Edit'}
+                            </Link>
+                          )}
                           <button
                             onClick={() => setSelectedLetter(app)}
                             className="px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-[11px] transition-colors"

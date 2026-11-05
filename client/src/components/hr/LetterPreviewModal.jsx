@@ -263,28 +263,18 @@ const LetterPreviewModal = ({ isOpen, onClose, appointment, candidate }) => {
             </div>
 
             {/* Signatories & Official Seal Grid */}
-            <div className="grid grid-cols-3 gap-4 pt-6 border-t border-slate-200 mt-8">
+            <div className="grid grid-cols-2 gap-4 pt-6 border-t border-slate-200 mt-8">
               <div className="border border-slate-200 rounded-lg p-3 bg-slate-50/50 flex flex-col justify-between">
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-6">Authorized Signatory</p>
                 <div>
                   <div className="border-b border-slate-200 pb-1 mb-1.5" />
-                  <p className="font-bold text-slate-900 text-xs">P.S. Dharshan</p>
-                  <p className="text-[11px] text-slate-600">Founder</p>
+                  <p className="font-bold text-slate-900 text-xs">Anisha</p>
+                  <p className="text-[11px] text-slate-600">People Operations</p>
                   <p className="text-[10px] text-slate-400">GENFREX Ecosystem</p>
                 </div>
               </div>
 
-              <div className="border border-slate-200 rounded-lg p-3 bg-slate-50/50 flex flex-col justify-between">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-6">Authorized Signatory</p>
-                <div>
-                  <div className="border-b border-slate-200 pb-1 mb-1.5" />
-                  <p className="font-bold text-slate-900 text-xs">Deepak P</p>
-                  <p className="text-[11px] text-slate-600">Chief Operating Officer</p>
-                  <p className="text-[10px] text-slate-400">GENFREX Ecosystem</p>
-                </div>
-              </div>
-
-              {/* Company Seal (in Candidate Signature old place) */}
+              {/* Company Seal */}
               <div className="border border-slate-200 rounded-lg p-3 bg-slate-50/50 flex flex-col items-center justify-between text-center">
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider w-full text-left">Company Seal</p>
                 <div className="my-1 flex items-center justify-center">

@@ -93,15 +93,9 @@ const letterTemplateSchema = new mongoose.Schema(
     },
     signatories: [
       {
-        name: { type: String, default: 'P.S. Dharshan' },
-        designation: { type: String, default: 'Founder' },
-        title: { type: String, default: 'Founder, GENFREX' },
-        signatureUrl: { type: String, default: '' }
-      },
-      {
-        name: { type: String, default: 'Deepak P' },
-        designation: { type: String, default: 'Chief Operating Officer' },
-        title: { type: String, default: 'Chief Operating Officer, GENFREX' },
+        name: { type: String, default: 'Anisha' },
+        designation: { type: String, default: 'People Operations' },
+        title: { type: String, default: 'People Operations, GENFREX' },
         signatureUrl: { type: String, default: '' }
       }
     ],

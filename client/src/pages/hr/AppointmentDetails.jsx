@@ -234,10 +234,19 @@ const AppointmentDetails = () => {
 
           {/* HR Actions */}
           {(isDraft || isRejected) && (
-            <Button variant="primary" size="sm" onClick={handleSubmitForApproval}>
-              <Send className="w-3.5 h-3.5 mr-1" />
-              <span>Submit for Admin Approval</span>
-            </Button>
+            <>
+              <Link
+                to={isAdmin ? `/admin/hr/appointments/edit/${appointment._id}` : `/hr/appointments/edit/${appointment._id}`}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-900 text-xs font-semibold shadow-sm transition-colors"
+              >
+                <Edit className="w-3.5 h-3.5" />
+                <span>{isRejected ? 'Update & Fix Rejection' : 'Edit Letter'}</span>
+              </Link>
+              <Button variant="primary" size="sm" onClick={handleSubmitForApproval}>
+                <Send className="w-3.5 h-3.5 mr-1" />
+                <span>Submit for Admin Approval</span>
+              </Button>
+            </>
           )}
 
           {/* If Approved, HR can generate PDF and Send */}
@@ -296,17 +305,31 @@ const AppointmentDetails = () => {
 
       {/* Status Callout Banners */}
       {isRejected && (
-        <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl flex items-start gap-3">
-          <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
-          <div className="text-xs">
-            <p className="font-bold text-rose-900">Returned for Revision by Admin</p>
-            <p className="text-rose-700 mt-0.5">
-              Reason: <span className="font-semibold">"{appointment.rejectionReason}"</span>
-            </p>
-            <p className="text-rose-600 mt-1 text-[11px]">
-              You can make required adjustments and resubmit this appointment letter for approval.
-            </p>
+        <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+            <div className="text-xs">
+              <div className="flex items-center gap-2">
+                <p className="font-bold text-rose-900 text-sm">Returned for Revision by Admin</p>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-200 text-rose-800">
+                  Action Required
+                </span>
+              </div>
+              <p className="text-rose-800 mt-1">
+                Admin Rejection Reason: <strong className="font-semibold underline">"{appointment.rejectionReason}"</strong>
+              </p>
+              <p className="text-rose-600 mt-1 text-[11px]">
+                Click "Update & Fix Rejection" to edit this letter's terms, compensation, or responsibilities and resubmit for approval.
+              </p>
+            </div>
           </div>
+          <Link
+            to={isAdmin ? `/admin/hr/appointments/edit/${appointment._id}` : `/hr/appointments/edit/${appointment._id}`}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs shadow-sm transition-colors self-start sm:self-center shrink-0"
+          >
+            <Edit className="w-3.5 h-3.5" />
+            <span>Update & Fix Rejection</span>
+          </Link>
         </div>
       )}
 

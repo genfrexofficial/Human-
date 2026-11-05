@@ -426,6 +426,8 @@ const updateAppointment = async (req, res, next) => {
     if (req.body.submitNow) {
       appointment.status = 'PENDING_APPROVAL';
       appointment.submittedAt = new Date();
+      appointment.rejectionReason = ''; // Clear previous rejection reason
+      appointment.rejectedAt = null;
 
       await HRApproval.create({
         appointmentLetterId: appointment._id,

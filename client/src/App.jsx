@@ -141,6 +141,8 @@ function App() {
             <Route path="hr/dashboard" element={<HRDashboard />} />
             <Route path="hr/candidates" element={<Candidates />} />
             <Route path="hr/appointments" element={<AppointmentsList />} />
+            <Route path="hr/appointments/create" element={<CreateAppointment />} />
+            <Route path="hr/appointments/edit/:id" element={<CreateAppointment />} />
             <Route path="hr/appointments/:id" element={<AppointmentDetails />} />
             <Route path="hr/pending-approvals" element={<AdminPendingApprovals />} />
             <Route path="hr/approved" element={<AppointmentsList defaultStatus="APPROVED" />} />
@@ -167,6 +169,7 @@ function App() {
             <Route path="candidates" element={<Candidates />} />
             <Route path="appointments" element={<AppointmentsList />} />
             <Route path="appointments/create" element={<CreateAppointment />} />
+            <Route path="appointments/edit/:id" element={<CreateAppointment />} />
             <Route path="appointments/:id" element={<AppointmentDetails />} />
             <Route path="approvals-status" element={<AppointmentsList defaultStatus="PENDING_APPROVAL" />} />
             <Route path="sent-letters" element={<AppointmentsList defaultStatus="SENT" />} />

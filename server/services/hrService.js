@@ -135,8 +135,7 @@ const DEFAULT_ROLE_TEMPLATES = [
     acceptanceTerms:
       'Please signify your acceptance of this Trainee Appointment Letter and its incorporated terms by signing and returning the duplicate copy on or before the acceptance deadline mentioned herein.',
     signatories: [
-      { name: 'P.S. Dharshan', designation: 'Founder', title: 'Founder, GENFREX' },
-      { name: 'Deepak P', designation: 'Chief Operating Officer', title: 'Chief Operating Officer, GENFREX' }
+      { name: 'Anisha', designation: 'People Operations', title: 'People Operations, GENFREX' }
     ]
   },
   {
@@ -169,8 +168,7 @@ const DEFAULT_ROLE_TEMPLATES = [
     acceptanceTerms:
       'Please sign and return this DevOps Appointment Letter on or before the acceptance deadline to formally secure your enrollment.',
     signatories: [
-      { name: 'P.S. Dharshan', designation: 'Founder', title: 'Founder, GENFREX' },
-      { name: 'Deepak P', designation: 'Chief Operating Officer', title: 'Chief Operating Officer, GENFREX' }
+      { name: 'Anisha', designation: 'People Operations', title: 'People Operations, GENFREX' }
     ]
   },
   {
@@ -203,8 +201,7 @@ const DEFAULT_ROLE_TEMPLATES = [
     acceptanceTerms:
       'Kindly acknowledge receipt and return the signed duplicate copy on or before the acceptance deadline.',
     signatories: [
-      { name: 'P.S. Dharshan', designation: 'Founder', title: 'Founder, GENFREX' },
-      { name: 'Deepak P', designation: 'Chief Operating Officer', title: 'Chief Operating Officer, GENFREX' }
+      { name: 'Anisha', designation: 'People Operations', title: 'People Operations, GENFREX' }
     ]
   },
   {
@@ -237,8 +234,7 @@ const DEFAULT_ROLE_TEMPLATES = [
     acceptanceTerms:
       'Please sign and return the duplicate copy on or before the acceptance deadline to initiate your onboarding.',
     signatories: [
-      { name: 'P.S. Dharshan', designation: 'Founder', title: 'Founder, GENFREX' },
-      { name: 'Deepak P', designation: 'Chief Operating Officer', title: 'Chief Operating Officer, GENFREX' }
+      { name: 'Anisha', designation: 'People Operations', title: 'People Operations, GENFREX' }
     ]
   },
   {
@@ -271,8 +267,7 @@ const DEFAULT_ROLE_TEMPLATES = [
     acceptanceTerms:
       'Please sign and return this letter on or before the acceptance deadline to confirm your appointment.',
     signatories: [
-      { name: 'P.S. Dharshan', designation: 'Founder', title: 'Founder, GENFREX' },
-      { name: 'Deepak P', designation: 'Chief Operating Officer', title: 'Chief Operating Officer, GENFREX' }
+      { name: 'Anisha', designation: 'People Operations', title: 'People Operations, GENFREX' }
     ]
   },
   {
@@ -305,8 +300,7 @@ const DEFAULT_ROLE_TEMPLATES = [
     acceptanceTerms:
       'Please sign and return this internship agreement on or before the stated deadline.',
     signatories: [
-      { name: 'P.S. Dharshan', designation: 'Founder', title: 'Founder, GENFREX' },
-      { name: 'Deepak P', designation: 'Chief Operating Officer', title: 'Chief Operating Officer, GENFREX' }
+      { name: 'Anisha', designation: 'People Operations', title: 'People Operations, GENFREX' }
     ]
   }
 ];
@@ -324,6 +318,9 @@ const seedMasterRoleTemplates = async () => {
         ...tmpl,
         active: true
       });
+    } else {
+      existing.signatories = tmpl.signatories;
+      await existing.save();
     }
   }
 };

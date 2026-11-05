@@ -170,8 +170,32 @@ const getHRSettings = async (req, res, next) => {
         companyName: 'GENFREX',
         referencePrefix: 'GFX/HR',
         referenceYear: new Date().getFullYear(),
-        currentSequence: 1
+        currentSequence: 1,
+        signatories: [
+          {
+            name: 'Anisha',
+            designation: 'People Operations',
+            title: 'People Operations, GENFREX',
+            signatureUrl: '',
+            isDefault: true
+          }
+        ]
       });
+    } else if (
+      !settings.signatories ||
+      settings.signatories.length === 0 ||
+      settings.signatories.some((s) => s.name === 'P.S. Dharshan' || s.name === 'Deepak P')
+    ) {
+      settings.signatories = [
+        {
+          name: 'Anisha',
+          designation: 'People Operations',
+          title: 'People Operations, GENFREX',
+          signatureUrl: '',
+          isDefault: true
+        }
+      ];
+      await settings.save();
     }
 
     const templates = await getMasterRoleTemplates();

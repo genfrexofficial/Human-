@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { useNavigate, useSearchParams, useParams, useLocation, Link } from 'react-router-dom';
 import { hrService } from '../../services/hrService';
 import { projectService } from '../../services/projectService';
 import { clientService } from '../../services/clientService';
@@ -18,6 +18,7 @@ import {
   ArrowLeft,
   CheckCircle2,
   AlertCircle,
+  AlertTriangle,
   Plus,
   Layers,
   Building2,
@@ -30,6 +31,11 @@ import toast from 'react-hot-toast';
 
 const CreateAppointment = () => {
   const [searchParams] = useSearchParams();
+  const { id: routeEditId } = useParams();
+  const location = useLocation();
+  const editId = routeEditId || searchParams.get('editId');
+  const isEditing = Boolean(editId);
+
   const preselectedCandidateId = searchParams.get('candidateId');
   const preselectedProjectId = searchParams.get('projectId');
   const preselectedClientId = searchParams.get('clientId');
@@ -40,6 +46,7 @@ const CreateAppointment = () => {
   const navigate = useNavigate();
 
   const [step, setStep] = useState(1);
+  const [editingAppointment, setEditingAppointment] = useState(null);
   const [candidates, setCandidates] = useState([]);
   const [projects, setProjects] = useState([]);
   const [clients, setClients] = useState([]);
@@ -158,6 +165,44 @@ const CreateAppointment = () => {
           }));
         }
       }
+
+      // If in edit mode, fetch existing appointment and populate fields
+      if (isEditing) {
+        const appRes = await hrService.getAppointmentById(editId).catch(() => null);
+        if (appRes?.success && appRes.appointment) {
+          const app = appRes.appointment;
+          setEditingAppointment(app);
+          const cand = app.candidateId || app.candidate;
+          if (cand) {
+            setSelectedCandidate(cand);
+          }
+          setFormData({
+            candidateId: cand?._id || cand || '',
+            templateId: app.templateId?._id || app.templateId || '',
+            appointmentType: app.appointmentType || 'TRAINEE',
+            employmentType: app.employmentType || 'Trainee',
+            title: app.title || 'TRAINEE APPOINTMENT LETTER',
+            designation: app.designation || '',
+            department: app.department || 'Engineering',
+            appointmentDate: app.appointmentDate ? new Date(app.appointmentDate).toISOString().substring(0, 10) : new Date().toISOString().substring(0, 10),
+            joiningDate: app.joiningDate ? new Date(app.joiningDate).toISOString().substring(0, 10) : '',
+            workLocation: app.workLocation || 'Remote / Bengaluru HQ',
+            reportingManager: app.reportingManager || 'Technical Lead',
+            compensation: app.compensation || 25000,
+            compensationFrequency: app.compensationFrequency || 'STIPEND_MONTHLY',
+            responsibilities: app.responsibilities && app.responsibilities.length > 0 ? [...app.responsibilities] : [],
+            terms: app.terms && app.terms.length > 0 ? [...app.terms] : [],
+            confidentialityTerms: app.confidentialityTerms || '',
+            professionalConductTerms: app.professionalConductTerms || '',
+            acceptanceDeadline: app.acceptanceDeadline ? new Date(app.acceptanceDeadline).toISOString().substring(0, 10) : '',
+            clientId: app.clientId?._id || app.clientId || app.client?._id || app.client || '',
+            projectId: app.projectId?._id || app.projectId || app.project?._id || app.project || '',
+            requirementId: app.requirementId?._id || app.requirementId || app.requirement?._id || app.requirement || '',
+            EmployeeId: app.EmployeeId?._id || app.EmployeeId || app.assignedEmployee?._id || app.assignedEmployee || ''
+          });
+          setStep(2); // Jump directly to details since candidate is already set
+        }
+      }
     } catch (err) {
       toast.error('Failed to load initial form data.');
     } finally {
@@ -273,22 +318,36 @@ const CreateAppointment = () => {
 
     try {
       setSubmitting(true);
-      const res = await hrService.createAppointment({
-        ...formData,
-        client: formData.clientId || null,
-        project: formData.projectId || null,
-        requirement: formData.requirementId || null,
-        assignedEmployee: formData.EmployeeId || null,
-        submitNow
-      });
+      let res;
+      if (isEditing) {
+        res = await hrService.updateAppointment(editId, {
+          ...formData,
+          client: formData.clientId || null,
+          project: formData.projectId || null,
+          requirement: formData.requirementId || null,
+          assignedEmployee: formData.EmployeeId || null,
+          submitNow
+        });
+      } else {
+        res = await hrService.createAppointment({
+          ...formData,
+          client: formData.clientId || null,
+          project: formData.projectId || null,
+          requirement: formData.requirementId || null,
+          assignedEmployee: formData.EmployeeId || null,
+          submitNow
+        });
+      }
 
       if (res.success) {
         toast.success(
           submitNow
-            ? 'Appointment letter submitted for Admin approval!'
-            : 'Appointment draft saved successfully!'
+            ? (isEditing ? 'Appointment letter updated & resubmitted for Admin approval!' : 'Appointment letter submitted for Admin approval!')
+            : (isEditing ? 'Appointment letter updated successfully!' : 'Appointment draft saved successfully!')
         );
-        navigate(`/hr/appointments/${res.appointment._id}`);
+        const redirectBase = location.pathname.includes('/admin/') ? '/admin/hr/appointments' : '/hr/appointments';
+        const targetId = isEditing ? editId : res.appointment?._id;
+        navigate(targetId ? `${redirectBase}/${targetId}` : redirectBase);
       }
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to save appointment letter.');
@@ -320,18 +379,54 @@ const CreateAppointment = () => {
             GENFREX HR OfferFlow
           </span>
           <h1 className="text-2xl font-black text-slate-900 tracking-tight mt-0.5">
-            Create Appointment Letter
+            {isEditing
+              ? editingAppointment?.status === 'REJECTED'
+                ? 'Update & Fix Returned Appointment Letter'
+                : 'Edit Appointment Letter'
+              : 'Create Appointment Letter'}
           </h1>
           <p className="text-xs text-slate-500">
-            6-Step guided appointment workflow with optional ClientFlow project linking
+            {isEditing
+              ? `Revising letter ${editingAppointment?.referenceNumber || ''} • Update details across steps and resubmit for approval`
+              : '6-Step guided appointment workflow with optional ClientFlow project linking'}
           </p>
         </div>
 
-        <Button variant="secondary" size="sm" onClick={() => navigate('/hr/appointments')}>
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => {
+            const redirectBase = location.pathname.includes('/admin/') ? '/admin/hr/appointments' : '/hr/appointments';
+            navigate(isEditing ? `${redirectBase}/${editId}` : redirectBase);
+          }}
+        >
           <ArrowLeft className="w-3.5 h-3.5 mr-1" />
-          <span>Back to Letters</span>
+          <span>{isEditing ? 'Back to Letter' : 'Back to Letters'}</span>
         </Button>
       </div>
+
+      {/* Alert banner if fixing a returned / rejected appointment letter */}
+      {isEditing && editingAppointment?.status === 'REJECTED' && (
+        <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl flex items-start gap-3 shadow-xs">
+          <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+          <div className="text-xs">
+            <div className="flex items-center gap-2">
+              <p className="font-bold text-rose-900 text-sm">
+                Returned for Revision by Admin: {editingAppointment.referenceNumber}
+              </p>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-200 text-rose-800">
+                Action Required
+              </span>
+            </div>
+            <p className="text-rose-800 font-medium mt-1">
+              Admin Rejection Reason: <strong className="font-bold underline">"{editingAppointment.rejectionReason}"</strong>
+            </p>
+            <p className="text-rose-600 mt-1 text-[11px]">
+              You can modify the candidate role, compensation, responsibilities, or terms across the steps below. Once updated, click <strong>"Update & Resubmit for Approval"</strong> in Step 6.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Stepper Navigation */}
       <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 bg-white p-2 rounded-2xl border border-slate-200 shadow-sm text-xs">
@@ -996,13 +1091,13 @@ const CreateAppointment = () => {
               <div className="grid grid-cols-2 gap-4 pt-6 border-t border-slate-200">
                 <div className="p-2 border rounded bg-slate-50 text-[11px]">
                   <p className="text-[9px] font-bold text-slate-400 uppercase">Authorized Signatory</p>
-                  <p className="font-bold text-slate-900 mt-4">P.S. Dharshan</p>
-                  <p className="text-slate-600">Founder, GENFREX</p>
+                  <p className="font-bold text-slate-900 mt-4">Anisha</p>
+                  <p className="text-slate-600">People Operations, GENFREX</p>
                 </div>
                 <div className="p-2 border rounded bg-slate-50 text-[11px]">
-                  <p className="text-[9px] font-bold text-slate-400 uppercase">Authorized Signatory</p>
-                  <p className="font-bold text-slate-900 mt-4">Deepak P</p>
-                  <p className="text-slate-600">Chief Operating Officer, GENFREX</p>
+                  <p className="text-[9px] font-bold text-slate-400 uppercase">Company Seal</p>
+                  <p className="font-bold text-slate-900 mt-4">GENFREX Official Seal</p>
+                  <p className="text-slate-600">Karur • 639113</p>
                 </div>
               </div>
             </div>
@@ -1095,7 +1190,7 @@ const CreateAppointment = () => {
                 disabled={submitting}
               >
                 <Save className="w-3.5 h-3.5 mr-1" />
-                <span>Save Draft</span>
+                <span>{isEditing ? 'Update Draft' : 'Save Draft'}</span>
               </Button>
               <Button
                 variant="primary"
@@ -1104,7 +1199,7 @@ const CreateAppointment = () => {
                 loading={submitting}
               >
                 <Send className="w-3.5 h-3.5 mr-1" />
-                <span>Submit for Admin Approval</span>
+                <span>{isEditing ? 'Update & Resubmit for Approval' : 'Submit for Admin Approval'}</span>
               </Button>
             </div>
           </div>
