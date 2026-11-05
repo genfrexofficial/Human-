@@ -29,6 +29,20 @@ import Button from '../../components/common/Button';
 import Card from '../../components/common/Card';
 import toast from 'react-hot-toast';
 
+const STANDARD_DEPARTMENTS = [
+  'Engineering',
+  'Design & Product',
+  'DevOps & Infrastructure',
+  'Quality Assurance',
+  'Data & Analytics',
+  'People Operations',
+  'Human Resources',
+  'Finance & Accounts',
+  'Sales & Marketing',
+  'Operations',
+  'IT & Security'
+];
+
 const CreateAppointment = () => {
   const [searchParams] = useSearchParams();
   const { id: routeEditId } = useParams();
@@ -47,6 +61,7 @@ const CreateAppointment = () => {
 
   const [step, setStep] = useState(1);
   const [editingAppointment, setEditingAppointment] = useState(null);
+  const [isCustomDept, setIsCustomDept] = useState(false);
   const [candidates, setCandidates] = useState([]);
   const [projects, setProjects] = useState([]);
   const [clients, setClients] = useState([]);
@@ -200,6 +215,9 @@ const CreateAppointment = () => {
             requirementId: app.requirementId?._id || app.requirementId || app.requirement?._id || app.requirement || '',
             EmployeeId: app.EmployeeId?._id || app.EmployeeId || app.assignedEmployee?._id || app.assignedEmployee || ''
           });
+          if (app.department && !STANDARD_DEPARTMENTS.includes(app.department)) {
+            setIsCustomDept(true);
+          }
           setStep(2); // Jump directly to details since candidate is already set
         }
       }
@@ -239,6 +257,12 @@ const CreateAppointment = () => {
 
     if (matchedTmpl) {
       applyTemplate(matchedTmpl, false);
+    }
+
+    if (cand.department && !STANDARD_DEPARTMENTS.includes(cand.department)) {
+      setIsCustomDept(true);
+    } else {
+      setIsCustomDept(false);
     }
 
     setFormData((prev) => ({
@@ -640,16 +664,64 @@ const CreateAppointment = () => {
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">
-                Department <span className="text-rose-500">*</span>
-              </label>
-              <input
-                type="text"
-                name="department"
-                value={formData.department}
-                onChange={handleInputChange}
-                className="w-full p-2 rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:border-blue-500"
-              />
+              <div className="flex items-center justify-between mb-1">
+                <label className="block font-semibold text-slate-700">
+                  Department <span className="text-rose-500">*</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = !isCustomDept;
+                    setIsCustomDept(next);
+                    if (!next && !STANDARD_DEPARTMENTS.includes(formData.department)) {
+                      setFormData((prev) => ({ ...prev, department: 'Engineering' }));
+                    }
+                  }}
+                  className="text-xs text-blue-600 hover:text-blue-800 font-medium hover:underline cursor-pointer"
+                >
+                  {isCustomDept ? '← Select from list' : '+ Add custom / manual'}
+                </button>
+              </div>
+
+              {isCustomDept ? (
+                <div>
+                  <input
+                    type="text"
+                    name="department"
+                    required
+                    value={formData.department}
+                    onChange={handleInputChange}
+                    placeholder="Type department name (e.g. People Operations, Finance, etc.)"
+                    className="w-full p-2 rounded-lg border border-blue-400 text-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-blue-50/20"
+                    autoFocus
+                  />
+                  <p className="text-[10px] text-slate-400 mt-1">Manual department entry enabled.</p>
+                </div>
+              ) : (
+                <select
+                  name="department"
+                  value={STANDARD_DEPARTMENTS.includes(formData.department) ? formData.department : '__CUSTOM__'}
+                  onChange={(e) => {
+                    if (e.target.value === '__CUSTOM__') {
+                      setIsCustomDept(true);
+                      setFormData((prev) => ({ ...prev, department: '' }));
+                    } else {
+                      handleInputChange(e);
+                    }
+                  }}
+                  className="w-full p-2 rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:border-blue-500 bg-white"
+                >
+                  {STANDARD_DEPARTMENTS.map((dept) => (
+                    <option key={dept} value={dept}>
+                      {dept}
+                    </option>
+                  ))}
+                  {!STANDARD_DEPARTMENTS.includes(formData.department) && formData.department && (
+                    <option value={formData.department}>{formData.department} (Custom)</option>
+                  )}
+                  <option value="__CUSTOM__">+ Enter Other / Custom Department (Manual)...</option>
+                </select>
+              )}
             </div>
 
             <div>
