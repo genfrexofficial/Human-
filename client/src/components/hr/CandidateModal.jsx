@@ -156,9 +156,13 @@ const CandidateModal = ({ isOpen, onClose, candidate, onSave, loading }) => {
       compensationFrequency: isPaidStipend
         ? (formData.compensationFrequency === 'UNPAID' ? 'STIPEND_MONTHLY' : formData.compensationFrequency)
         : 'UNPAID',
+      clientId: formData.clientId || null,
       client: formData.clientId || null,
+      projectId: formData.projectId || null,
       project: formData.projectId || null,
+      requirementId: formData.requirementId || null,
       requirement: formData.requirementId || null,
+      EmployeeId: formData.EmployeeId || null,
       assignedEmployee: formData.EmployeeId || null
     });
   };

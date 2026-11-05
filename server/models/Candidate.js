@@ -61,13 +61,17 @@ const candidateSchema = new mongoose.Schema(
       trim: true,
       default: 'Technical Lead'
     },
+    isPaid: {
+      type: Boolean,
+      default: true
+    },
     compensation: {
       type: Number,
       default: 0
     },
     compensationFrequency: {
       type: String,
-      enum: ['MONTHLY', 'ANNUAL', 'STIPEND_MONTHLY'],
+      enum: ['MONTHLY', 'ANNUAL', 'STIPEND_MONTHLY', 'UNPAID'],
       default: 'STIPEND_MONTHLY'
     },
     probationPeriod: {

@@ -442,7 +442,15 @@ const updateAppointment = async (req, res, next) => {
 
     allowedFields.forEach((field) => {
       if (req.body[field] !== undefined) {
-        appointment[field] = req.body[field];
+        // Convert empty string for ObjectId fields to null to prevent CastError
+        if (
+          ['clientId', 'client', 'projectId', 'project', 'requirementId', 'requirement', 'EmployeeId', 'assignedEmployee', 'templateId'].includes(field) &&
+          req.body[field] === ''
+        ) {
+          appointment[field] = null;
+        } else {
+          appointment[field] = req.body[field];
+        }
       }
     });
 

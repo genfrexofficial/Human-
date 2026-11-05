@@ -239,7 +239,36 @@ const updateCandidate = async (req, res, next) => {
     const prevProject = candidate.projectId || candidate.project;
     const prevReq = candidate.requirementId || candidate.requirement;
 
-    const updated = await Candidate.findByIdAndUpdate(req.params.id, req.body, {
+    const updateData = { ...req.body };
+
+    // Clean empty string ObjectIds to null so Mongoose does not throw CastError
+    const objectIdFields = [
+      'client',
+      'clientId',
+      'project',
+      'projectId',
+      'requirement',
+      'requirementId',
+      'assignedEmployee',
+      'EmployeeId'
+    ];
+    objectIdFields.forEach((field) => {
+      if (updateData[field] === '' || updateData[field] === undefined) {
+        updateData[field] = null;
+      }
+    });
+
+    // Synchronize aliases
+    if (updateData.client && !updateData.clientId) updateData.clientId = updateData.client;
+    if (updateData.clientId && !updateData.client) updateData.client = updateData.clientId;
+    if (updateData.project && !updateData.projectId) updateData.projectId = updateData.project;
+    if (updateData.projectId && !updateData.project) updateData.project = updateData.projectId;
+    if (updateData.requirement && !updateData.requirementId) updateData.requirementId = updateData.requirement;
+    if (updateData.requirementId && !updateData.requirement) updateData.requirement = updateData.requirementId;
+    if (updateData.assignedEmployee && !updateData.EmployeeId) updateData.EmployeeId = updateData.assignedEmployee;
+    if (updateData.EmployeeId && !updateData.assignedEmployee) updateData.assignedEmployee = updateData.EmployeeId;
+
+    const updated = await Candidate.findByIdAndUpdate(req.params.id, updateData, {
       new: true,
       runValidators: true
     })

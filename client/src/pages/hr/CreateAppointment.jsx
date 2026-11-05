@@ -424,9 +424,13 @@ const CreateAppointment = () => {
         isCustomTemplate,
         customTemplateName: isCustomTemplate ? customTemplateName : null,
         templateId: isCustomTemplate ? null : formData.templateId,
+        clientId: formData.clientId || null,
         client: formData.clientId || null,
+        projectId: formData.projectId || null,
         project: formData.projectId || null,
+        requirementId: formData.requirementId || null,
         requirement: formData.requirementId || null,
+        EmployeeId: formData.EmployeeId || null,
         assignedEmployee: formData.EmployeeId || null,
         submitNow
       };
