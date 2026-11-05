@@ -211,6 +211,7 @@ const createAppointment = async (req, res, next) => {
       templateId,
       customTemplateName,
       isCustomTemplate,
+      isPaid,
       submitNow
     } = req.body;
 
@@ -239,12 +240,16 @@ const createAppointment = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Candidate information is required.' });
     }
 
-    if (!designation || !joiningDate || !compensation || !acceptanceDeadline) {
+    if (!designation || !joiningDate || compensation === undefined || compensation === null || !acceptanceDeadline) {
       return res.status(400).json({
         success: false,
         message: 'Designation, joining date, compensation, and acceptance deadline are required.'
       });
     }
+
+    const isPaidFinal = isPaid !== undefined ? Boolean(isPaid) : Number(compensation) > 0;
+    const finalCompensation = isPaidFinal ? Number(compensation) : 0;
+    const finalFrequency = isPaidFinal ? (compensationFrequency === 'UNPAID' ? 'STIPEND_MONTHLY' : (compensationFrequency || 'STIPEND_MONTHLY')) : 'UNPAID';
 
     const candidate = await Candidate.findById(targetCandidateId);
     if (!candidate) {
@@ -290,8 +295,9 @@ const createAppointment = async (req, res, next) => {
       joiningDate,
       workLocation: workLocation || 'Remote / Bengaluru',
       reportingManager: reportingManager || 'Technical Lead',
-      compensation,
-      compensationFrequency: compensationFrequency || 'STIPEND_MONTHLY',
+      isPaid: isPaidFinal,
+      compensation: finalCompensation,
+      compensationFrequency: finalFrequency,
       responsibilities: responsibilities && responsibilities.length > 0
         ? responsibilities
         : (activeTemplate?.roleAndResponsibilities || []),
@@ -416,6 +422,7 @@ const updateAppointment = async (req, res, next) => {
       'joiningDate',
       'workLocation',
       'reportingManager',
+      'isPaid',
       'compensation',
       'compensationFrequency',
       'responsibilities',

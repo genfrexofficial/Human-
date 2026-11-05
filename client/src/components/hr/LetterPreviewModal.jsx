@@ -25,7 +25,7 @@ const LetterPreviewModal = ({ isOpen, onClose, appointment, candidate }) => {
   });
 
   const formatFrequency = (freq) => {
-    if (!freq) return 'Month';
+    if (!freq || freq === 'UNPAID') return 'Unpaid';
     if (freq === 'STIPEND_MONTHLY') return 'Month (Stipend)';
     if (freq === 'MONTHLY') return 'Month';
     if (freq === 'ANNUAL') return 'Per Annum';
@@ -185,9 +185,13 @@ const LetterPreviewModal = ({ isOpen, onClose, appointment, candidate }) => {
                 </div>
                 <div className="grid grid-cols-2 bg-slate-50 border-b border-slate-200 p-2">
                   <span className="font-semibold text-slate-600">Stipend / Compensation:</span>
-                  <span className="font-bold text-emerald-700">
-                    ₹ {Number(appointment.compensation || 0).toLocaleString('en-IN')} / {formatFrequency(appointment.compensationFrequency)}
-                  </span>
+                  {Number(appointment.compensation || 0) > 0 ? (
+                    <span className="font-bold text-emerald-700">
+                      ₹ {Number(appointment.compensation).toLocaleString('en-IN')} / {formatFrequency(appointment.compensationFrequency)}
+                    </span>
+                  ) : (
+                    <span className="font-bold text-amber-700">Unpaid</span>
+                  )}
                 </div>
                 <div className="grid grid-cols-2 p-2">
                   <span className="font-semibold text-slate-600">Acceptance Deadline:</span>

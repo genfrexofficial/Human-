@@ -344,7 +344,10 @@ const seedMasterRoleTemplates = async () => {
  * Get all active role templates
  */
 const getMasterRoleTemplates = async () => {
-  await seedMasterRoleTemplates();
+  const count = await LetterTemplate.countDocuments();
+  if (count === 0) {
+    await seedMasterRoleTemplates();
+  }
   return LetterTemplate.find({ active: true }).sort({ isDefault: -1, createdAt: 1 });
 };
 
@@ -352,7 +355,10 @@ const getMasterRoleTemplates = async () => {
  * Get active letter template matching role or appointment type
  */
 const getActiveTemplate = async (appointmentType = null, designation = null) => {
-  await seedMasterRoleTemplates();
+  const count = await LetterTemplate.countDocuments();
+  if (count === 0) {
+    await seedMasterRoleTemplates();
+  }
 
   let query = { active: true };
 

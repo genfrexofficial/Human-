@@ -66,6 +66,7 @@ const CreateAppointment = () => {
   const [isCustomTemplate, setIsCustomTemplate] = useState(false);
   const [customTemplateName, setCustomTemplateName] = useState('');
   const [savingTemplate, setSavingTemplate] = useState(false);
+  const [isPaidStipend, setIsPaidStipend] = useState(true);
   const [candidates, setCandidates] = useState([]);
   const [projects, setProjects] = useState([]);
   const [clients, setClients] = useState([]);
@@ -83,6 +84,7 @@ const CreateAppointment = () => {
   const [formData, setFormData] = useState({
     candidateId: '',
     templateId: '',
+    isPaid: true,
     appointmentType: 'TRAINEE',
     employmentType: 'Trainee',
     title: 'TRAINEE APPOINTMENT LETTER',
@@ -208,8 +210,12 @@ const CreateAppointment = () => {
             joiningDate: app.joiningDate ? new Date(app.joiningDate).toISOString().substring(0, 10) : '',
             workLocation: app.workLocation || 'Remote / Bengaluru HQ',
             reportingManager: app.reportingManager || 'Technical Lead',
-            compensation: app.compensation || 25000,
-            compensationFrequency: app.compensationFrequency || 'STIPEND_MONTHLY',
+            compensation: (app.isPaid === false || Number(app.compensation) === 0 || app.compensationFrequency === 'UNPAID')
+              ? ''
+              : (app.compensation || 25000),
+            compensationFrequency: (app.isPaid === false || Number(app.compensation) === 0 || app.compensationFrequency === 'UNPAID')
+              ? 'UNPAID'
+              : (app.compensationFrequency || 'STIPEND_MONTHLY'),
             responsibilities: app.responsibilities && app.responsibilities.length > 0 ? [...app.responsibilities] : [],
             terms: app.terms && app.terms.length > 0 ? [...app.terms] : [],
             confidentialityTerms: app.confidentialityTerms || '',
@@ -226,6 +232,11 @@ const CreateAppointment = () => {
           if (app.letterContentSnapshot?.customTemplateName) {
             setIsCustomTemplate(true);
             setCustomTemplateName(app.letterContentSnapshot.customTemplateName);
+          }
+          if (app.isPaid === false || Number(app.compensation) === 0 || app.compensationFrequency === 'UNPAID') {
+            setIsPaidStipend(false);
+          } else {
+            setIsPaidStipend(true);
           }
           setStep(2); // Jump directly to details since candidate is already set
         }
@@ -274,6 +285,13 @@ const CreateAppointment = () => {
       setIsCustomDept(false);
     }
 
+    const isCandUnpaid = cand.compensation === 0 || cand.compensationFrequency === 'UNPAID';
+    if (isCandUnpaid) {
+      setIsPaidStipend(false);
+    } else if (cand.compensation > 0) {
+      setIsPaidStipend(true);
+    }
+
     setFormData((prev) => ({
       ...prev,
       candidateId: cand._id,
@@ -284,8 +302,8 @@ const CreateAppointment = () => {
       joiningDate: cand.joiningDate ? cand.joiningDate.substring(0, 10) : prev.joiningDate,
       workLocation: cand.workLocation || prev.workLocation,
       reportingManager: cand.reportingManager || prev.reportingManager,
-      compensation: cand.compensation || prev.compensation,
-      compensationFrequency: cand.compensationFrequency || prev.compensationFrequency,
+      compensation: isCandUnpaid ? '' : (cand.compensation || prev.compensation),
+      compensationFrequency: isCandUnpaid ? 'UNPAID' : (cand.compensationFrequency || prev.compensationFrequency),
       acceptanceDeadline: prev.acceptanceDeadline || deadline,
       projectId: prev.projectId || cand.projectId || cand.project?._id || cand.project || '',
       clientId: prev.clientId || cand.clientId || cand.client?._id || cand.client || '',
@@ -383,8 +401,13 @@ const CreateAppointment = () => {
       setStep(1);
       return;
     }
-    if (!formData.designation || !formData.joiningDate || !formData.compensation || !formData.acceptanceDeadline) {
+    if (!formData.designation || !formData.joiningDate || !formData.acceptanceDeadline) {
       toast.error('Please complete all required appointment details in Step 2.');
+      setStep(2);
+      return;
+    }
+    if (isPaidStipend && (!formData.compensation || Number(formData.compensation) <= 0)) {
+      toast.error('Please enter a valid stipend/compensation amount for the Paid engagement.');
       setStep(2);
       return;
     }
@@ -393,6 +416,11 @@ const CreateAppointment = () => {
       setSubmitting(true);
       const payload = {
         ...formData,
+        isPaid: isPaidStipend,
+        compensation: isPaidStipend ? Number(formData.compensation) : 0,
+        compensationFrequency: isPaidStipend
+          ? (formData.compensationFrequency === 'UNPAID' ? 'STIPEND_MONTHLY' : formData.compensationFrequency)
+          : 'UNPAID',
         isCustomTemplate,
         customTemplateName: isCustomTemplate ? customTemplateName : null,
         templateId: isCustomTemplate ? null : formData.templateId,
@@ -934,33 +962,116 @@ const CreateAppointment = () => {
               />
             </div>
 
-            <div>
-              <label className="block font-semibold text-slate-700 mb-1">
-                Stipend / Compensation (₹) <span className="text-rose-500">*</span>
-              </label>
-              <input
-                type="number"
-                name="compensation"
-                value={formData.compensation}
-                onChange={handleInputChange}
-                className="w-full p-2 rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:border-blue-500"
-              />
-            </div>
+            {/* Stipend Options: Paid vs Unpaid */}
+            <div className="col-span-1 sm:col-span-2 p-3.5 bg-slate-50/80 border border-slate-200 rounded-xl space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <label className="block font-bold text-slate-800 text-xs">
+                    Stipend / Compensation Type <span className="text-rose-500">*</span>
+                  </label>
+                  <p className="text-[11px] text-slate-500">
+                    Choose whether this role is a Paid or Unpaid engagement / internship
+                  </p>
+                </div>
 
-            <div>
-              <label className="block font-semibold text-slate-700 mb-1">
-                Compensation Frequency
-              </label>
-              <select
-                name="compensationFrequency"
-                value={formData.compensationFrequency}
-                onChange={handleInputChange}
-                className="w-full p-2 rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:border-blue-500"
-              >
-                <option value="STIPEND_MONTHLY">Monthly Stipend</option>
-                <option value="MONTHLY">Monthly Salary</option>
-                <option value="ANNUAL">Annual CTC</option>
-              </select>
+                <div className="inline-flex p-1 bg-white border border-slate-200 rounded-xl shadow-xs">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsPaidStipend(true);
+                      setFormData((prev) => ({
+                        ...prev,
+                        isPaid: true,
+                        compensation: prev.compensation && Number(prev.compensation) > 0 ? prev.compensation : 15000,
+                        compensationFrequency: prev.compensationFrequency === 'UNPAID' ? 'STIPEND_MONTHLY' : prev.compensationFrequency
+                      }));
+                    }}
+                    className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                      isPaidStipend
+                        ? 'bg-emerald-600 text-white shadow-sm'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                    }`}
+                  >
+                    <span>Paid</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsPaidStipend(false);
+                      setFormData((prev) => ({
+                        ...prev,
+                        isPaid: false,
+                        compensation: '',
+                        compensationFrequency: 'UNPAID'
+                      }));
+                    }}
+                    className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                      !isPaidStipend
+                        ? 'bg-amber-600 text-white shadow-sm'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                    }`}
+                  >
+                    <span>Unpaid</span>
+                  </button>
+                </div>
+              </div>
+
+              {isPaidStipend ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 border-t border-slate-200/60">
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">
+                      Stipend / Compensation Amount (₹) <span className="text-rose-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-2 text-slate-400 font-bold text-xs">₹</span>
+                      <input
+                        type="number"
+                        name="compensation"
+                        min="1"
+                        required
+                        value={formData.compensation || ''}
+                        onChange={handleInputChange}
+                        placeholder="Enter amount manually (e.g. 15000)"
+                        className="w-full pl-7 pr-3 py-2 rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:border-blue-500 font-semibold"
+                        autoFocus
+                      />
+                    </div>
+                    <p className="text-[10px] text-slate-400 mt-1">Enter stipend or compensation amount manually.</p>
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">
+                      Compensation Frequency
+                    </label>
+                    <select
+                      name="compensationFrequency"
+                      value={formData.compensationFrequency === 'UNPAID' ? 'STIPEND_MONTHLY' : formData.compensationFrequency}
+                      onChange={handleInputChange}
+                      className="w-full p-2 rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:border-blue-500 bg-white"
+                    >
+                      <option value="STIPEND_MONTHLY">Monthly Stipend</option>
+                      <option value="MONTHLY">Monthly Salary</option>
+                      <option value="ANNUAL">Annual CTC</option>
+                    </select>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-3 bg-amber-50/70 border border-amber-200 rounded-lg flex items-center justify-between text-xs">
+                  <div className="space-y-0.5">
+                    <p className="font-bold text-amber-900 flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-amber-500" />
+                      Unpaid Engagement / Internship
+                    </p>
+                    <p className="text-[11px] text-amber-700">
+                      No monetary compensation or stipend will be disbursed. Appointment will be issued as an Unpaid Internship/Engagement.
+                    </p>
+                  </div>
+                  <span className="px-2.5 py-1 rounded-md bg-amber-200/80 text-amber-900 font-bold text-[10px] uppercase tracking-wider shrink-0">
+                    Unpaid
+                  </span>
+                </div>
+              )}
             </div>
 
             <div>
@@ -1321,9 +1432,13 @@ const CreateAppointment = () => {
                 </div>
                 <div className="grid grid-cols-2 p-2 bg-slate-50 border-b border-slate-200">
                   <span className="font-semibold text-slate-600">Compensation / Stipend:</span>
-                  <span className="font-bold text-emerald-700">
-                    ₹ {Number(formData.compensation).toLocaleString('en-IN')} / {formData.compensationFrequency}
-                  </span>
+                  {isPaidStipend && Number(formData.compensation) > 0 ? (
+                    <span className="font-bold text-emerald-700">
+                      ₹ {Number(formData.compensation).toLocaleString('en-IN')} / {formData.compensationFrequency}
+                    </span>
+                  ) : (
+                    <span className="font-bold text-amber-700">Unpaid</span>
+                  )}
                 </div>
                 <div className="grid grid-cols-2 p-2">
                   <span className="font-semibold text-slate-600">Acceptance Deadline:</span>
@@ -1418,9 +1533,13 @@ const CreateAppointment = () => {
               </div>
               <div>
                 <span className="text-[10px] text-slate-400 font-bold uppercase block">Stipend</span>
-                <span className="font-bold text-emerald-700">
-                  ₹ {Number(formData.compensation).toLocaleString('en-IN')}
-                </span>
+                {isPaidStipend && Number(formData.compensation) > 0 ? (
+                  <span className="font-bold text-emerald-700">
+                    ₹ {Number(formData.compensation).toLocaleString('en-IN')}
+                  </span>
+                ) : (
+                  <span className="font-bold text-amber-700">Unpaid</span>
+                )}
               </div>
             </div>
 

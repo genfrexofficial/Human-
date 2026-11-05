@@ -510,9 +510,15 @@ const AppointmentDetails = () => {
               </div>
               <div>
                 <span className="text-slate-500 block text-[11px]">Stipend / Compensation:</span>
-                <span className="font-bold text-emerald-700 text-sm">
-                  ₹ {Number(appointment.compensation).toLocaleString('en-IN')} / {appointment.compensationFrequency}
-                </span>
+                {Number(appointment.compensation || 0) > 0 ? (
+                  <span className="font-bold text-emerald-700 text-sm">
+                    ₹ {Number(appointment.compensation).toLocaleString('en-IN')} / {appointment.compensationFrequency}
+                  </span>
+                ) : (
+                  <span className="font-bold text-amber-700 text-sm">
+                    Unpaid
+                  </span>
+                )}
               </div>
               <div>
                 <span className="text-slate-500 block text-[11px]">Reporting Manager:</span>

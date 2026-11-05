@@ -67,9 +67,15 @@ const ApprovalModal = ({ isOpen, onClose, mode, appointment, onConfirm, loading 
             </div>
             <div className="flex justify-between">
               <span className="text-slate-500">Stipend / Compensation:</span>
-              <span className="font-semibold text-emerald-700">
-                ₹ {Number(appointment.compensation).toLocaleString('en-IN')} / {appointment.compensationFrequency}
-              </span>
+              {Number(appointment.compensation || 0) > 0 ? (
+                <span className="font-semibold text-emerald-700">
+                  ₹ {Number(appointment.compensation).toLocaleString('en-IN')} / {appointment.compensationFrequency}
+                </span>
+              ) : (
+                <span className="font-bold text-amber-700">
+                  Unpaid
+                </span>
+              )}
             </div>
           </div>
 

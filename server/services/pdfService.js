@@ -21,7 +21,7 @@ function sanitizeText(str) {
 }
 
 function formatFrequency(freq) {
-  if (!freq) return 'Month';
+  if (!freq || freq === 'UNPAID') return 'Unpaid';
   if (freq === 'STIPEND_MONTHLY') return 'Month (Stipend)';
   if (freq === 'MONTHLY') return 'Month';
   if (freq === 'ANNUAL') return 'Per Annum';
@@ -187,9 +187,11 @@ const generateAppointmentPDF = async (appointment, candidate = {}, template = nu
         { label: 'Reporting Manager:', val: sanitizeText(appointment.reportingManager || 'Engineering Lead'), isBold: false, color: cSlate900 },
         {
           label: 'Stipend / Compensation:',
-          val: `INR ${Number(appointment.compensation || 0).toLocaleString('en-IN')} / ${formatFrequency(appointment.compensationFrequency)}`,
+          val: Number(appointment.compensation || 0) > 0
+            ? `INR ${Number(appointment.compensation).toLocaleString('en-IN')} / ${formatFrequency(appointment.compensationFrequency)}`
+            : 'Unpaid',
           isBold: true,
-          color: cEmerald700
+          color: Number(appointment.compensation || 0) > 0 ? cEmerald700 : cSlate700
         },
         { label: 'Acceptance Deadline:', val: deadlineDateStr, isBold: true, color: cRose600 }
       ];
