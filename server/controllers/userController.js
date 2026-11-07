@@ -277,7 +277,7 @@ const updateUser = async (req, res, next) => {
       try {
         const linkedCandidate = await Candidate.findById(user.candidateId);
         if (linkedCandidate && linkedCandidate.email !== user.email) {
-          const candConflict = await Candidate.findOne({ email: user.email, _id: { $ne: linkedCandidate._id } });
+          const candConflict = await Candidate.findOne({ email: user.email, _id: { $ne: linkedCandidate?._id } });
           if (!candConflict) {
             linkedCandidate.email = user.email;
             await linkedCandidate.save();
@@ -288,9 +288,11 @@ const updateUser = async (req, res, next) => {
       }
     }
 
+    const performerId = req.user?._id || req.user?.id || user._id;
+
     if (statusChanged) {
       await AuditLog.create({
-        performedBy: req.user._id,
+        performedBy: performerId,
         action: user.status === 'ACTIVE' ? 'ACTIVATE_USER' : 'DEACTIVATE_USER',
         targetUser: user._id,
         targetRole: user.role,
@@ -306,7 +308,7 @@ const updateUser = async (req, res, next) => {
       });
     } else {
       await AuditLog.create({
-        performedBy: req.user._id,
+        performedBy: performerId,
         action: 'UPDATE_USER',
         targetUser: user._id,
         targetRole: user.role,
@@ -370,8 +372,9 @@ const changeUserPassword = async (req, res, next) => {
     await targetUser.save();
 
     // Audit log (NEVER store password in audit log)
+    const performerId = req.user?._id || req.user?.id || targetUser._id;
     await AuditLog.create({
-      performedBy: req.user._id,
+      performedBy: performerId,
       action: 'CHANGE_USER_PASSWORD',
       targetUser: targetUser._id,
       targetRole: targetUser.role,
@@ -470,7 +473,8 @@ const deleteUser = async (req, res, next) => {
   try {
     const { id } = req.params;
 
-    if (id === req.user._id.toString()) {
+    const performerId = req.user?._id || req.user?.id;
+    if (performerId && id === performerId.toString()) {
       return res.status(400).json({
         success: false,
         message: 'Administrator cannot delete their own active account.'
@@ -496,7 +500,7 @@ const deleteUser = async (req, res, next) => {
     await User.findByIdAndDelete(id);
 
     await AuditLog.create({
-      performedBy: req.user._id,
+      performedBy: performerId || userInfo._id,
       action: 'DELETE_USER',
       targetUser: userInfo._id,
       targetRole: userInfo.role,

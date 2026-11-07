@@ -127,9 +127,15 @@ const AdminUsers = () => {
       return;
     }
 
+    const targetUserId = selectedUser?._id || selectedUser?.id;
+    if (!targetUserId) {
+      toast.error('No user selected.');
+      return;
+    }
+
     try {
       setPasswordLoading(true);
-      const res = await userService.changeUserPassword(selectedUser._id, {
+      const res = await userService.changeUserPassword(targetUserId, {
         newPassword: passwordForm.newPassword,
         confirmPassword: passwordForm.confirmPassword
       });
@@ -147,6 +153,7 @@ const AdminUsers = () => {
 
   // Open Edit User Modal
   const openEditModal = (user) => {
+    if (!user) return;
     setSelectedUser(user);
     setEditForm({
       name: user.name || '',
@@ -170,13 +177,21 @@ const AdminUsers = () => {
       toast.error('Email address is required.');
       return;
     }
+
+    const targetUserId = selectedUser?._id || selectedUser?.id;
+    if (!targetUserId) {
+      toast.error('No user selected for update.');
+      return;
+    }
+
     try {
       setEditLoading(true);
-      const res = await userService.updateUser(selectedUser._id, editForm);
+      const res = await userService.updateUser(targetUserId, editForm);
       if (res.success) {
         toast.success('User updated successfully.');
         setEditModalOpen(false);
-        if (currentUser && (currentUser.id === selectedUser._id || currentUser._id === selectedUser._id)) {
+        const currentUserId = currentUser?._id || currentUser?.id;
+        if (currentUserId && currentUserId === targetUserId) {
           const storedUser = localStorage.getItem('user');
           if (storedUser) {
             try {
@@ -199,16 +214,18 @@ const AdminUsers = () => {
 
   // Toggle Status (Activate / Deactivate)
   const handleToggleStatus = async (user) => {
-    if (user._id === currentUser?.id || user.role === 'ADMIN') {
+    const targetId = user?._id || user?.id;
+    const currentId = currentUser?._id || currentUser?.id;
+    if (targetId === currentId || user?.role === 'ADMIN') {
       toast.error('Primary Administrator account status cannot be deactivated.');
       return;
     }
 
-    const nextStatus = user.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+    const nextStatus = user?.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
     try {
-      const res = await userService.updateUser(user._id, { status: nextStatus });
+      const res = await userService.updateUser(targetId, { status: nextStatus });
       if (res.success) {
-        toast.success(`Account for ${user.name} is now ${nextStatus}.`);
+        toast.success(`Account for ${user?.name || 'User'} is now ${nextStatus}.`);
         fetchUsers();
       }
     } catch (err) {
@@ -274,17 +291,19 @@ const AdminUsers = () => {
 
   // Delete User
   const handleDeleteUser = async (user) => {
-    if (user.role === 'ADMIN' || user._id === currentUser?.id) {
+    const targetId = user?._id || user?.id;
+    const currentId = currentUser?._id || currentUser?.id;
+    if (user?.role === 'ADMIN' || targetId === currentId) {
       toast.error('Administrator accounts cannot be deleted.');
       return;
     }
 
-    if (!window.confirm(`Are you sure you want to delete the user account for ${user.name}?`)) {
+    if (!window.confirm(`Are you sure you want to delete the user account for ${user?.name || 'this user'}?`)) {
       return;
     }
 
     try {
-      const res = await userService.deleteUser(user._id);
+      const res = await userService.deleteUser(targetId);
       if (res.success) {
         toast.success('User account removed.');
         fetchUsers();
@@ -482,13 +501,14 @@ const AdminUsers = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 bg-white">
-                {users.map((u) => {
-                  const isSelf = u._id === currentUser?.id;
-                  const isDeactivated = u.status === 'INACTIVE' || u.isActive === false;
+                {users.filter(Boolean).map((u) => {
+                  const uId = u?._id || u?.id;
+                  const isSelf = uId === (currentUser?._id || currentUser?.id);
+                  const isDeactivated = u?.status === 'INACTIVE' || u?.isActive === false;
 
                   return (
                     <tr
-                      key={u._id}
+                      key={uId || Math.random()}
                       className={`hover:bg-slate-50/80 transition-colors ${isDeactivated ? 'bg-slate-50/40 opacity-70' : ''
                         }`}
                     >
@@ -887,7 +907,7 @@ const AdminUsers = () => {
               <div>
                 <label className="block font-semibold text-slate-800 mb-1">Account Status</label>
                 <select
-                  disabled={selectedUser.role === 'ADMIN'}
+                  disabled={selectedUser?.role === 'ADMIN'}
                   value={editForm.status}
                   onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
                   className="w-full rounded-lg border border-slate-200 p-2 text-xs text-slate-800 bg-white focus:border-blue-500 focus:outline-none disabled:bg-slate-100"

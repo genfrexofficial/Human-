@@ -381,7 +381,7 @@ const AdminProjectDetails = () => {
           EmployeeId: apptForm.EmployeeId || null
         });
         if (candRes.success) {
-          targetCandId = candRes.candidate._id;
+          targetCandId = candRes.candidate?._id;
         }
       }
 

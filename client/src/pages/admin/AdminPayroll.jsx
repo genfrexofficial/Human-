@@ -630,6 +630,7 @@ const AdminPayroll = () => {
               </thead>
               <tbody className="divide-y divide-slate-100 text-xs">
                 {structuresList.map((item) => {
+                  if (!item?.Employee) return null;
                   const struct = item.salaryStructure;
                   const hasBank = struct?.bankDetails?.accountNumber;
                   const totalAllowances = struct
@@ -639,8 +640,10 @@ const AdminPayroll = () => {
                     (struct.allowances?.medicalAllowance || 0)
                     : 0;
 
+                  const empId = item.Employee._id || item.Employee.id;
+
                   return (
-                    <tr key={item.Employee._id} className="hover:bg-slate-50/70 transition-colors">
+                    <tr key={empId} className="hover:bg-slate-50/70 transition-colors">
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-full bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs">
