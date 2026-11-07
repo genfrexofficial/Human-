@@ -202,7 +202,7 @@ const tempPassword = password && password.trim() ? password.trim() : generateTem
 const updateUser = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { name, phone, title, companyName, skills, status } = req.body;
+    const { name, email, phone, title, companyName, skills, status } = req.body;
 
     const user = await User.findById(id);
     if (!user) {
@@ -210,6 +210,39 @@ const updateUser = async (req, res, next) => {
         success: false,
         message: 'User not found.'
       });
+    }
+
+    let emailChanged = false;
+    let oldEmail = user.email;
+
+    if (email !== undefined) {
+      const normalizedEmail = email.toLowerCase().trim();
+      if (!normalizedEmail) {
+        return res.status(400).json({
+          success: false,
+          message: 'Email address cannot be empty.'
+        });
+      }
+
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(normalizedEmail)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Please provide a valid email address.'
+        });
+      }
+
+      if (normalizedEmail !== user.email) {
+        const existing = await User.findOne({ email: normalizedEmail, _id: { $ne: user._id } });
+        if (existing) {
+          return res.status(400).json({
+            success: false,
+            message: 'A user with this email address already exists.'
+          });
+        }
+        user.email = normalizedEmail;
+        emailChanged = true;
+      }
     }
 
     if (name !== undefined) user.name = name.trim();
@@ -239,6 +272,22 @@ const updateUser = async (req, res, next) => {
 
     await user.save();
 
+    // If email changed and user is linked to Candidate, keep candidate email synced
+    if (emailChanged && user.candidateId) {
+      try {
+        const linkedCandidate = await Candidate.findById(user.candidateId);
+        if (linkedCandidate && linkedCandidate.email !== user.email) {
+          const candConflict = await Candidate.findOne({ email: user.email, _id: { $ne: linkedCandidate._id } });
+          if (!candConflict) {
+            linkedCandidate.email = user.email;
+            await linkedCandidate.save();
+          }
+        }
+      } catch (candErr) {
+        console.warn('Could not sync candidate email:', candErr.message);
+      }
+    }
+
     if (statusChanged) {
       await AuditLog.create({
         performedBy: req.user._id,
@@ -249,7 +298,10 @@ const updateUser = async (req, res, next) => {
         metadata: {
           previousStatus: oldStatus,
           newStatus: user.status,
-          ip: req.ip || req.headers['x-forwarded-for'] || ''
+          ip: req.ip || req.headers['x-forwarded-for'] || '',
+          emailChanged,
+          oldEmail: emailChanged ? oldEmail : undefined,
+          newEmail: emailChanged ? user.email : undefined
         }
       });
     } else {
@@ -259,7 +311,12 @@ const updateUser = async (req, res, next) => {
         targetUser: user._id,
         targetRole: user.role,
         targetEmail: user.email,
-        metadata: { ip: req.ip || req.headers['x-forwarded-for'] || '' }
+        metadata: {
+          ip: req.ip || req.headers['x-forwarded-for'] || '',
+          emailChanged,
+          oldEmail: emailChanged ? oldEmail : undefined,
+          newEmail: emailChanged ? user.email : undefined
+        }
       });
     }
 

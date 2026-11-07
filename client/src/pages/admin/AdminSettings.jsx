@@ -42,10 +42,41 @@ const AdminSettings = () => {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [passwordLoading, setPasswordLoading] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(false);
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
-    toast.success('Agency settings updated successfully.');
+    if (!formData.name?.trim()) {
+      toast.error('Full Name is required.');
+      return;
+    }
+    if (!formData.email?.trim()) {
+      toast.error('Email Address is required.');
+      return;
+    }
+    const adminId = user?._id || user?.id;
+    if (!adminId) {
+      toast.error('Admin user ID not found.');
+      return;
+    }
+    try {
+      setProfileLoading(true);
+      const res = await userService.updateUser(adminId, {
+        name: formData.name,
+        email: formData.email,
+        companyName: formData.companyName,
+        phone: formData.phone
+      });
+      if (res.success) {
+        toast.success('Agency settings updated successfully.');
+        const updated = { ...user, ...res.user };
+        localStorage.setItem('user', JSON.stringify(updated));
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to update agency settings.');
+    } finally {
+      setProfileLoading(false);
+    }
   };
 
   const handleAdminPasswordChange = async (e) => {
@@ -123,12 +154,13 @@ const AdminSettings = () => {
                 type="email"
                 icon={Mail}
                 value={formData.email}
-                disabled={true}
-                helperText="Email is bound to your primary authentication identity."
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                required
+                helperText="Primary email used for administrator sign-in."
               />
 
               <div className="pt-2">
-                <Button type="submit" size="sm">
+                <Button type="submit" size="sm" loading={profileLoading}>
                   Save Changes
                 </Button>
               </div>

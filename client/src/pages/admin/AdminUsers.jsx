@@ -69,6 +69,7 @@ const AdminUsers = () => {
   // Edit user state
   const [editForm, setEditForm] = useState({
     name: '',
+    email: '',
     phone: '',
     title: '',
     companyName: '',
@@ -149,6 +150,7 @@ const AdminUsers = () => {
     setSelectedUser(user);
     setEditForm({
       name: user.name || '',
+      email: user.email || '',
       phone: user.phone || '',
       title: user.title || '',
       companyName: user.companyName || '',
@@ -160,12 +162,32 @@ const AdminUsers = () => {
   // Submit Edit User
   const handleEditSubmit = async (e) => {
     e.preventDefault();
+    if (!editForm.name?.trim()) {
+      toast.error('Full Name is required.');
+      return;
+    }
+    if (!editForm.email?.trim()) {
+      toast.error('Email address is required.');
+      return;
+    }
     try {
       setEditLoading(true);
       const res = await userService.updateUser(selectedUser._id, editForm);
       if (res.success) {
         toast.success('User updated successfully.');
         setEditModalOpen(false);
+        if (currentUser && (currentUser.id === selectedUser._id || currentUser._id === selectedUser._id)) {
+          const storedUser = localStorage.getItem('user');
+          if (storedUser) {
+            try {
+              const parsed = JSON.parse(storedUser);
+              const updatedAuthUser = { ...parsed, ...res.user };
+              localStorage.setItem('user', JSON.stringify(updatedAuthUser));
+            } catch (err) {
+              // ignore
+            }
+          }
+        }
         fetchUsers();
       }
     } catch (err) {
@@ -827,15 +849,28 @@ const AdminUsers = () => {
       >
         {selectedUser && (
           <form onSubmit={handleEditSubmit} className="space-y-4 text-xs">
-            <div>
-              <label className="block font-semibold text-slate-800 mb-1">Full Name</label>
-              <input
-                type="text"
-                required
-                value={editForm.name}
-                onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                className="w-full rounded-lg border border-slate-200 p-2 text-xs text-slate-800 focus:border-blue-500 focus:outline-none"
-              />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block font-semibold text-slate-800 mb-1">Full Name</label>
+                <input
+                  type="text"
+                  required
+                  value={editForm.name}
+                  onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                  className="w-full rounded-lg border border-slate-200 p-2 text-xs text-slate-800 focus:border-blue-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-800 mb-1">Email Address</label>
+                <input
+                  type="email"
+                  required
+                  value={editForm.email}
+                  onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                  className="w-full rounded-lg border border-slate-200 p-2 text-xs text-slate-800 focus:border-blue-500 focus:outline-none"
+                />
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
