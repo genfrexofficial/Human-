@@ -47,7 +47,7 @@ const letterTemplateSchema = new mongoose.Schema(
     },
     officialEmail: {
       type: String,
-      default: 'genfrexofficial@gmail.com'
+      default: 'hr@genfrex.com'
     },
     website: {
       type: String,

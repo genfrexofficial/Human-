@@ -30,7 +30,7 @@ const sendAppointmentEmail = async ({
   };
   const senderDisplayEmail = process.env.RESEND_FROM ? extractEmail(process.env.RESEND_FROM) : (process.env.SMTP_FROM || 'hr@genfrex.com');
   const fromEmail = senderDisplayEmail;
-  const replyToEmail = process.env.REPLY_TO_EMAIL || process.env.OFFICIAL_EMAIL || 'genfrexofficial@gmail.com';
+  const replyToEmail = process.env.REPLY_TO_EMAIL || process.env.OFFICIAL_EMAIL || 'hr@genfrex.com';
   const subject = `GENFREX — Appointment Letter — ${designation} (${referenceNumber})`;
 
   const formattedJoiningDate = new Date(joiningDate).toLocaleDateString('en-GB', {

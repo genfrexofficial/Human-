@@ -112,8 +112,9 @@ const generateAppointmentPDF = async (appointment, candidate = {}, template = nu
       }
 
       // Right Header text (matching LetterPreviewModal.jsx header right)
+      const officialSenderEmail = process.env.OFFICIAL_EMAIL || 'hr@genfrex.com';
       doc.fontSize(7.8).font('Helvetica-Bold').fillColor(cSlate700)
-        .text('Official Sender: genfrexofficial@gmail.com', leftMargin, headerStartY, { width: contentWidth, align: 'right' });
+        .text(`Official Sender: ${officialSenderEmail}`, leftMargin, headerStartY, { width: contentWidth, align: 'right' });
       doc.fontSize(7.8).font('Helvetica').fillColor(cSlate500)
         .text('Web: www.genfrex.com', leftMargin, headerStartY + 11, { width: contentWidth, align: 'right' });
       doc.fontSize(7.8).font('Helvetica-Bold').fillColor(cBlue600)

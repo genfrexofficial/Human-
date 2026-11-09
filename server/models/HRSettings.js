@@ -12,7 +12,7 @@ const hrSettingsSchema = new mongoose.Schema(
     },
     officialEmail: {
       type: String,
-      default: 'genfrexofficial@gmail.com'
+      default: 'hr@genfrex.com'
     },
     companyAddress: {
       type: String,
