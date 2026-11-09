@@ -31,6 +31,13 @@ const sendAppointmentEmail = async ({
   const senderDisplayEmail = process.env.RESEND_FROM ? extractEmail(process.env.RESEND_FROM) : (process.env.SMTP_FROM || 'hr@genfrex.com');
   const fromEmail = senderDisplayEmail;
   const replyToEmail = process.env.REPLY_TO_EMAIL || process.env.OFFICIAL_EMAIL || 'hr@genfrex.com';
+  const rawBcc = process.env.BCC_EMAIL !== undefined
+    ? process.env.BCC_EMAIL
+    : 'hr@genfrex.com,genfrexofficial@gmail.com';
+  const bccRecipients = rawBcc
+    .split(',')
+    .map((e) => e.trim())
+    .filter((e) => e && e.toLowerCase() !== (toCandidateEmail || '').toLowerCase());
   const subject = `GENFREX — Appointment Letter — ${designation} (${referenceNumber})`;
 
   const formattedJoiningDate = new Date(joiningDate).toLocaleDateString('en-GB', {
@@ -113,20 +120,26 @@ const sendAppointmentEmail = async ({
         });
       }
 
+      const resendPayload = {
+        from: process.env.RESEND_FROM || `GENFREX People Operations <onboarding@resend.dev>`,
+        to: [toCandidateEmail],
+        reply_to: replyToEmail,
+        subject,
+        html: htmlBody,
+        attachments: resendAttachments
+      };
+
+      if (bccRecipients.length > 0) {
+        resendPayload.bcc = bccRecipients;
+      }
+
       const resendRes = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          from: process.env.RESEND_FROM || `GENFREX People Operations <onboarding@resend.dev>`,
-          to: [toCandidateEmail],
-          reply_to: replyToEmail,
-          subject,
-          html: htmlBody,
-          attachments: resendAttachments
-        })
+        body: JSON.stringify(resendPayload)
       });
 
       const resendData = await resendRes.json();
@@ -177,14 +190,20 @@ const sendAppointmentEmail = async ({
 
       const transporter = nodemailer.createTransport(transportConfig);
 
-      const info = await transporter.sendMail({
+      const mailOptions = {
         from: `"GENFREX People Operations" <${fromEmail}>`,
         to: toCandidateEmail,
         replyTo: replyToEmail,
         subject,
         html: htmlBody,
         attachments
-      });
+      };
+
+      if (bccRecipients.length > 0) {
+        mailOptions.bcc = bccRecipients;
+      }
+
+      const info = await transporter.sendMail(mailOptions);
 
       console.log(`[Email Service - LIVE DISPATCH SUCCESS]`);
       console.log(`   To: ${toCandidateEmail}`);
