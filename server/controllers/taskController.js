@@ -30,6 +30,57 @@ const ADMIN_ALLOWED_TRANSITIONS = {
   COMPLETED: ['IN_PROGRESS', 'IN_REVIEW'] // allows reopening if necessary
 };
 
+// Helper to normalize and deduplicate assignee IDs from both assignedEmployees array and legacy assignedTo
+const normalizeAssigneeIds = (assignedEmployees, assignedTo) => {
+  let ids = [];
+  if (Array.isArray(assignedEmployees)) {
+    ids = assignedEmployees.map((id) => (id?._id ? id._id : id)).filter(Boolean);
+  } else if (typeof assignedEmployees === 'string' && assignedEmployees.trim()) {
+    try {
+      const parsed = JSON.parse(assignedEmployees);
+      if (Array.isArray(parsed)) ids = parsed;
+      else ids = [assignedEmployees];
+    } catch {
+      ids = [assignedEmployees];
+    }
+  }
+  if (assignedTo) {
+    const singleId = assignedTo?._id ? assignedTo._id : assignedTo;
+    if (singleId && !ids.some((id) => id.toString() === singleId.toString())) {
+      ids.push(singleId);
+    }
+  }
+  // Deduplicate and ensure valid ObjectId strings
+  const unique = [];
+  const set = new Set();
+  for (const rawId of ids) {
+    if (!rawId) continue;
+    const s = rawId.toString();
+    if (mongoose.Types.ObjectId.isValid(s) && !set.has(s)) {
+      set.add(s);
+      unique.push(s);
+    }
+  }
+  return unique;
+};
+
+// Helper to check if a user is assigned to a task (supports both assignedEmployees array and assignedTo)
+const isUserAssignedToTask = (task, userId) => {
+  if (!task || !userId) return false;
+  const uIdStr = userId.toString();
+  if (task.assignedTo) {
+    const aId = task.assignedTo?._id ? task.assignedTo._id.toString() : task.assignedTo.toString();
+    if (aId === uIdStr) return true;
+  }
+  if (Array.isArray(task.assignedEmployees)) {
+    return task.assignedEmployees.some((emp) => {
+      const empId = emp?._id ? emp._id.toString() : emp?.toString();
+      return empId === uIdStr;
+    });
+  }
+  return false;
+};
+
 // @desc    Get all tasks for a project
 // @route   GET /api/tasks/project/:projectId
 // @access  Private (Admin, Employee assigned, Client of project)
@@ -70,7 +121,7 @@ const getProjectTasks = async (req, res, next) => {
         (w) => w.toString() === req.user._id.toString()
       );
       if (!isAssigned && req.user.role === 'Employee') {
-        query.assignedTo = req.user._id;
+        query.$or = [{ assignedEmployees: req.user._id }, { assignedTo: req.user._id }];
       }
     }
 
@@ -80,6 +131,7 @@ const getProjectTasks = async (req, res, next) => {
 
     let tasks = await Task.find(query)
       .populate('assignedTo', 'name email avatar title role')
+      .populate('assignedEmployees', 'name email avatar title role phone')
       .populate('createdBy', 'name email')
       .populate('milestone', 'title dueDate status')
       .sort({ createdAt: -1 });
@@ -102,9 +154,12 @@ const getPersonalTasks = async (req, res, next) => {
     let query = { taskType: 'PERSONAL' };
 
     if (req.user.role === 'Employee' || req.query.assignedTo === 'me') {
-      query.assignedTo = req.user._id;
+      query.$or = [{ assignedEmployees: req.user._id }, { assignedTo: req.user._id }];
     } else if (req.query.assignedTo && req.query.assignedTo !== 'ALL') {
-      query.assignedTo = req.query.assignedTo;
+      query.$or = [
+        { assignedEmployees: req.query.assignedTo },
+        { assignedTo: req.query.assignedTo }
+      ];
     }
 
     if (req.query.status) {
@@ -119,6 +174,7 @@ const getPersonalTasks = async (req, res, next) => {
 
     let tasks = await Task.find(query)
       .populate('assignedTo', 'name email avatar title phone')
+      .populate('assignedEmployees', 'name email avatar title role phone')
       .populate('createdBy', 'name email role')
       .populate('assignedBy', 'name email role')
       .sort({ dueDate: 1, createdAt: -1 })
@@ -173,7 +229,9 @@ const getPersonalTasks = async (req, res, next) => {
 // @access  Private (Employee)
 const getMyTasks = async (req, res, next) => {
   try {
-    let query = { assignedTo: req.user._id };
+    let query = {
+      $or: [{ assignedEmployees: req.user._id }, { assignedTo: req.user._id }]
+    };
 
     if (req.query.taskType) {
       query.taskType = req.query.taskType;
@@ -188,6 +246,8 @@ const getMyTasks = async (req, res, next) => {
     let tasks = await Task.find(query)
       .populate('project', 'name status stage client health')
       .populate('milestone', 'title dueDate status')
+      .populate('assignedTo', 'name email avatar title role')
+      .populate('assignedEmployees', 'name email avatar title role phone')
       .populate('createdBy', 'name email role')
       .populate('assignedBy', 'name email role')
       .sort({ dueDate: 1, createdAt: -1 })
@@ -245,6 +305,7 @@ const getTaskById = async (req, res, next) => {
     const task = await Task.findById(req.params.id)
       .populate('project', 'name status stage client health createdBy')
       .populate('assignedTo', 'name email avatar title phone')
+      .populate('assignedEmployees', 'name email avatar title role phone')
       .populate('createdBy', 'name email role')
       .populate('assignedBy', 'name email role')
       .populate('requestedBy', 'name email companyName')
@@ -277,8 +338,7 @@ const getTaskById = async (req, res, next) => {
         });
       }
       if (req.user.role === 'Employee') {
-        const assignedId = toIdStr(task.assignedTo);
-        const isAssigned = assignedId && assignedId === currentUserId;
+        const isAssigned = isUserAssignedToTask(task, currentUserId);
         if (!isAssigned) {
           return res.status(403).json({
             success: false,
@@ -302,8 +362,7 @@ const getTaskById = async (req, res, next) => {
         });
       }
     } else if (req.user.role === 'Employee') {
-      const assignedId = toIdStr(task.assignedTo);
-      const isAssigned = assignedId && assignedId === currentUserId;
+      const isAssigned = isUserAssignedToTask(task, currentUserId);
       if (!isAssigned) {
         return res.status(403).json({
           success: false,
@@ -340,6 +399,7 @@ const createTask = async (req, res, next) => {
       title,
       description,
       assignedTo,
+      assignedEmployees,
       status,
       priority,
       dueDate,
@@ -355,20 +415,22 @@ const createTask = async (req, res, next) => {
       });
     }
 
+    const assigneeIds = normalizeAssigneeIds(assignedEmployees, assignedTo);
+
     // PERSONAL TASK FLOW
     if (taskType === 'PERSONAL') {
-      if (!assignedTo) {
+      if (assigneeIds.length === 0) {
         return res.status(400).json({
           success: false,
-          message: 'An Employee must be assigned to a personal task.'
+          message: 'At least one team member must be assigned to a personal task.'
         });
       }
 
-      const assignedEmployee = await User.findById(assignedTo);
-      if (!assignedEmployee) {
+      const assignedUsers = await User.find({ _id: { $in: assigneeIds } });
+      if (assignedUsers.length === 0) {
         return res.status(404).json({
           success: false,
-          message: 'Assigned employee not found.'
+          message: 'Assigned employee(s) not found.'
         });
       }
 
@@ -380,7 +442,8 @@ const createTask = async (req, res, next) => {
         description: description || '',
         createdBy: req.user._id,
         assignedBy: req.user._id,
-        assignedTo: assignedEmployee._id,
+        assignedEmployees: assigneeIds,
+        assignedTo: assigneeIds[0],
         status: status || 'ASSIGNED',
         priority: priority || 'MEDIUM',
         dueDate: dueDate || null,
@@ -391,17 +454,20 @@ const createTask = async (req, res, next) => {
 
       const populatedTask = await Task.findById(task._id)
         .populate('assignedTo', 'name email avatar title phone')
+        .populate('assignedEmployees', 'name email avatar title role phone')
         .populate('createdBy', 'name email role')
         .populate('assignedBy', 'name email role');
 
-      // Dispatch in-app notification to the assigned employee
-      await sendNotification({
-        userId: assignedEmployee._id,
-        title: 'New Personal Task Assigned',
-        type: 'TASK',
-        message: `${req.user.name} (${req.user.role}) assigned you a personal task: "${task.title}".`,
-        link: `/Employee/tasks`
-      });
+      // Dispatch in-app notifications to all assigned employees
+      for (const assignedUser of assignedUsers) {
+        await sendNotification({
+          userId: assignedUser._id,
+          title: 'New Personal Task Assigned',
+          type: 'TASK',
+          message: `${req.user.name} (${req.user.role}) assigned you a personal task: "${task.title}".`,
+          link: `/Employee/tasks`
+        });
+      }
 
       return res.status(201).json({
         success: true,
@@ -426,14 +492,19 @@ const createTask = async (req, res, next) => {
       });
     }
 
-    let assignedEmployee = null;
-    if (assignedTo) {
-      assignedEmployee = await User.findById(assignedTo);
-      if (assignedEmployee && assignedEmployee.role === 'Employee') {
-        if (!project.assignedEmployees.some((w) => w.toString() === assignedEmployee._id.toString())) {
-          project.assignedEmployees.push(assignedEmployee._id);
-          await project.save();
+    if (assigneeIds.length > 0) {
+      const assignedUsers = await User.find({ _id: { $in: assigneeIds } });
+      let projectModified = false;
+      assignedUsers.forEach((usr) => {
+        if (usr.role === 'Employee') {
+          if (!project.assignedEmployees.some((w) => w.toString() === usr._id.toString())) {
+            project.assignedEmployees.push(usr._id);
+            projectModified = true;
+          }
         }
+      });
+      if (projectModified) {
+        await project.save();
       }
     }
 
@@ -444,9 +515,10 @@ const createTask = async (req, res, next) => {
       description: description || '',
       createdBy: req.user._id,
       assignedBy: req.user._id,
-      assignedTo: assignedTo || null,
+      assignedEmployees: assigneeIds,
+      assignedTo: assigneeIds.length > 0 ? assigneeIds[0] : null,
       milestone: milestone || null,
-      status: status || (assignedTo ? 'ASSIGNED' : 'TODO'),
+      status: status || (assigneeIds.length > 0 ? 'ASSIGNED' : 'TODO'),
       priority: priority || 'MEDIUM',
       dueDate: dueDate || null,
       estimatedHours: Number(estimatedHours) || 0,
@@ -456,6 +528,7 @@ const createTask = async (req, res, next) => {
 
     const populatedTask = await Task.findById(task._id)
       .populate('assignedTo', 'name email avatar title')
+      .populate('assignedEmployees', 'name email avatar title role phone')
       .populate('milestone', 'title dueDate')
       .populate('createdBy', 'name email role');
 
@@ -473,10 +546,10 @@ const createTask = async (req, res, next) => {
       clientVisible: task.clientVisible
     });
 
-    // Notify assigned Employee
-    if (assignedEmployee) {
+    // Notify all assigned Employees
+    for (const empId of assigneeIds) {
       await sendNotification({
-        userId: assignedEmployee._id,
+        userId: empId,
         projectId,
         title: 'New Task Assigned',
         type: 'TASK',
@@ -528,7 +601,7 @@ const updateTask = async (req, res, next) => {
     const oldProgress = task.progress;
 
     // ASSIGNEE ACCESS CHECK & STATE MACHINE VALIDATION
-    const isAssignee = task.assignedTo && task.assignedTo.toString() === req.user._id.toString();
+    const isAssignee = isUserAssignedToTask(task, req.user._id);
     if (req.user.role !== 'ADMIN') {
       if (!isAssignee) {
         return res.status(403).json({
@@ -593,11 +666,50 @@ const updateTask = async (req, res, next) => {
       if (actualHours !== undefined) task.actualHours = Number(actualHours) || 0;
       if (clientVisible !== undefined && task.taskType !== 'PERSONAL') task.clientVisible = clientVisible;
 
-      if (assignedTo !== undefined && assignedTo !== (task.assignedTo ? task.assignedTo.toString() : null)) {
-        task.assignedTo = assignedTo || null;
+      // Multi-Assignee & Dynamic Re-assignment handling
+      let newlyAddedAssigneeIds = [];
+      if (assignedEmployees !== undefined || assignedTo !== undefined) {
+        const newAssigneeIds = normalizeAssigneeIds(
+          assignedEmployees !== undefined ? assignedEmployees : task.assignedEmployees,
+          assignedTo
+        );
+
+        // Previous assignees list
+        const oldAssigneeIds = [];
+        if (Array.isArray(task.assignedEmployees)) {
+          task.assignedEmployees.forEach((id) => {
+            const s = id?._id ? id._id.toString() : id?.toString();
+            if (s && !oldAssigneeIds.includes(s)) oldAssigneeIds.push(s);
+          });
+        }
+        if (task.assignedTo) {
+          const s = task.assignedTo?._id ? task.assignedTo._id.toString() : task.assignedTo.toString();
+          if (s && !oldAssigneeIds.includes(s)) oldAssigneeIds.push(s);
+        }
+
+        newlyAddedAssigneeIds = newAssigneeIds.filter((id) => !oldAssigneeIds.includes(id));
+
+        task.assignedEmployees = newAssigneeIds;
+        task.assignedTo = newAssigneeIds.length > 0 ? newAssigneeIds[0] : null;
         task.assignedBy = req.user._id;
-        if (assignedTo && task.status === 'TODO') {
+
+        if (newAssigneeIds.length > 0 && task.status === 'TODO') {
           task.status = 'ASSIGNED';
+        }
+
+        // If project task, ensure newly assigned employees are added to project.assignedEmployees
+        if (task.project && newlyAddedAssigneeIds.length > 0) {
+          const projectDoc = await Project.findById(task.project);
+          if (projectDoc) {
+            let pChanged = false;
+            newlyAddedAssigneeIds.forEach((newEmpId) => {
+              if (!projectDoc.assignedEmployees.some((w) => w.toString() === newEmpId)) {
+                projectDoc.assignedEmployees.push(newEmpId);
+                pChanged = true;
+              }
+            });
+            if (pChanged) await projectDoc.save();
+          }
         }
       }
 
@@ -637,10 +749,25 @@ const updateTask = async (req, res, next) => {
 
     const populatedTask = await Task.findById(task._id)
       .populate('assignedTo', 'name email avatar title phone')
+      .populate('assignedEmployees', 'name email avatar title role phone')
       .populate('milestone', 'title dueDate')
       .populate('project', 'name client')
       .populate('createdBy', 'name email role')
       .populate('assignedBy', 'name email role');
+
+    // Dispatch instant notification ONLY to newly added assignees
+    if (newlyAddedAssigneeIds && newlyAddedAssigneeIds.length > 0) {
+      for (const newEmpId of newlyAddedAssigneeIds) {
+        await sendNotification({
+          userId: newEmpId,
+          projectId: task.project || undefined,
+          title: 'New Task Assigned to You',
+          type: 'TASK',
+          message: `${req.user.name} assigned you to task: "${task.title}".`,
+          link: task.taskType === 'PERSONAL' ? `/Employee/tasks` : `/Employee/tasks/${task._id}`
+        });
+      }
+    }
 
     // Recalculate project progress if project task
     let progressResult = null;
@@ -690,11 +817,21 @@ const updateTask = async (req, res, next) => {
         }
       }
 
-      // If admin or HR completed task, notify Employee and client (if applicable)
+      // If admin or HR completed task, notify all assigned Employees and client (if applicable)
       if (task.status === 'COMPLETED' && (req.user.role === 'ADMIN' || req.user.role === 'HR')) {
-        if (task.assignedTo) {
+        const notifyTargetIds = [];
+        if (Array.isArray(task.assignedEmployees) && task.assignedEmployees.length > 0) {
+          task.assignedEmployees.forEach((e) => {
+            const sid = e?._id ? e._id.toString() : e.toString();
+            if (sid && !notifyTargetIds.includes(sid)) notifyTargetIds.push(sid);
+          });
+        } else if (task.assignedTo) {
+          notifyTargetIds.push(task.assignedTo.toString());
+        }
+
+        for (const empId of notifyTargetIds) {
           await sendNotification({
-            userId: task.assignedTo,
+            userId: empId,
             projectId: task.project || undefined,
             title: 'Task Approved & Completed',
             type: 'TASK',
@@ -752,8 +889,8 @@ const startTask = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Task not found.' });
     }
 
-    if (!task.assignedTo || task.assignedTo.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ success: false, message: 'Only the assigned team member can start this task.' });
+    if (!isUserAssignedToTask(task, req.user._id)) {
+      return res.status(403).json({ success: false, message: 'Only an assigned team member can start this task.' });
     }
 
     if (!['ASSIGNED', 'TODO', 'BLOCKED', 'CHANGES_REQUESTED'].includes(task.status)) {
@@ -810,8 +947,8 @@ const updateTaskProgress = async (req, res, next) => {
     }
 
     if (req.user.role !== 'ADMIN') {
-      if (!task.assignedTo || task.assignedTo.toString() !== req.user._id.toString()) {
-        return res.status(403).json({ success: false, message: 'Only the assigned team member can update progress.' });
+      if (!isUserAssignedToTask(task, req.user._id)) {
+        return res.status(403).json({ success: false, message: 'Only an assigned team member can update progress.' });
       }
     }
 
@@ -853,8 +990,8 @@ const submitTaskForReview = async (req, res, next) => {
     }
 
     if (req.user.role !== 'ADMIN') {
-      if (!task.assignedTo || task.assignedTo.toString() !== req.user._id.toString()) {
-        return res.status(403).json({ success: false, message: 'Only the assigned team member can submit this task for review.' });
+      if (!isUserAssignedToTask(task, req.user._id)) {
+        return res.status(403).json({ success: false, message: 'Only an assigned team member can submit this task for review.' });
       }
     }
 
@@ -924,11 +1061,11 @@ const completeTask = async (req, res, next) => {
 
     // Check assignee permissions
     if (req.user.role !== 'ADMIN') {
-      const isAssigned = task.assignedTo && task.assignedTo.toString() === req.user._id.toString();
+      const isAssigned = isUserAssignedToTask(task, req.user._id);
       if (!isAssigned) {
         return res.status(403).json({
           success: false,
-          message: 'Only the assigned team member can complete this task.'
+          message: 'Only an assigned team member can complete this task.'
         });
       }
 
@@ -1048,10 +1185,20 @@ const completeTask = async (req, res, next) => {
         });
       }
     } else {
-      // Admin / HR completed task -> Notify assigned Employee
-      if (task.assignedTo) {
+      // Admin / HR completed task -> Notify all assigned Employees
+      const notifyTargetIds = [];
+      if (Array.isArray(task.assignedEmployees) && task.assignedEmployees.length > 0) {
+        task.assignedEmployees.forEach((e) => {
+          const sid = e?._id ? e._id.toString() : e.toString();
+          if (sid && !notifyTargetIds.includes(sid)) notifyTargetIds.push(sid);
+        });
+      } else if (task.assignedTo) {
+        notifyTargetIds.push(task.assignedTo.toString());
+      }
+
+      for (const empId of notifyTargetIds) {
         await sendNotification({
-          userId: task.assignedTo,
+          userId: empId,
           projectId: task.project || undefined,
           title: 'Task Approved & Completed',
           type: 'TASK',
@@ -1097,8 +1244,8 @@ const blockTask = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Task not found.' });
     }
 
-    if (!task.assignedTo || task.assignedTo.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ success: false, message: 'Only assigned team member can report a blocker.' });
+    if (!isUserAssignedToTask(task, req.user._id)) {
+      return res.status(403).json({ success: false, message: 'Only an assigned team member can report a blocker.' });
     }
 
     task.status = 'BLOCKED';

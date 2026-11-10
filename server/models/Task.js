@@ -50,6 +50,12 @@ const taskSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User'
     },
+    assignedEmployees: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+      }
+    ],
     taskRequest: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'TaskRequest'
@@ -116,9 +122,32 @@ const taskSchema = new mongoose.Schema(
   }
 );
 
+taskSchema.pre('save', function (next) {
+  // Sync assignedEmployees and assignedTo for bidirectional compatibility
+  if (Array.isArray(this.assignedEmployees) && this.assignedEmployees.length > 0) {
+    const seen = new Set();
+    const uniqueList = [];
+    for (const emp of this.assignedEmployees) {
+      const idStr = emp ? (emp._id ? emp._id.toString() : emp.toString()) : null;
+      if (idStr && !seen.has(idStr)) {
+        seen.add(idStr);
+        uniqueList.push(emp);
+      }
+    }
+    this.assignedEmployees = uniqueList;
+    if (!this.assignedTo) {
+      this.assignedTo = this.assignedEmployees[0];
+    }
+  } else if (this.assignedTo) {
+    this.assignedEmployees = [this.assignedTo];
+  }
+  next();
+});
+
 taskSchema.index({ taskType: 1 });
 taskSchema.index({ project: 1, status: 1 });
 taskSchema.index({ assignedTo: 1, status: 1 });
+taskSchema.index({ assignedEmployees: 1, status: 1 });
 taskSchema.index({ dueDate: 1 });
 taskSchema.index({ clientVisible: 1 });
 

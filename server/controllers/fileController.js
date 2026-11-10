@@ -105,7 +105,10 @@ const getProjectFiles = async (req, res, next) => {
       const isAssigned = project.assignedEmployees && project.assignedEmployees.some(
         (w) => w.toString() === req.user._id.toString()
       );
-      const hasTask = await Task.exists({ project: project._id, assignedTo: req.user._id });
+      const hasTask = await Task.exists({
+        project: project._id,
+        $or: [{ assignedEmployees: req.user._id }, { assignedTo: req.user._id }]
+      });
       if (!isAssigned && !hasTask) {
         return res.status(403).json({
           success: false,
@@ -183,7 +186,8 @@ const getTaskFiles = async (req, res, next) => {
         });
       }
     } else if (req.user.role === 'Employee') {
-      const isAssigned = task.assignedTo && task.assignedTo.toString() === req.user._id.toString();
+      const isAssigned = (task.assignedTo && task.assignedTo.toString() === req.user._id.toString()) ||
+        (Array.isArray(task.assignedEmployees) && task.assignedEmployees.some(e => (e?._id ? e._id.toString() : e.toString()) === req.user._id.toString()));
       const isProjectAssigned = task.project && task.project.assignedEmployees && task.project.assignedEmployees.some(
         (w) => w.toString() === req.user._id.toString()
       );
@@ -289,7 +293,10 @@ const uploadProjectFile = async (req, res, next) => {
         const isAssigned = project.assignedEmployees && project.assignedEmployees.some(
           (w) => w.toString() === req.user._id.toString()
         );
-        const hasTask = await Task.exists({ project: project._id, assignedTo: req.user._id });
+        const hasTask = await Task.exists({
+        project: project._id,
+        $or: [{ assignedEmployees: req.user._id }, { assignedTo: req.user._id }]
+      });
         if (!isAssigned && !hasTask) {
           return res.status(403).json({
             success: false,
@@ -310,7 +317,8 @@ const uploadProjectFile = async (req, res, next) => {
       }
 
       if (req.user.role === 'Employee') {
-        const isAssigned = task.assignedTo && task.assignedTo.toString() === req.user._id.toString();
+        const isAssigned = (task.assignedTo && task.assignedTo.toString() === req.user._id.toString()) ||
+        (Array.isArray(task.assignedEmployees) && task.assignedEmployees.some(e => (e?._id ? e._id.toString() : e.toString()) === req.user._id.toString()));
         const isCreator = task.createdBy && task.createdBy.toString() === req.user._id.toString();
         if (!isAssigned && !isCreator && req.user.role !== 'ADMIN' && req.user.role !== 'HR') {
           return res.status(403).json({
@@ -1110,9 +1118,19 @@ const reviewDeliverable = async (req, res, next) => {
         } catch (_) {}
       }
 
-      if (task.assignedTo) {
+      const assignees = [];
+      if (Array.isArray(task.assignedEmployees) && task.assignedEmployees.length > 0) {
+        task.assignedEmployees.forEach(e => {
+          const sid = e?._id ? e._id.toString() : e.toString();
+          if (sid && !assignees.includes(sid)) assignees.push(sid);
+        });
+      } else if (task.assignedTo) {
+        assignees.push(task.assignedTo.toString());
+      }
+
+      for (const empId of assignees) {
         await sendNotification({
-          userId: task.assignedTo,
+          userId: empId,
           projectId: task.project || undefined,
           title: status === 'APPROVED' ? 'Deliverable Approved' : 'Deliverable Changes Requested',
           message: status === 'APPROVED'

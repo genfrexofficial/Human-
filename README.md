@@ -236,10 +236,3 @@ Visit the application at: **http://localhost:5173**
    - Cloudinary keys (if using cloud storage)
 
 ---
-
-#   H R M S  
- #   H R M S  
- #   H R M S  
- #   H R M S  
- #   H u m a n -  
- 

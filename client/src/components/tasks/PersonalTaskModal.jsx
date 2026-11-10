@@ -4,7 +4,7 @@ import Input from '../common/Input';
 import Button from '../common/Button';
 import { EmployeeService } from '../../services/EmployeeService';
 import { userService } from '../../services/userService';
-import { UserCheck, Tag, Calendar, Clock, AlertCircle, Paperclip, ExternalLink, Download } from 'lucide-react';
+import { UserCheck, Tag, Calendar, Clock, AlertCircle, Paperclip, ExternalLink, Download, Users, X } from 'lucide-react';
 import { fileService } from '../../services/fileService';
 import toast from 'react-hot-toast';
 
@@ -21,7 +21,7 @@ const PersonalTaskModal = ({ isOpen, onClose, task = null, onSaved, preselectedE
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    assignedTo: preselectedEmployeeId || '',
+    assignedEmployees: [],
     personalCategory: 'INTERNAL_WORK',
     priority: 'MEDIUM',
     status: 'ASSIGNED',
@@ -47,10 +47,19 @@ const PersonalTaskModal = ({ isOpen, onClose, task = null, onSaved, preselectedE
         });
 
       if (task) {
+        let initialAssignees = [];
+        if (Array.isArray(task.assignedEmployees) && task.assignedEmployees.length > 0) {
+          initialAssignees = task.assignedEmployees.map((e) => e?._id || e);
+        } else if (task.assignedTo) {
+          initialAssignees = [task.assignedTo?._id || task.assignedTo];
+        } else if (preselectedEmployeeId) {
+          initialAssignees = [preselectedEmployeeId];
+        }
+
         setFormData({
           title: task.title || '',
           description: task.description || '',
-          assignedTo: task.assignedTo?._id || task.assignedTo || preselectedEmployeeId || '',
+          assignedEmployees: initialAssignees,
           personalCategory: task.personalCategory || 'INTERNAL_WORK',
           priority: task.priority || 'MEDIUM',
           status: task.status || 'ASSIGNED',
@@ -61,7 +70,7 @@ const PersonalTaskModal = ({ isOpen, onClose, task = null, onSaved, preselectedE
         setFormData({
           title: '',
           description: '',
-          assignedTo: preselectedEmployeeId || '',
+          assignedEmployees: preselectedEmployeeId ? [preselectedEmployeeId] : [],
           personalCategory: 'INTERNAL_WORK',
           priority: 'MEDIUM',
           status: 'ASSIGNED',
@@ -71,6 +80,26 @@ const PersonalTaskModal = ({ isOpen, onClose, task = null, onSaved, preselectedE
       }
     }
   }, [isOpen, task, preselectedEmployeeId]);
+
+  const allAssigneesList = [...employees, ...hrUsers];
+
+  const handleAddAssignee = (userId) => {
+    if (!userId) return;
+    setFormData((prev) => {
+      if (prev.assignedEmployees.includes(userId)) return prev;
+      return {
+        ...prev,
+        assignedEmployees: [...prev.assignedEmployees, userId]
+      };
+    });
+  };
+
+  const handleRemoveAssignee = (userId) => {
+    setFormData((prev) => ({
+      ...prev,
+      assignedEmployees: prev.assignedEmployees.filter((id) => id !== userId)
+    }));
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -83,8 +112,8 @@ const PersonalTaskModal = ({ isOpen, onClose, task = null, onSaved, preselectedE
       toast.error('Task title is required.');
       return;
     }
-    if (!formData.assignedTo) {
-      toast.error('Please select an employee to assign this personal task to.');
+    if (formData.assignedEmployees.length === 0) {
+      toast.error('Please assign at least one employee or HR officer to this task.');
       return;
     }
 
@@ -93,7 +122,9 @@ const PersonalTaskModal = ({ isOpen, onClose, task = null, onSaved, preselectedE
       await onSaved({
         ...formData,
         taskType: 'PERSONAL',
-        clientVisible: false
+        clientVisible: false,
+        assignedEmployees: formData.assignedEmployees,
+        assignedTo: formData.assignedEmployees[0] || null
       }, task?._id);
       onClose();
     } catch (err) {
@@ -107,7 +138,7 @@ const PersonalTaskModal = ({ isOpen, onClose, task = null, onSaved, preselectedE
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={task ? 'Edit Personal Company Task' : 'Assign Personal Task to Employee'}
+      title={task ? 'Edit Personal Company Task & Assignees' : 'Assign Personal Task to Team Members'}
     >
       <form onSubmit={handleSubmit} className="space-y-4 text-xs">
         {/* Banner explanation */}
@@ -116,40 +147,98 @@ const PersonalTaskModal = ({ isOpen, onClose, task = null, onSaved, preselectedE
           <div>
             <span className="font-semibold text-indigo-900 block text-xs">Internal Company Assignment</span>
             <span className="text-[11px] text-indigo-700/80">
-              Personal tasks are directly assigned to employees or HR officers (internal work, training, compliance, onboarding). They are not visible to external clients.
+              Personal tasks are directly assigned to one or more employees or HR officers (internal work, training, compliance, onboarding). They are not visible to external clients.
             </span>
           </div>
         </div>
 
-        {/* Assignee selection */}
+        {/* Multi-Employee Assignee selection */}
         <div>
-          <label className="block font-semibold text-slate-800 mb-1">
-            Assign To Team Member (Employee or HR) <span className="text-rose-500">*</span>
-          </label>
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="block font-semibold text-slate-800">
+              Assigned Team Members ({formData.assignedEmployees.length}) <span className="text-rose-500">*</span>
+            </label>
+            <span className="text-[11px] text-indigo-600 font-medium">
+              Multi-employee assignment enabled
+            </span>
+          </div>
+
+          {/* Selected assignees chip list */}
+          {formData.assignedEmployees.length > 0 ? (
+            <div className="flex flex-wrap gap-1.5 p-2 bg-slate-50 border border-slate-200 rounded-lg mb-2">
+              {formData.assignedEmployees.map((empId) => {
+                const empObj =
+                  allAssigneesList.find((o) => o._id === empId) ||
+                  (task?.assignedEmployees?.find((o) => (o._id || o) === empId)) ||
+                  (task?.assignedTo?._id === empId ? task.assignedTo : null);
+                const name = empObj?.name || 'Assigned Member';
+                const isHr = empObj?.role === 'HR';
+
+                return (
+                  <span
+                    key={empId}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs bg-white border border-slate-200 shadow-xs text-slate-800"
+                  >
+                    <span
+                      className={`w-4 h-4 rounded-full text-[9px] font-bold flex items-center justify-center text-white ${
+                        isHr ? 'bg-purple-600' : 'bg-indigo-600'
+                      }`}
+                    >
+                      {name.charAt(0).toUpperCase()}
+                    </span>
+                    <span className="font-medium text-[11px]">{name}</span>
+                    {isHr && (
+                      <span className="text-[9px] bg-purple-50 text-purple-700 px-1 rounded font-semibold">
+                        HR
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveAssignee(empId)}
+                      className="text-slate-400 hover:text-rose-600 ml-0.5 cursor-pointer"
+                      title="Remove assignee"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="p-2 mb-2 text-[11px] text-rose-500 italic bg-rose-50/60 border border-dashed border-rose-200 rounded-lg">
+              No employees selected. Please add at least one assignee below.
+            </div>
+          )}
+
+          {/* Dropdown to add an employee */}
           <select
-            name="assignedTo"
-            value={formData.assignedTo}
-            onChange={handleChange}
-            required
+            value=""
+            onChange={(e) => {
+              handleAddAssignee(e.target.value);
+            }}
             className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs text-slate-800 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
           >
-            <option value="">-- Select Assignee --</option>
-            {hrUsers.length > 0 && (
+            <option value="">+ Add employee or HR officer to task...</option>
+            {hrUsers.filter((hr) => !formData.assignedEmployees.includes(hr._id)).length > 0 && (
               <optgroup label="🏢 HR Officers & Team">
-                {hrUsers.map((hr) => (
-                  <option key={hr._id} value={hr._id}>
-                    {hr.name} — {hr.title || 'HR Officer'} (HR) &bull; {hr.email}
-                  </option>
-                ))}
+                {hrUsers
+                  .filter((hr) => !formData.assignedEmployees.includes(hr._id))
+                  .map((hr) => (
+                    <option key={hr._id} value={hr._id}>
+                      {hr.name} — {hr.title || 'HR Officer'} (HR) • {hr.email}
+                    </option>
+                  ))}
               </optgroup>
             )}
-            {employees.length > 0 && (
+            {employees.filter((w) => !formData.assignedEmployees.includes(w._id)).length > 0 && (
               <optgroup label="👷 Employees & Workers">
-                {employees.map((w) => (
-                  <option key={w._id} value={w._id}>
-                    {w.name} — {w.title || 'Worker'} &bull; {w.email}
-                  </option>
-                ))}
+                {employees
+                  .filter((w) => !formData.assignedEmployees.includes(w._id))
+                  .map((w) => (
+                    <option key={w._id} value={w._id}>
+                      {w.name} — {w.title || 'Worker'} • {w.email}
+                    </option>
+                  ))}
               </optgroup>
             )}
           </select>
@@ -170,35 +259,37 @@ const PersonalTaskModal = ({ isOpen, onClose, task = null, onSaved, preselectedE
                   onClick={() => setFormData((prev) => ({ ...prev, personalCategory: cat.value }))}
                   className={`flex items-center gap-2 p-2 rounded-xl border text-left transition-all ${
                     isSelected
-                      ? 'border-indigo-600 bg-indigo-50/80 text-indigo-900 shadow-sm font-semibold'
-                      : 'border-slate-200 hover:border-slate-300 text-slate-700 bg-white'
+                      ? `${cat.color} ring-2 ring-indigo-500/30 font-semibold shadow-xs`
+                      : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-600'
                   }`}
                 >
                   <span className="text-base">{cat.icon}</span>
-                  <span className="text-[11px] truncate">{cat.label}</span>
+                  <div className="truncate">
+                    <span className="text-xs truncate block">{cat.label}</span>
+                  </div>
                 </button>
               );
             })}
           </div>
         </div>
 
-        {/* Title */}
+        {/* Task Title */}
         <Input
           label="Task Title *"
           name="title"
-          placeholder="e.g. Complete ISO Security Training / Refactor Auth Middleware"
+          placeholder="e.g. Complete ISO-27001 Security Training"
           value={formData.title}
           onChange={handleChange}
           required
         />
 
-        {/* Description */}
+        {/* Task Description */}
         <Input
-          label="Instructions & Details"
+          label="Instructions & Acceptance Criteria"
           name="description"
           type="textarea"
           rows={3}
-          placeholder="Specific steps, resources, links, or expectations for the employee..."
+          placeholder="Provide clear steps, links, or expectations for the employee..."
           value={formData.description}
           onChange={handleChange}
         />

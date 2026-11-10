@@ -197,11 +197,13 @@ const AdminTasks = () => {
   const filteredPersonalTasks = personalTasks.filter((t) => {
     const matchesEmployee =
       employeeFilter === 'ALL' ||
+      (Array.isArray(t.assignedEmployees) && t.assignedEmployees.some((emp) => (emp?._id || emp) === employeeFilter)) ||
       (t.assignedTo && (t.assignedTo._id === employeeFilter || t.assignedTo === employeeFilter));
     const matchesCategory = categoryFilter === 'ALL' || t.personalCategory === categoryFilter;
     const matchesStatus = statusFilterPersonal === 'ALL' || t.status === statusFilterPersonal;
     const matchesSearch =
       t.title.toLowerCase().includes(personalSearch.toLowerCase()) ||
+      (Array.isArray(t.assignedEmployees) && t.assignedEmployees.some((emp) => emp?.name && emp.name.toLowerCase().includes(personalSearch.toLowerCase()))) ||
       (t.assignedTo?.name && t.assignedTo.name.toLowerCase().includes(personalSearch.toLowerCase())) ||
       (t.description && t.description.toLowerCase().includes(personalSearch.toLowerCase()));
 

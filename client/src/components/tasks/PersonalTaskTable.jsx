@@ -112,34 +112,79 @@ const PersonalTaskTable = ({
 
                   {/* Assigned Employee / HR */}
                   <td className="px-4 py-4 whitespace-nowrap">
-                    {task.assignedTo ? (
-                      <div className="flex items-center gap-2">
-                        <div className={`w-7 h-7 rounded-full text-white font-bold flex items-center justify-center text-[11px] shadow-sm flex-shrink-0 ${
-                          task.assignedTo.role === 'HR'
-                            ? 'bg-gradient-to-tr from-purple-500 to-pink-600'
-                            : 'bg-gradient-to-tr from-indigo-500 to-purple-600'
-                        }`}>
-                          {task.assignedTo.name?.charAt(0).toUpperCase() || (task.assignedTo.role === 'HR' ? 'H' : 'W')}
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-1.5">
-                            <span className="font-semibold text-slate-900 block text-xs leading-tight">
-                              {task.assignedTo.name}
-                            </span>
-                            {task.assignedTo.role === 'HR' && (
-                              <span className="text-[9px] font-semibold text-purple-700 bg-purple-50 border border-purple-200 px-1 rounded">
-                                HR
+                    {(() => {
+                      const assignees = Array.isArray(task.assignedEmployees) && task.assignedEmployees.length > 0
+                        ? task.assignedEmployees
+                        : (task.assignedTo ? [task.assignedTo] : []);
+
+                      if (assignees.length === 0) {
+                        return <span className="text-slate-400 italic text-[11px]">Unassigned</span>;
+                      }
+
+                      if (assignees.length === 1) {
+                        const emp = assignees[0];
+                        const isHr = emp.role === 'HR';
+                        return (
+                          <div className="flex items-center gap-2">
+                            <div className={`w-7 h-7 rounded-full text-white font-bold flex items-center justify-center text-[11px] shadow-sm flex-shrink-0 ${
+                              isHr
+                                ? 'bg-gradient-to-tr from-purple-500 to-pink-600'
+                                : 'bg-gradient-to-tr from-indigo-500 to-purple-600'
+                            }`}>
+                              {emp.name?.charAt(0).toUpperCase() || (isHr ? 'H' : 'W')}
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-semibold text-slate-900 block text-xs leading-tight">
+                                  {emp.name}
+                                </span>
+                                {isHr && (
+                                  <span className="text-[9px] font-semibold text-purple-700 bg-purple-50 border border-purple-200 px-1 rounded">
+                                    HR
+                                  </span>
+                                )}
+                              </div>
+                              <span className="text-[10px] text-slate-500 block">
+                                {emp.title || emp.email}
                               </span>
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center -space-x-2">
+                            {assignees.slice(0, 3).map((emp, i) => (
+                              <div
+                                key={emp._id || i}
+                                title={`${emp.name} (${emp.role || 'Member'})`}
+                                className={`w-6 h-6 rounded-full text-white font-bold flex items-center justify-center text-[10px] ring-2 ring-white shadow-xs ${
+                                  emp.role === 'HR'
+                                    ? 'bg-gradient-to-tr from-purple-500 to-pink-600'
+                                    : 'bg-gradient-to-tr from-indigo-500 to-purple-600'
+                                }`}
+                              >
+                                {emp.name?.charAt(0).toUpperCase() || 'U'}
+                              </div>
+                            ))}
+                            {assignees.length > 3 && (
+                              <div className="w-6 h-6 rounded-full bg-slate-100 text-slate-600 font-bold flex items-center justify-center text-[9px] ring-2 ring-white">
+                                +{assignees.length - 3}
+                              </div>
                             )}
                           </div>
-                          <span className="text-[10px] text-slate-500 block">
-                            {task.assignedTo.title || task.assignedTo.email}
-                          </span>
+                          <div>
+                            <span className="font-semibold text-slate-900 block text-xs leading-tight truncate max-w-[140px]" title={assignees.map((a) => a.name).join(', ')}>
+                              {assignees.map((a) => a.name).join(', ')}
+                            </span>
+                            <span className="text-[10px] text-indigo-600 font-medium block">
+                              {assignees.length} members assigned
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                    ) : (
-                      <span className="text-slate-400 italic text-[11px]">Unassigned</span>
-                    )}
+                      );
+                    })()}
                   </td>
 
                   {/* Priority */}

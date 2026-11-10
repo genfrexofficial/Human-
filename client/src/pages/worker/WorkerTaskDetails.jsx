@@ -514,7 +514,7 @@ const EmployeeTaskDetails = ({ backPath }) => {
         </div>
 
         {/* Task Meta Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6 pt-5 border-t border-slate-100 text-xs">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mt-6 pt-5 border-t border-slate-100 text-xs">
           <div>
             <span className="text-slate-400 block text-[10px] uppercase font-semibold">Target Due Date</span>
             <span className="font-medium text-slate-800 mt-0.5 block">
@@ -535,6 +535,18 @@ const EmployeeTaskDetails = ({ backPath }) => {
             <span className="text-slate-400 block text-[10px] uppercase font-semibold">Assigned By</span>
             <span className="font-medium text-slate-800 mt-0.5 block">
               {task.assignedBy?.name || task.createdBy?.name || 'Admin'}
+            </span>
+          </div>
+          <div>
+            <span className="text-slate-400 block text-[10px] uppercase font-semibold">Assigned Team</span>
+            <span className="font-medium text-slate-800 mt-0.5 block truncate" title={
+              (Array.isArray(task.assignedEmployees) && task.assignedEmployees.length > 0)
+                ? task.assignedEmployees.map((e) => e.name).join(', ')
+                : (task.assignedTo?.name || 'You')
+            }>
+              {(Array.isArray(task.assignedEmployees) && task.assignedEmployees.length > 0)
+                ? task.assignedEmployees.map((e) => e.name).join(', ')
+                : (task.assignedTo?.name || 'You')}
             </span>
           </div>
           <div>

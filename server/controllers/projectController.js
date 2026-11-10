@@ -22,7 +22,9 @@ const getProjects = async (req, res, next) => {
       query = { client: req.user._id };
     } else if (req.user.role === 'Employee') {
       // Find projects where Employee is assigned directly or has assigned tasks
-      const taskProjectIds = await Task.distinct('project', { assignedTo: req.user._id });
+      const taskProjectIds = await Task.distinct('project', {
+        $or: [{ assignedEmployees: req.user._id }, { assignedTo: req.user._id }]
+      });
       query = {
         $or: [
           { assignedEmployees: req.user._id },
@@ -135,7 +137,10 @@ const getProjectById = async (req, res, next) => {
       const isAssigned = project.assignedEmployees && project.assignedEmployees.some(
         (w) => w._id.toString() === req.user._id.toString()
       );
-      const hasTask = await Task.exists({ project: project._id, assignedTo: req.user._id });
+      const hasTask = await Task.exists({
+        project: project._id,
+        $or: [{ assignedEmployees: req.user._id }, { assignedTo: req.user._id }]
+      });
       if (!isAssigned && !hasTask) {
         return res.status(403).json({
           success: false,

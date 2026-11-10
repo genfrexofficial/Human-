@@ -58,7 +58,9 @@ const getRecentActivities = async (req, res, next) => {
         clientVisible: true
       };
     } else if (req.user.role === 'Employee') {
-      const EmployeeProjectIds = await Task.distinct('project', { assignedTo: req.user._id });
+      const EmployeeProjectIds = await Task.distinct('project', {
+        $or: [{ assignedEmployees: req.user._id }, { assignedTo: req.user._id }]
+      });
       const assignedProjects = await Project.find({ assignedEmployees: req.user._id }).select('_id');
       const allIds = Array.from(new Set([...EmployeeProjectIds, ...assignedProjects.map((p) => p._id.toString())]));
 

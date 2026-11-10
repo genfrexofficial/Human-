@@ -367,6 +367,14 @@ const EmployeeTasks = ({ basePath }) => {
                               Milestone: {task.milestone.title}
                             </span>
                           )}
+                          {Array.isArray(task.assignedEmployees) && task.assignedEmployees.length > 1 && (
+                            <span
+                              className="text-[10px] text-indigo-600 font-medium block mt-0.5 truncate"
+                              title={`Assigned Team: ${task.assignedEmployees.map((e) => e.name).join(', ')}`}
+                            >
+                              Team: {task.assignedEmployees.map((e) => e.name).join(', ')}
+                            </span>
+                          )}
                         </td>
 
                         <td className="px-4 py-3.5 text-slate-600 font-medium whitespace-nowrap">
@@ -488,6 +496,14 @@ const EmployeeTasks = ({ basePath }) => {
                             <p className="text-[11px] text-slate-500 line-clamp-2 mt-0.5">
                               {task.description}
                             </p>
+                          )}
+                          {Array.isArray(task.assignedEmployees) && task.assignedEmployees.length > 1 && (
+                            <span
+                              className="text-[10px] text-indigo-600 font-medium block mt-1 truncate"
+                              title={`Assigned Team: ${task.assignedEmployees.map((e) => e.name).join(', ')}`}
+                            >
+                              Team: {task.assignedEmployees.map((e) => e.name).join(', ')}
+                            </span>
                           )}
                         </td>
 

@@ -4,13 +4,14 @@ import Input from '../common/Input';
 import Button from '../common/Button';
 import { EmployeeService } from '../../services/EmployeeService';
 import { userService } from '../../services/userService';
+import { Users, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const TaskModal = ({ isOpen, onClose, task = null, projectId, onSaved }) => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    assignedTo: '',
+    assignedEmployees: [],
     priority: 'MEDIUM',
     status: 'TODO',
     dueDate: '',
@@ -33,10 +34,17 @@ const TaskModal = ({ isOpen, onClose, task = null, projectId, onSaved }) => {
       }).catch(console.error);
 
       if (task) {
+        let initialAssignees = [];
+        if (Array.isArray(task.assignedEmployees) && task.assignedEmployees.length > 0) {
+          initialAssignees = task.assignedEmployees.map((e) => e?._id || e);
+        } else if (task.assignedTo) {
+          initialAssignees = [task.assignedTo?._id || task.assignedTo];
+        }
+
         setFormData({
           title: task.title || '',
           description: task.description || '',
-          assignedTo: task.assignedTo?._id || task.assignedTo || '',
+          assignedEmployees: initialAssignees,
           priority: task.priority || 'MEDIUM',
           status: task.status || 'TODO',
           dueDate: task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : '',
@@ -47,7 +55,7 @@ const TaskModal = ({ isOpen, onClose, task = null, projectId, onSaved }) => {
         setFormData({
           title: '',
           description: '',
-          assignedTo: '',
+          assignedEmployees: [],
           priority: 'MEDIUM',
           status: 'TODO',
           dueDate: '',
@@ -57,6 +65,26 @@ const TaskModal = ({ isOpen, onClose, task = null, projectId, onSaved }) => {
       }
     }
   }, [isOpen, task]);
+
+  const allAssigneesList = [...Employees, ...hrUsers];
+
+  const handleAddAssignee = (userId) => {
+    if (!userId) return;
+    setFormData((prev) => {
+      if (prev.assignedEmployees.includes(userId)) return prev;
+      return {
+        ...prev,
+        assignedEmployees: [...prev.assignedEmployees, userId]
+      };
+    });
+  };
+
+  const handleRemoveAssignee = (userId) => {
+    setFormData((prev) => ({
+      ...prev,
+      assignedEmployees: prev.assignedEmployees.filter((id) => id !== userId)
+    }));
+  };
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -78,7 +106,8 @@ const TaskModal = ({ isOpen, onClose, task = null, projectId, onSaved }) => {
       await onSaved({
         ...formData,
         project: projectId,
-        assignedTo: formData.assignedTo || null
+        assignedEmployees: formData.assignedEmployees,
+        assignedTo: formData.assignedEmployees.length > 0 ? formData.assignedEmployees[0] : null
       }, task?._id);
       onClose();
     } catch (err) {
@@ -92,7 +121,7 @@ const TaskModal = ({ isOpen, onClose, task = null, projectId, onSaved }) => {
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={task ? 'Edit Task & Assignment' : 'Create New Engineering Task'}
+      title={task ? 'Edit Task & Assignments' : 'Create New Engineering Task'}
     >
       <form onSubmit={handleSubmit} className="space-y-4 text-xs">
         <Input
@@ -114,33 +143,93 @@ const TaskModal = ({ isOpen, onClose, task = null, projectId, onSaved }) => {
           onChange={handleChange}
         />
 
+        {/* Multi-Employee Assignment Section */}
         <div>
-          <label className="block font-semibold text-slate-800 mb-1">
-            Assign Team Member (Engineer or HR)
-          </label>
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="block font-semibold text-slate-800">
+              Assign Team Members ({formData.assignedEmployees.length})
+            </label>
+            <span className="text-[11px] text-indigo-600 font-medium">
+              Multi-employee assignment enabled
+            </span>
+          </div>
+
+          {/* Selected assignees chip list */}
+          {formData.assignedEmployees.length > 0 ? (
+            <div className="flex flex-wrap gap-1.5 p-2 bg-slate-50 border border-slate-200 rounded-lg mb-2">
+              {formData.assignedEmployees.map((empId) => {
+                const empObj =
+                  allAssigneesList.find((o) => o._id === empId) ||
+                  (task?.assignedEmployees?.find((o) => (o._id || o) === empId)) ||
+                  (task?.assignedTo?._id === empId ? task.assignedTo : null);
+                const name = empObj?.name || 'Assigned Member';
+                const isHr = empObj?.role === 'HR';
+
+                return (
+                  <span
+                    key={empId}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs bg-white border border-slate-200 shadow-xs text-slate-800"
+                  >
+                    <span
+                      className={`w-4 h-4 rounded-full text-[9px] font-bold flex items-center justify-center text-white ${
+                        isHr ? 'bg-purple-600' : 'bg-indigo-600'
+                      }`}
+                    >
+                      {name.charAt(0).toUpperCase()}
+                    </span>
+                    <span className="font-medium text-[11px]">{name}</span>
+                    {isHr && (
+                      <span className="text-[9px] bg-purple-50 text-purple-700 px-1 rounded font-semibold">
+                        HR
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveAssignee(empId)}
+                      className="text-slate-400 hover:text-rose-600 ml-0.5 cursor-pointer"
+                      title="Remove assignee"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="p-2 mb-2 text-[11px] text-slate-400 italic bg-slate-50/60 border border-dashed border-slate-200 rounded-lg">
+              No employees assigned yet (Task will be in TODO status).
+            </div>
+          )}
+
+          {/* Dropdown to add an employee */}
           <select
-            name="assignedTo"
-            value={formData.assignedTo}
-            onChange={handleChange}
-            className="w-full rounded-lg border border-slate-200 p-2 text-xs text-slate-800 focus:border-indigo-500 focus:outline-none"
+            value=""
+            onChange={(e) => {
+              handleAddAssignee(e.target.value);
+            }}
+            className="w-full rounded-lg border border-slate-200 p-2 text-xs text-slate-800 focus:border-indigo-500 focus:outline-none bg-white"
           >
-            <option value="">-- Unassigned (TODO) --</option>
-            {hrUsers.length > 0 && (
+            <option value="">+ Add employee or HR officer to task...</option>
+            {hrUsers.filter((hr) => !formData.assignedEmployees.includes(hr._id)).length > 0 && (
               <optgroup label="🏢 HR Team Members">
-                {hrUsers.map((hr) => (
-                  <option key={hr._id} value={hr._id}>
-                    {hr.name} — {hr.title || 'HR Officer'} (HR)
-                  </option>
-                ))}
+                {hrUsers
+                  .filter((hr) => !formData.assignedEmployees.includes(hr._id))
+                  .map((hr) => (
+                    <option key={hr._id} value={hr._id}>
+                      {hr.name} — {hr.title || 'HR Officer'} (HR)
+                    </option>
+                  ))}
               </optgroup>
             )}
-            {Employees.length > 0 && (
+            {Employees.filter((w) => !formData.assignedEmployees.includes(w._id)).length > 0 && (
               <optgroup label="👷 Engineers & Employees">
-                {Employees.map((w) => (
-                  <option key={w._id} value={w._id}>
-                    {w.name} — {w.title || 'Engineer'} ({w.workload?.totalActive || 0} active)
-                  </option>
-                ))}
+                {Employees
+                  .filter((w) => !formData.assignedEmployees.includes(w._id))
+                  .map((w) => (
+                    <option key={w._id} value={w._id}>
+                      {w.name} — {w.title || 'Engineer'} ({w.workload?.totalActive || 0} active)
+                    </option>
+                  ))}
               </optgroup>
             )}
           </select>

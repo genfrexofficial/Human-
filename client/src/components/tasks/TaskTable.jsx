@@ -76,16 +76,37 @@ const TaskTable = ({
                             {task.description}
                           </p>
                         )}
-                        {task.assignedTo && (
-                          <p className="text-[10px] text-slate-400 mt-0.5">
-                            Assigned to: <span className="text-slate-600 font-medium">{task.assignedTo.name}</span>
-                            {task.assignedTo.role === 'HR' && (
-                              <span className="ml-1 text-[9px] font-semibold text-purple-700 bg-purple-50 border border-purple-200 px-1 rounded">
-                                HR
+                        {(() => {
+                          const assignees = Array.isArray(task.assignedEmployees) && task.assignedEmployees.length > 0
+                            ? task.assignedEmployees
+                            : (task.assignedTo ? [task.assignedTo] : []);
+
+                          if (assignees.length === 0) return null;
+
+                          return (
+                            <div className="flex items-center gap-1.5 mt-1">
+                              <span className="text-[10px] text-slate-400">Assigned:</span>
+                              <div className="flex items-center -space-x-1.5 overflow-hidden">
+                                {assignees.slice(0, 3).map((emp, i) => (
+                                  <div
+                                    key={emp._id || i}
+                                    title={`${emp.name || 'Member'} (${emp.role || 'Member'})`}
+                                    className={`inline-block h-5 w-5 rounded-full ring-1 ring-white text-[9px] font-bold text-white flex items-center justify-center shrink-0 ${
+                                      emp.role === 'HR'
+                                        ? 'bg-purple-600'
+                                        : 'bg-indigo-600'
+                                    }`}
+                                  >
+                                    {emp.name?.charAt(0).toUpperCase() || 'U'}
+                                  </div>
+                                ))}
+                              </div>
+                              <span className="text-[10px] text-slate-600 font-medium truncate max-w-[200px]" title={assignees.map((a) => a.name).join(', ')}>
+                                {assignees.map((a) => a.name).join(', ')}
                               </span>
-                            )}
-                          </p>
-                        )}
+                            </div>
+                          );
+                        })()}
                       </div>
                     </div>
                   </td>
