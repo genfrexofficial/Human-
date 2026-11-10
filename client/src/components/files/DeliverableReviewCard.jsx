@@ -63,7 +63,7 @@ const DeliverableReviewCard = ({
     if (downloading) return;
     try {
       setDownloading(true);
-      await fileService.downloadBlob(currentFile._id, currentFile.fileName);
+      await fileService.downloadBlob(currentFile?._id, currentFile?.fileName || 'deliverable');
     } catch (err) {
       toast.error(err.response?.data?.message || err.message || 'Failed to download file.');
     } finally {
@@ -87,13 +87,13 @@ const DeliverableReviewCard = ({
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-xs font-bold text-indigo-600 hover:text-indigo-800 hover:underline truncate block"
-                  title={currentFile.fileName || targetUrl}
+                  title={currentFile?.fileName || targetUrl}
                 >
-                  {currentFile.fileName || targetUrl}
+                  {currentFile?.fileName || targetUrl}
                 </a>
               ) : (
-                <h4 className="text-xs font-bold text-slate-900 truncate" title={currentFile.fileName}>
-                  {currentFile.fileName}
+                <h4 className="text-xs font-bold text-slate-900 truncate" title={currentFile?.fileName}>
+                  {currentFile?.fileName || 'Deliverable'}
                 </h4>
               )}
               <p className="text-[11px] text-slate-500 mt-0.5">
@@ -176,7 +176,7 @@ const DeliverableReviewCard = ({
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition-colors"
-            title={`Open ${currentFile.fileName || targetUrl}`}
+            title={`Open ${currentFile?.fileName || targetUrl}`}
           >
             <ExternalLink className="w-3.5 h-3.5" />
             <span>Open Link</span>
@@ -187,7 +187,7 @@ const DeliverableReviewCard = ({
             onClick={handleDownload}
             disabled={downloading}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-            title={`Download ${currentFile.fileName}`}
+            title={`Download ${currentFile?.fileName || 'deliverable'}`}
           >
             {downloading ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-500" />

@@ -77,7 +77,7 @@ const AdminWorkReviews = () => {
       setActionLoading(true);
       const res = await fileService.reviewDeliverable(item._id, 'APPROVED');
       if (res.success) {
-        toast.success(`🎉 Deliverable "${item.fileName || 'Work'}" approved!`);
+        toast.success(`🎉 Deliverable "${item?.fileName || item?.title || 'Work'}" approved!`);
         fetchSubmissions(true);
       }
     } catch (err) {
@@ -131,8 +131,8 @@ const AdminWorkReviews = () => {
 
     try {
       setDownloadingId(item._id);
-      if (item._id && !item._id.startsWith('task_')) {
-        await fileService.downloadBlob(item._id, item.fileName);
+      if (item?._id && !item._id.startsWith('task_')) {
+        await fileService.downloadBlob(item._id, item?.fileName || 'deliverable');
       } else if (item.fileUrl) {
         window.open(item.fileUrl, '_blank');
       }
@@ -531,7 +531,7 @@ const AdminWorkReviews = () => {
                   {/* Title and URL/File Details */}
                   <div>
                     <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                      {item.fileName || item.title || 'Submitted Deliverable'}
+                      {item?.fileName || item?.title || 'Submitted Deliverable'}
                     </h3>
 
                     {/* Context: Project & Task badges */}
@@ -647,9 +647,9 @@ const AdminWorkReviews = () => {
         >
           <form onSubmit={handleSubmitRevision} className="space-y-4">
             <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800">
-              <span className="font-semibold">Reviewing: {targetItem.fileName || targetItem.title}</span>
+              <span className="font-semibold">Reviewing: {targetItem?.fileName || targetItem?.title || 'Deliverable'}</span>
               <p className="mt-0.5 text-amber-700">
-                Submitted by: <strong>{targetItem.uploadedBy?.name}</strong>. Provide clear instructions so the worker knows what adjustments to make.
+                Submitted by: <strong>{targetItem?.uploadedBy?.name || 'Worker'}</strong>. Provide clear instructions so the worker knows what adjustments to make.
               </p>
             </div>
 

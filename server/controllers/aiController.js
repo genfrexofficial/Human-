@@ -113,7 +113,7 @@ const generateProjectSummary = async (req, res, next) => {
       risks.push(`${overdueTasks.length} task(s) past target deadline: ${overdueTasks.map((t) => `"${t.title}"`).join(', ')}`);
     }
     if (changesRequestedFiles.length > 0) {
-      risks.push(`Deliverable revision pending: ${changesRequestedFiles.map((f) => `"${f.fileName}"`).join(', ')}`);
+      risks.push(`Deliverable revision pending: ${changesRequestedFiles.filter(Boolean).map((f) => `"${f?.fileName || 'Deliverable'}"`).join(', ')}`);
     }
     if (risks.length === 0) {
       risks.push('Zero active blockers identified; project execution is tracking normally against schedule.');

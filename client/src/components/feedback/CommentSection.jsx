@@ -111,7 +111,7 @@ const CommentSection = ({
                     )}
                   </div>
 
-                  {comment.file?.fileName && (
+                  {comment?.file?.fileName && (
                     <p className="text-[11px] font-medium text-indigo-600 mt-1">
                       Regarding: {comment.file.fileName}
                     </p>

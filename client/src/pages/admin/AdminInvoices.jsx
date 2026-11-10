@@ -824,10 +824,17 @@ const AdminInvoices = () => {
                   <p>UPI: {previewInvoiceModalData.bankDetails?.upiId || 'yb.genfrex0001@sbi'}</p>
                 </div>
 
-                <div className="flex flex-col justify-end items-end text-right p-3.5">
+                <div className="flex flex-col justify-end items-end text-right p-3.5 bg-slate-50/70 rounded-xl border border-slate-100">
                   <p className="text-[11px] font-bold text-slate-700">For GENFREX</p>
-                  <p className="text-[10px] text-slate-400 mt-6">[ Digitally Certified Tax Invoice ]</p>
-                  <p className="text-xs font-bold text-slate-900 mt-1">Authorized Signatory</p>
+                  <div className="my-1.5 flex justify-end">
+                    <img
+                      src="/company-seal.png"
+                      alt="GENFREX Official Seal"
+                      className="w-16 h-16 sm:w-20 sm:h-20 object-contain drop-shadow-sm select-none"
+                    />
+                  </div>
+                  <p className="text-xs font-bold text-slate-900">Authorized Signatory</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">Digitally Certified & Sealed</p>
                 </div>
               </div>
             </div>

@@ -492,7 +492,7 @@ const uploadProjectFile = async (req, res, next) => {
     if (task) {
       task.attachments = task.attachments || [];
       const alreadyExists = task.attachments.some(
-        (a) => a.fileUrl === fileDoc.fileUrl || a.fileName === fileDoc.fileName
+        (a) => a && (a.fileUrl === fileDoc?.fileUrl || a.fileName === fileDoc?.fileName)
       );
       if (!alreadyExists) {
         task.attachments.push({
@@ -1379,6 +1379,7 @@ const getWorkReviews = async (req, res, next) => {
     for (const task of tasksWithAttachments) {
       if (Array.isArray(task.attachments) && task.attachments.length > 0) {
         for (const att of task.attachments) {
+          if (!att) continue;
           const url = att.fileUrl;
           if (url && !existingUrls.has(url)) {
             existingUrls.add(url);
@@ -1398,7 +1399,7 @@ const getWorkReviews = async (req, res, next) => {
               },
               project: task.project ? { _id: task.project._id, name: task.project.name } : null,
               uploadedBy: task.assignedTo || task.createdBy,
-              fileName: att.fileName || 'Attached Document',
+              fileName: att?.fileName || 'Attached Document',
               fileUrl: url,
               linkUrl: isLink ? url : '',
               isLink: isLink,

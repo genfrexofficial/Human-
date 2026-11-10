@@ -215,12 +215,12 @@ const EmployeeFiles = () => {
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="font-semibold text-indigo-600 hover:text-indigo-800 hover:underline block truncate"
-                                title={`Open ${file.fileName || targetUrl}`}
+                                title={`Open ${file?.fileName || targetUrl}`}
                               >
-                                {file.fileName || targetUrl}
+                                {file?.fileName || targetUrl}
                               </a>
                             ) : (
-                              <span className="font-semibold text-slate-900 block truncate">{file.fileName}</span>
+                              <span className="font-semibold text-slate-900 block truncate">{file?.fileName || 'Document'}</span>
                             )}
                             {file.revisionNotes && (
                               <span className="text-[10px] text-rose-600 block mt-0.5 truncate font-medium">
@@ -260,7 +260,7 @@ const EmployeeFiles = () => {
                             target="_blank"
                             rel="noopener noreferrer"
                             className="px-2.5 py-1 rounded bg-indigo-50 text-indigo-700 hover:bg-indigo-100 font-medium text-[11px] inline-flex items-center gap-1"
-                            title={`Open ${file.fileName}`}
+                            title={`Open ${file?.fileName || 'Link'}`}
                           >
                             <ExternalLink className="h-3 w-3" />
                             <span>Open Link</span>
@@ -268,10 +268,10 @@ const EmployeeFiles = () => {
                         ) : (
                           <button
                             type="button"
-                            onClick={() => handleDownload(file._id, file.fileName)}
-                            disabled={downloadingId === file._id}
+                            onClick={() => handleDownload(file?._id, file?.fileName)}
+                            disabled={downloadingId === file?._id}
                             className="px-2.5 py-1 rounded bg-slate-100 text-slate-700 hover:bg-slate-200 font-medium text-[11px] inline-flex items-center gap-1 disabled:opacity-50"
-                            title={`Download ${file.fileName}`}
+                            title={`Download ${file?.fileName || 'document'}`}
                           >
                             {downloadingId === file._id ? (
                               <Loader2 className="h-3 w-3 animate-spin text-slate-500" />

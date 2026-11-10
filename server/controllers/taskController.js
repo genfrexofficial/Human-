@@ -142,13 +142,13 @@ const getPersonalTasks = async (req, res, next) => {
       const linkedFiles = filesByTask[t._id.toString()] || [];
       const attachments = (t.attachments && t.attachments.length > 0)
         ? t.attachments
-        : linkedFiles.map((lf) => ({
+        : linkedFiles.filter(Boolean).map((lf) => ({
             _id: lf._id,
-            fileName: lf.fileName,
-            fileUrl: lf.fileUrl || lf.linkUrl,
-            fileSize: lf.fileSize || 0,
-            fileType: lf.fileType || lf.mimeType || 'application/octet-stream',
-            isLink: lf.isLink
+            fileName: lf?.fileName || lf?.originalFileName || 'Attached Document',
+            fileUrl: lf?.fileUrl || lf?.linkUrl,
+            fileSize: lf?.fileSize || 0,
+            fileType: lf?.fileType || lf?.mimeType || 'application/octet-stream',
+            isLink: lf?.isLink
           }));
 
       return {
@@ -211,13 +211,13 @@ const getMyTasks = async (req, res, next) => {
       const linkedFiles = filesByTask[t._id.toString()] || [];
       const attachments = (t.attachments && t.attachments.length > 0)
         ? t.attachments
-        : linkedFiles.map((lf) => ({
+        : linkedFiles.filter(Boolean).map((lf) => ({
             _id: lf._id,
-            fileName: lf.fileName,
-            fileUrl: lf.fileUrl || lf.linkUrl,
-            fileSize: lf.fileSize || 0,
-            fileType: lf.fileType || lf.mimeType || 'application/octet-stream',
-            isLink: lf.isLink
+            fileName: lf?.fileName || lf?.originalFileName || 'Attached Document',
+            fileUrl: lf?.fileUrl || lf?.linkUrl,
+            fileSize: lf?.fileSize || 0,
+            fileType: lf?.fileType || lf?.mimeType || 'application/octet-stream',
+            isLink: lf?.isLink
           }));
 
       return {
@@ -978,7 +978,8 @@ const completeTask = async (req, res, next) => {
         });
       }
     } else if (task.attachments && task.attachments.length > 0) {
-      attachedDocName = task.attachments[task.attachments.length - 1].fileName;
+      const lastAtt = task.attachments[task.attachments.length - 1];
+      attachedDocName = lastAtt?.fileName || 'Attached Document';
     }
 
     task.status = 'COMPLETED';

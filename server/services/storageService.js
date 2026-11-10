@@ -79,7 +79,7 @@ const uploadFile = async (file, options = {}) => {
   );
 
   const folderPath = resolveFolderPath(options);
-  const targetFileName = options.fileName || file.originalname || file.filename;
+  const targetFileName = options?.fileName || file?.originalname || file?.filename || 'document';
 
   // 1. GOOGLE DRIVE (Primary enterprise cloud storage)
   if (isGoogleDriveConfigured()) {
@@ -286,7 +286,7 @@ const deleteFile = async (fileRecord) => {
 const replaceFileStorage = async (fileRecord, newFile, options = {}) => {
   if (!fileRecord) throw new Error('File record is required for replacement.');
 
-  const targetFileName = options.fileName || newFile.originalname || newFile.filename;
+  const targetFileName = options?.fileName || newFile?.originalname || newFile?.filename || 'document';
   const folderPath = resolveFolderPath({
     module: fileRecord.module,
     category: fileRecord.category,

@@ -61,14 +61,14 @@ const CompleteCompanyTaskModal = ({ isOpen, onClose, task, onCompleted }) => {
 
     if (useExisting && existingAttachments.length > 0) {
       const selected = existingAttachments.find(
-        (a) => a._id === selectedExistingId || a.fileUrl === selectedExistingId
+        (a) => a && (a._id === selectedExistingId || a.fileUrl === selectedExistingId)
       ) || existingAttachments[0];
 
-      if (selected._id) {
+      if (selected?._id) {
         uploadedFileId = selected._id;
-      } else if (selected.fileUrl) {
+      } else if (selected?.fileUrl) {
         attachmentObj = {
-          fileName: selected.fileName || 'Attached Document',
+          fileName: selected?.fileName || 'Attached Document',
           fileUrl: selected.fileUrl,
           fileSize: selected.fileSize || 0,
           fileType: selected.fileType || 'application/octet-stream'
@@ -236,9 +236,9 @@ const CompleteCompanyTaskModal = ({ isOpen, onClose, task, onCompleted }) => {
                         className="text-indigo-600 focus:ring-indigo-500"
                       />
                       <FileText className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
-                      <span className="truncate text-xs">{att.fileName}</span>
+                      <span className="truncate text-xs">{att?.fileName || 'Document'}</span>
                     </div>
-                    {att.fileSize > 0 && (
+                    {att?.fileSize > 0 && (
                       <span className="text-[10px] text-slate-400 shrink-0">
                         {(att.fileSize / 1024).toFixed(0)} KB
                       </span>

@@ -256,9 +256,10 @@ const generateInvoicePDF = async (req, res, next) => {
 
     // Company info comfortably BELOW the logo (starts at y = 97)
     const companyTextY = logoY + logoHeight + 8;
+    const officialEmail = process.env.OFFICIAL_EMAIL || 'hr@genfrex.com';
     doc.fontSize(7.5).fillColor('#64748B').text('DIGITAL SERVICES & TALENT ECOSYSTEM', logoX, companyTextY, { bold: true });
     doc.fontSize(7.5).fillColor('#475569').text('56, Periyapudhur,Orathai Post , Karur -639113', logoX, companyTextY + 11);
-    doc.fontSize(7.5).fillColor('#64748B').text('genfrexofficial@gmail.com | www.genfrex.com', logoX, companyTextY + 22);
+    doc.fontSize(7.5).fillColor('#64748B').text(`${officialEmail} | www.genfrex.com`, logoX, companyTextY + 22);
 
     // Invoice Title on Right (Top alignment)
     doc.fontSize(22).fillColor('#0F172A').text('TAX INVOICE', 330, 35, { align: 'right', bold: true });
@@ -331,19 +332,38 @@ const generateInvoicePDF = async (req, res, next) => {
     doc.fontSize(10).fillColor('#FFFFFF').text(`Rs. ${Number(invoice.totalAmount).toLocaleString('en-IN')}`, 440, y + 6, { width: 95, align: 'right', bold: true });
 
     // --- Bottom Section ---
-    const bottomY = Math.max(y + 36, 480);
+    const bottomY = Math.max(y + 30, 475);
+    const boxHeight = 105;
 
     // Terms Box on left
-    doc.roundedRect(40, bottomY, 320, 85, 4).fill('#F8FAFC');
+    doc.roundedRect(40, bottomY, 320, boxHeight, 4).fillAndStroke('#F8FAFC', '#E2E8F0');
     doc.fontSize(8).fillColor('#0052FF').text('TERMS & PAYMENT INSTRUCTIONS', 52, bottomY + 10, { bold: true });
-    doc.fontSize(7.5).fillColor('#64748B').text('1. Payment is due within 15 days of invoice date.\n2. Invoices are payable via Direct Bank Wire Transfer / NEFT / RTGS / UPI.\n3. Please quote the invoice reference number in payment advice.', 52, bottomY + 25, { width: 295, lineGap: 3 });
+    doc.fontSize(7.5).fillColor('#64748B').text(
+      '1. Payment is due within 15 days of invoice date.\n2. Invoices are payable via Direct Bank Wire Transfer / NEFT / RTGS / UPI.\n3. Please quote the invoice reference number in payment advice.\n4. Official Support: ' + officialEmail,
+      52,
+      bottomY + 25,
+      { width: 295, lineGap: 3 }
+    );
 
-    // Authorized Signatory Stamp Box on right
-    const signX = 380;
-    doc.roundedRect(signX, bottomY, 175, 85, 4).fill('#F8FAFC');
-    doc.fontSize(8).fillColor('#475569').text('For GENFREX', signX + 10, bottomY + 10, { align: 'center', width: 155, bold: true });
-    doc.fontSize(7.5).fillColor('#94A3B8').text('[ Digitally Certified Tax Invoice ]', signX + 10, bottomY + 45, { align: 'center', width: 155 });
-    doc.fontSize(8).fillColor('#0F172A').text('Authorized Signatory', signX + 10, bottomY + 68, { align: 'center', width: 155, bold: true });
+    // Authorized Signatory & Official Company Seal Box on right
+    const signX = 375;
+    const signW = 180;
+    doc.roundedRect(signX, bottomY, signW, boxHeight, 4).fillAndStroke('#F8FAFC', '#E2E8F0');
+    doc.fontSize(8).fillColor('#475569').text('For GENFREX', signX, bottomY + 8, { align: 'center', width: signW, bold: true });
+
+    const sealPath = path.join(__dirname, '../assets/company-seal.png');
+    const sealSize = 54;
+    const sealX = signX + (signW - sealSize) / 2;
+    const sealY = bottomY + 22;
+
+    if (fs.existsSync(sealPath)) {
+      doc.image(sealPath, sealX, sealY, { width: sealSize, height: sealSize });
+    } else {
+      doc.fontSize(7.5).fillColor('#2563EB').text('[ GENFREX SEAL ]', signX, bottomY + 40, { align: 'center', width: signW, bold: true });
+    }
+
+    doc.fontSize(8).fillColor('#0F172A').text('Authorized Signatory', signX, bottomY + 80, { align: 'center', width: signW, bold: true });
+    doc.fontSize(6.5).fillColor('#64748B').text('Digitally Certified & Sealed', signX, bottomY + 91, { align: 'center', width: signW });
 
     // --- Footer Notes ---
     doc.fontSize(7.5).fillColor('#94A3B8').text(

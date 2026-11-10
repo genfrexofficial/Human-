@@ -224,9 +224,23 @@ const ClientInvoices = () => {
                 ))}
               </div>
 
+              <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
+                <div className="flex items-center gap-2.5">
+                  <img
+                    src="/company-seal.png"
+                    alt="GENFREX Official Seal"
+                    className="w-10 h-10 object-contain drop-shadow-xs select-none"
+                  />
+                  <div>
+                    <p className="text-xs font-bold text-slate-800">GENFREX Certified Tax Invoice</p>
+                    <p className="text-[10px] text-slate-500">Official Seal & Digital Verification</p>
+                  </div>
+                </div>
+              </div>
+
               <button
                 onClick={() => handleDownloadPDF(selectedInvoice)}
-                className="w-full inline-flex items-center justify-center gap-2 py-2 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-xl"
+                className="w-full inline-flex items-center justify-center gap-2 py-2 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-xl shadow-xs"
               >
                 <Download className="w-4 h-4" /> Download Official PDF
               </button>

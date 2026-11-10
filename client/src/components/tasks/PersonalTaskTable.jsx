@@ -50,8 +50,8 @@ const PersonalTaskTable = ({
       }
       if (fileId) {
         setDownloadingId(fileId);
-        await fileService.downloadBlob(fileId, att.fileName);
-      } else if (att.fileUrl) {
+        await fileService.downloadBlob(fileId, att?.fileName || 'document');
+      } else if (att?.fileUrl) {
         window.open(att.fileUrl, '_blank');
       }
     } catch (err) {
@@ -193,25 +193,25 @@ const PersonalTaskTable = ({
                   <td className="px-4 py-4 max-w-xs">
                     {task.attachments && task.attachments.length > 0 ? (
                       <div className="flex flex-wrap gap-1.5">
-                        {task.attachments.map((att, idx) => {
-                          const isLink = att.isLink || att.fileType === 'LINK' || (att.fileUrl && att.fileUrl.startsWith('http'));
+                        {(task.attachments || []).filter(Boolean).map((att, idx) => {
+                          const isLink = att?.isLink || att?.fileType === 'LINK' || (att?.fileUrl && att.fileUrl.startsWith('http'));
                           return (
                             <button
-                              key={att._id || idx}
+                              key={att?._id || idx}
                               type="button"
                               onClick={() => handleDownloadAttachment(att)}
-                              disabled={downloadingId === att._id}
-                              title={att.fileName || 'View attached document'}
+                              disabled={downloadingId === att?._id}
+                              title={att?.fileName || 'View attached document'}
                               className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-slate-200 bg-slate-50 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 text-[10px] font-medium text-slate-700 transition-colors max-w-[140px] truncate"
                             >
-                              {downloadingId === att._id ? (
+                              {downloadingId === att?._id ? (
                                 <Loader2 className="w-2.5 h-2.5 animate-spin text-slate-500 shrink-0" />
                               ) : isLink ? (
                                 <ExternalLink className="w-2.5 h-2.5 text-indigo-500 shrink-0" />
                               ) : (
                                 <Paperclip className="w-2.5 h-2.5 text-slate-500 shrink-0" />
                               )}
-                              <span className="truncate">{att.fileName}</span>
+                              <span className="truncate">{att?.fileName || 'Document'}</span>
                             </button>
                           );
                         })}

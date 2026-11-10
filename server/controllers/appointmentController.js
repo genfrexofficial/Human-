@@ -727,11 +727,14 @@ const generatePDF = async (req, res, next) => {
     }
 
     // Generate PDF
-    const { filePath, fileName, fileUrl } = await generateAppointmentPDF(
+    const generated = await generateAppointmentPDF(
       appointment,
       candidate,
       appointment.letterContentSnapshot || appointment.templateId
     );
+    const filePath = generated?.filePath;
+    const fileName = generated?.fileName || `GENFREX_Appointment_${(appointment.referenceNumber || 'LETTER').replace(/[^a-zA-Z0-9_-]/g, '_')}.pdf`;
+    const fileUrl = generated?.fileUrl || `/uploads/${fileName}`;
 
     // Save File record with Google Drive cloud storage (or graceful fallback)
     const stats = fs.statSync(filePath);
@@ -860,9 +863,9 @@ const sendAppointment = async (req, res, next) => {
       candidate,
       appointment.letterContentSnapshot || appointment.templateId
     );
-    const pdfPath = generated.filePath;
-    const pdfFileName = generated.fileName;
-    appointment.pdfUrl = generated.fileUrl;
+    const pdfPath = generated?.filePath;
+    const pdfFileName = generated?.fileName || `GENFREX_Appointment_${(appointment.referenceNumber || 'LETTER').replace(/[^a-zA-Z0-9_-]/g, '_')}.pdf`;
+    appointment.pdfUrl = generated?.fileUrl || `/uploads/${pdfFileName}`;
     appointment.pdfGeneratedAt = new Date();
     await appointment.save();
 

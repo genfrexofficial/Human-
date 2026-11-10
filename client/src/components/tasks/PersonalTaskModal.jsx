@@ -268,16 +268,16 @@ const PersonalTaskModal = ({ isOpen, onClose, task = null, onSaved, preselectedE
               Attached Worker Documents ({task.attachments.length})
             </span>
             <div className="space-y-1.5">
-              {task.attachments.map((att, idx) => {
-                const isLink = att.isLink || att.fileType === 'LINK' || (att.fileUrl && att.fileUrl.startsWith('http'));
+              {(task.attachments || []).filter(Boolean).map((att, idx) => {
+                const isLink = att?.isLink || att?.fileType === 'LINK' || (att?.fileUrl && att.fileUrl.startsWith('http'));
                 return (
-                  <div key={att._id || idx} className="flex items-center justify-between p-2 rounded-lg bg-white border border-slate-200 text-xs">
+                  <div key={att?._id || idx} className="flex items-center justify-between p-2 rounded-lg bg-white border border-slate-200 text-xs">
                     <div className="flex items-center gap-2 truncate">
                       {isLink ? <ExternalLink className="w-3.5 h-3.5 text-indigo-500 shrink-0" /> : <Paperclip className="w-3.5 h-3.5 text-slate-400 shrink-0" />}
-                      <span className="font-medium text-slate-800 truncate">{att.fileName}</span>
+                      <span className="font-medium text-slate-800 truncate">{att?.fileName || 'Attached Document'}</span>
                     </div>
                     {isLink ? (
-                      <a href={att.fileUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline font-semibold text-[11px] inline-flex items-center gap-1">
+                      <a href={att?.fileUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline font-semibold text-[11px] inline-flex items-center gap-1">
                         Open Link <ExternalLink className="w-3 h-3" />
                       </a>
                     ) : (
@@ -285,10 +285,10 @@ const PersonalTaskModal = ({ isOpen, onClose, task = null, onSaved, preselectedE
                         type="button"
                         onClick={async () => {
                           try {
-                            const fileId = att._id || att.fileUrl?.split('/')[3];
+                            const fileId = att?._id || att?.fileUrl?.split('/')[3];
                             if (fileId) {
-                              await fileService.downloadBlob(fileId, att.fileName);
-                            } else if (att.fileUrl) {
+                              await fileService.downloadBlob(fileId, att?.fileName || 'document');
+                            } else if (att?.fileUrl) {
                               window.open(att.fileUrl, '_blank');
                             }
                           } catch (err) {

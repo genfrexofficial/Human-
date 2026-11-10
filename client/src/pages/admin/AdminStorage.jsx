@@ -612,12 +612,12 @@ const AdminStorage = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {files.map((file) => (
-                      <tr key={file._id} className="hover:bg-slate-50/70 transition-colors">
+                    {files.filter(Boolean).map((file) => (
+                      <tr key={file?._id} className="hover:bg-slate-50/70 transition-colors">
                         <td className="py-3 px-4 font-bold text-slate-900 max-w-xs truncate">
                           <div className="flex items-center gap-2">
                             <FileText className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                            <span className="truncate" title={file.fileName}>{file.fileName}</span>
+                            <span className="truncate" title={file?.fileName}>{file?.fileName || 'Unnamed File'}</span>
                           </div>
                         </td>
                         <td className="py-3 px-4 text-slate-600 font-medium">
@@ -666,7 +666,7 @@ const AdminStorage = () => {
                             <button
                               type="button"
                               title="Download Secure Stream"
-                              onClick={() => handleDownloadFile(file._id, file.fileName)}
+                              onClick={() => handleDownloadFile(file?._id, file?.fileName)}
                               className="p-1 rounded text-slate-500 hover:text-blue-700 hover:bg-blue-50 transition-colors"
                             >
                               <Download className="w-3.5 h-3.5" />
@@ -687,7 +687,7 @@ const AdminStorage = () => {
                             <button
                               type="button"
                               title="Delete File"
-                              onClick={() => handleDeleteFile(file._id, file.fileName)}
+                              onClick={() => handleDeleteFile(file?._id, file?.fileName)}
                               className="p-1 rounded text-slate-500 hover:text-rose-700 hover:bg-rose-50 transition-colors"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
@@ -754,8 +754,8 @@ const AdminStorage = () => {
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {recentDeletions.map((del) => (
-                    <tr key={del._id} className="hover:bg-slate-50/70">
-                      <td className="py-3 px-4 font-bold text-slate-900">{del.fileName || 'Unnamed File'}</td>
+                    <tr key={del?._id} className="hover:bg-slate-50/70">
+                      <td className="py-3 px-4 font-bold text-slate-900">{del?.fileName || 'Unnamed File'}</td>
                       <td className="py-3 px-4 text-slate-600">{del.relatedModule || 'GENERAL'}</td>
                       <td className="py-3 px-4 text-slate-700">{del.performedBy?.name || 'System'}</td>
                       <td className="py-3 px-4">
@@ -805,8 +805,8 @@ const AdminStorage = () => {
                 </thead>
                 <tbody className="divide-y divide-rose-100/60">
                   {storageErrors.map((err) => (
-                    <tr key={err._id} className="hover:bg-rose-50/40">
-                      <td className="py-3 px-4 font-bold text-slate-900">{err.fileName || 'Protected Asset'}</td>
+                    <tr key={err?._id} className="hover:bg-rose-50/40">
+                      <td className="py-3 px-4 font-bold text-slate-900">{err?.fileName || 'Protected Asset'}</td>
                       <td className="py-3 px-4 text-slate-600">{err.relatedModule || 'HR'}</td>
                       <td className="py-3 px-4 text-slate-700">{err.performedBy?.name || 'Unknown'}</td>
                       <td className="py-3 px-4">
