@@ -202,7 +202,7 @@ const AdminProjectDetails = () => {
         fetchProjectData();
       }
     } catch (err) {
-      toast.error('Failed to update task status.');
+      toast.error(err.response?.data?.message || 'Failed to update task status.');
     }
   };
 

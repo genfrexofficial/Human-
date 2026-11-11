@@ -120,7 +120,7 @@ const AdminTasks = () => {
       const res = await taskService.getProjectTasks(selectedProjectId);
       if (res.success) setTasks(res.tasks || []);
     } catch (err) {
-      toast.error('Failed to update status.');
+      toast.error(err.response?.data?.message || 'Failed to update status.');
     }
   };
 
@@ -161,7 +161,7 @@ const AdminTasks = () => {
       toast.success(`Personal task marked as ${newStatus}.`);
       fetchPersonalTasks();
     } catch (err) {
-      toast.error('Failed to update status.');
+      toast.error(err.response?.data?.message || 'Failed to update status.');
     }
   };
 

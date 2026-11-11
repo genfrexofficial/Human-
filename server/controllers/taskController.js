@@ -571,6 +571,19 @@ const createTask = async (req, res, next) => {
 // @desc    Update task details / status
 // @route   PUT /api/tasks/:id
 // @access  Private (Admin or assigned Employee)
+const ALL_VALID_STATUSES = [
+  'PENDING_APPROVAL',
+  'APPROVED',
+  'REJECTED',
+  'ASSIGNED',
+  'TODO',
+  'IN_PROGRESS',
+  'BLOCKED',
+  'IN_REVIEW',
+  'CHANGES_REQUESTED',
+  'COMPLETED'
+];
+
 const updateTask = async (req, res, next) => {
   try {
     const task = await Task.findById(req.params.id);
@@ -585,6 +598,7 @@ const updateTask = async (req, res, next) => {
       title,
       description,
       assignedTo,
+      assignedEmployees,
       status,
       priority,
       dueDate,
@@ -599,10 +613,13 @@ const updateTask = async (req, res, next) => {
 
     const oldStatus = task.status;
     const oldProgress = task.progress;
+    let newlyAddedAssigneeIds = [];
 
-    // ASSIGNEE ACCESS CHECK & STATE MACHINE VALIDATION
+    // ASSIGNEE ACCESS CHECK & MANAGER ROLE CHECK
     const isAssignee = isUserAssignedToTask(task, req.user._id);
-    if (req.user.role !== 'ADMIN') {
+    const isManager = req.user.role === 'ADMIN' || (req.user.role === 'HR' && task.taskType === 'PERSONAL');
+
+    if (!isManager) {
       if (!isAssignee) {
         return res.status(403).json({
           success: false,
@@ -610,7 +627,7 @@ const updateTask = async (req, res, next) => {
         });
       }
 
-      // If updating status, validate state machine
+      // If updating status, validate state machine for employee
       if (status && status !== oldStatus) {
         const allowedNext = Employee_ALLOWED_TRANSITIONS[oldStatus] || [];
         if (!allowedNext.includes(status)) {
@@ -654,8 +671,8 @@ const updateTask = async (req, res, next) => {
       if (actualHours !== undefined) task.actualHours = Number(actualHours) || task.actualHours;
       if (description !== undefined) task.description = description;
 
-    } else if (req.user.role === 'ADMIN') {
-      // Admin update
+    } else {
+      // Manager update (Admin or HR for personal tasks)
       if (title) task.title = title.trim();
       if (description !== undefined) task.description = description;
       if (personalCategory || category) task.personalCategory = personalCategory || category;
@@ -667,7 +684,6 @@ const updateTask = async (req, res, next) => {
       if (clientVisible !== undefined && task.taskType !== 'PERSONAL') task.clientVisible = clientVisible;
 
       // Multi-Assignee & Dynamic Re-assignment handling
-      let newlyAddedAssigneeIds = [];
       if (assignedEmployees !== undefined || assignedTo !== undefined) {
         const newAssigneeIds = normalizeAssigneeIds(
           assignedEmployees !== undefined ? assignedEmployees : task.assignedEmployees,
@@ -725,24 +741,22 @@ const updateTask = async (req, res, next) => {
       }
 
       if (status && status !== oldStatus) {
-        const allowedNext = ADMIN_ALLOWED_TRANSITIONS[oldStatus] || [];
-        if (!allowedNext.includes(status)) {
+        if (!ALL_VALID_STATUSES.includes(status)) {
           return res.status(400).json({
             success: false,
-            message: `Invalid state transition from '${oldStatus}' to '${status}'. Allowed transitions: ${allowedNext.join(', ')}.`
+            message: `Invalid task status '${status}'. Allowed statuses: ${ALL_VALID_STATUSES.join(', ')}.`
           });
         }
         task.status = status;
         if (status === 'COMPLETED') {
           task.completedAt = new Date();
           task.progress = 100;
+        } else if (status === 'IN_PROGRESS' && !task.startedAt) {
+          task.startedAt = new Date();
+        } else if (oldStatus === 'COMPLETED' && status !== 'COMPLETED') {
+          task.completedAt = null;
         }
       }
-    } else {
-      return res.status(403).json({
-        success: false,
-        message: 'Clients are not authorized to update tasks directly.'
-      });
     }
 
     await task.save();
