@@ -270,9 +270,9 @@ const CreateAppointment = () => {
     const empNorm = (cand.employmentType || '').toUpperCase().replace('-', '_');
     const track = empNorm === 'FULL_TIME' ? 'FULL_TIME' :
       empNorm === 'PART_TIME' ? 'PART_TIME' :
-      empNorm === 'INTERNSHIP' ? 'INTERNSHIP' :
-      empNorm === 'TRAINEE' ? 'TRAINEE' :
-      (cand.employmentType || 'TRAINEE');
+        empNorm === 'INTERNSHIP' ? 'INTERNSHIP' :
+          empNorm === 'TRAINEE' ? 'TRAINEE' :
+            (cand.employmentType || 'TRAINEE');
 
     let matchedTmpl = (templateList || []).find((t) => {
       if (des.includes('devops') || des.includes('cloud') || des.includes('infra')) return t.roleCategory === 'DEVOPS';
@@ -566,10 +566,10 @@ const CreateAppointment = () => {
               type="button"
               onClick={() => setStep(item.num)}
               className={`flex items-center justify-center sm:justify-start gap-1.5 py-2 px-2.5 rounded-xl font-semibold transition-all ${isActive
-                  ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/30'
-                  : isDone
-                    ? 'bg-blue-50 text-blue-700'
-                    : 'text-slate-500 hover:bg-slate-50'
+                ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/30'
+                : isDone
+                  ? 'bg-blue-50 text-blue-700'
+                  : 'text-slate-500 hover:bg-slate-50'
                 }`}
             >
               <div
@@ -606,8 +606,8 @@ const CreateAppointment = () => {
                     key={cand._id}
                     onClick={() => selectCandidate(cand)}
                     className={`p-3.5 rounded-xl border cursor-pointer transition-all ${isSelected
-                        ? 'border-blue-600 bg-blue-50/60 shadow-sm ring-2 ring-blue-500/20'
-                        : 'border-slate-200 hover:border-slate-300 bg-white'
+                      ? 'border-blue-600 bg-blue-50/60 shadow-sm ring-2 ring-blue-500/20'
+                      : 'border-slate-200 hover:border-slate-300 bg-white'
                       }`}
                   >
                     <div className="flex items-center justify-between">
@@ -1054,11 +1054,10 @@ const CreateAppointment = () => {
                         compensationFrequency: prev.compensationFrequency === 'UNPAID' ? 'STIPEND_MONTHLY' : prev.compensationFrequency
                       }));
                     }}
-                    className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                      isPaidStipend
+                    className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${isPaidStipend
                         ? 'bg-emerald-600 text-white shadow-sm'
                         : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                    }`}
+                      }`}
                   >
                     <span>Paid</span>
                   </button>
@@ -1074,11 +1073,10 @@ const CreateAppointment = () => {
                         compensationFrequency: 'UNPAID'
                       }));
                     }}
-                    className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                      !isPaidStipend
+                    className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${!isPaidStipend
                         ? 'bg-amber-600 text-white shadow-sm'
                         : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                    }`}
+                      }`}
                   >
                     <span>Unpaid</span>
                   </button>
@@ -1462,7 +1460,7 @@ const CreateAppointment = () => {
                   </p>
                 </div>
                 <div className="text-right text-[10px] text-slate-500">
-                  <p className="font-semibold text-slate-700">genfrexofficial@gmail.com</p>
+                  <p className="font-semibold text-slate-700">hr@genfrex.com</p>
                   <p className="text-blue-600">Build. Grow. Connect.</p>
                 </div>
               </div>
