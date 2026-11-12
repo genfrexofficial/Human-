@@ -41,6 +41,12 @@ const CandidateModal = ({ isOpen, onClose, candidate, onSave, loading }) => {
     reportingManager: 'Technical Lead',
     compensation: 25000,
     compensationFrequency: 'STIPEND_MONTHLY',
+    variablePay: {
+      isEnabled: false,
+      amount: '',
+      frequency: 'ANNUAL',
+      criteria: ''
+    },
     probationPeriod: '3 Months',
     notes: '',
     source: 'Direct HR',
@@ -95,6 +101,12 @@ const CandidateModal = ({ isOpen, onClose, candidate, onSave, loading }) => {
         reportingManager: candidate.reportingManager || 'Technical Lead',
         compensation: candidate.compensation !== undefined ? candidate.compensation : 25000,
         compensationFrequency: candidate.compensationFrequency || 'STIPEND_MONTHLY',
+        variablePay: {
+          isEnabled: Boolean(candidate.variablePay?.isEnabled),
+          amount: candidate.variablePay?.amount || '',
+          frequency: candidate.variablePay?.frequency || 'ANNUAL',
+          criteria: candidate.variablePay?.criteria || ''
+        },
         probationPeriod: candidate.probationPeriod || '3 Months',
         notes: candidate.notes || '',
         source: candidate.source || 'Direct HR',
@@ -119,6 +131,12 @@ const CandidateModal = ({ isOpen, onClose, candidate, onSave, loading }) => {
         reportingManager: 'Technical Lead',
         compensation: 25000,
         compensationFrequency: 'STIPEND_MONTHLY',
+        variablePay: {
+          isEnabled: false,
+          amount: '',
+          frequency: 'ANNUAL',
+          criteria: ''
+        },
         probationPeriod: '3 Months',
         notes: '',
         source: 'Direct HR',
@@ -148,6 +166,16 @@ const CandidateModal = ({ isOpen, onClose, candidate, onSave, loading }) => {
     }
   };
 
+  const handleVariablePayChange = (field, value) => {
+    setFormData((prev) => ({
+      ...prev,
+      variablePay: {
+        ...(prev.variablePay || { isEnabled: false, amount: '', frequency: 'ANNUAL', criteria: '' }),
+        [field]: value
+      }
+    }));
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     onSave({
@@ -156,6 +184,12 @@ const CandidateModal = ({ isOpen, onClose, candidate, onSave, loading }) => {
       compensationFrequency: isPaidStipend
         ? (formData.compensationFrequency === 'UNPAID' ? 'STIPEND_MONTHLY' : formData.compensationFrequency)
         : 'UNPAID',
+      variablePay: {
+        isEnabled: isPaidStipend && Boolean(formData.variablePay?.isEnabled),
+        amount: (isPaidStipend && formData.variablePay?.isEnabled) ? (Number(formData.variablePay?.amount) || 0) : 0,
+        frequency: formData.variablePay?.frequency || 'ANNUAL',
+        criteria: formData.variablePay?.criteria || ''
+      },
       clientId: formData.clientId || null,
       client: formData.clientId || null,
       projectId: formData.projectId || null,
@@ -513,6 +547,67 @@ const CandidateModal = ({ isOpen, onClose, candidate, onSave, loading }) => {
                       <option value="MONTHLY">Monthly Salary</option>
                       <option value="ANNUAL">Annual CTC</option>
                     </select>
+                  </div>
+
+                  {/* Variable Pay Toggle & Input */}
+                  <div className="col-span-1 sm:col-span-2 pt-2 border-t border-slate-200/60 space-y-2">
+                    <label className="text-xs font-bold text-slate-800 flex items-center gap-2 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={Boolean(formData.variablePay?.isEnabled)}
+                        onChange={(e) => handleVariablePayChange('isEnabled', e.target.checked)}
+                        className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300 cursor-pointer"
+                      />
+                      <span>Include Variable Pay / Performance Bonus</span>
+                    </label>
+
+                    {formData.variablePay?.isEnabled && (
+                      <div className="p-3 bg-blue-50/50 border border-blue-200/70 rounded-xl space-y-2.5">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                              Variable Amount (₹)
+                            </label>
+                            <input
+                              type="number"
+                              min="0"
+                              value={formData.variablePay?.amount || ''}
+                              onChange={(e) => handleVariablePayChange('amount', e.target.value)}
+                              placeholder="e.g. 50000"
+                              className="w-full p-2 rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:border-blue-500 font-semibold bg-white text-xs"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                              Payout Frequency
+                            </label>
+                            <select
+                              value={formData.variablePay?.frequency || 'ANNUAL'}
+                              onChange={(e) => handleVariablePayChange('frequency', e.target.value)}
+                              className="w-full p-2 rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:border-blue-500 bg-white text-xs"
+                            >
+                              <option value="ANNUAL">Annual Performance Bonus</option>
+                              <option value="QUARTERLY">Quarterly Appraisal Bonus</option>
+                              <option value="HALF_YEARLY">Half-Yearly Bonus</option>
+                              <option value="MONTHLY">Monthly Incentive</option>
+                              <option value="MILESTONE">Project Milestone Based</option>
+                            </select>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                            Payout Criteria / Notes (Optional)
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.variablePay?.criteria || ''}
+                            onChange={(e) => handleVariablePayChange('criteria', e.target.value)}
+                            placeholder="e.g. Subject to 80%+ KPI rating"
+                            className="w-full p-2 rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:border-blue-500 bg-white text-xs"
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               ) : (

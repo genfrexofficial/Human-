@@ -195,6 +195,7 @@ const createAppointment = async (req, res, next) => {
       reportingManager,
       compensation,
       compensationFrequency,
+      variablePay,
       responsibilities,
       terms,
       confidentialityTerms,
@@ -251,6 +252,13 @@ const createAppointment = async (req, res, next) => {
     const finalCompensation = isPaidFinal ? Number(compensation) : 0;
     const finalFrequency = isPaidFinal ? (compensationFrequency === 'UNPAID' ? 'STIPEND_MONTHLY' : (compensationFrequency || 'STIPEND_MONTHLY')) : 'UNPAID';
 
+    const finalVariablePay = {
+      isEnabled: isPaidFinal && Boolean(variablePay?.isEnabled),
+      amount: (isPaidFinal && variablePay?.isEnabled) ? Number(variablePay?.amount || 0) : 0,
+      frequency: variablePay?.frequency || 'ANNUAL',
+      criteria: variablePay?.criteria ? String(variablePay.criteria).trim() : ''
+    };
+
     const candidate = await Candidate.findById(targetCandidateId);
     if (!candidate) {
       return res.status(404).json({ success: false, message: 'Candidate not found.' });
@@ -303,6 +311,7 @@ const createAppointment = async (req, res, next) => {
       isPaid: isPaidFinal,
       compensation: finalCompensation,
       compensationFrequency: finalFrequency,
+      variablePay: finalVariablePay,
       responsibilities: responsibilities && responsibilities.length > 0
         ? responsibilities
         : (activeTemplate?.roleAndResponsibilities || []),
@@ -430,6 +439,7 @@ const updateAppointment = async (req, res, next) => {
       'isPaid',
       'compensation',
       'compensationFrequency',
+      'variablePay',
       'responsibilities',
       'terms',
       'confidentialityTerms',

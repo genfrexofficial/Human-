@@ -74,6 +74,26 @@ const candidateSchema = new mongoose.Schema(
       enum: ['MONTHLY', 'ANNUAL', 'STIPEND_MONTHLY', 'UNPAID'],
       default: 'STIPEND_MONTHLY'
     },
+    variablePay: {
+      isEnabled: {
+        type: Boolean,
+        default: false
+      },
+      amount: {
+        type: Number,
+        default: 0
+      },
+      frequency: {
+        type: String,
+        enum: ['ANNUAL', 'QUARTERLY', 'HALF_YEARLY', 'MONTHLY', 'MILESTONE'],
+        default: 'ANNUAL'
+      },
+      criteria: {
+        type: String,
+        default: '',
+        trim: true
+      }
+    },
     probationPeriod: {
       type: String,
       default: '3 Months'

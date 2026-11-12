@@ -187,15 +187,50 @@ const generateAppointmentPDF = async (appointment, candidate = {}, template = nu
         { label: 'Work Location / Mode:', val: sanitizeText(appointment.workLocation || 'Remote / Hybrid'), isBold: false, color: cSlate900 },
         { label: 'Reporting Manager:', val: sanitizeText(appointment.reportingManager || 'Engineering Lead'), isBold: false, color: cSlate900 },
         {
-          label: 'Stipend / Compensation:',
+          label: 'Fixed Compensation / Stipend:',
           val: Number(appointment.compensation || 0) > 0
             ? `INR ${Number(appointment.compensation).toLocaleString('en-IN')} / ${formatFrequency(appointment.compensationFrequency)}`
             : 'Unpaid',
           isBold: true,
           color: Number(appointment.compensation || 0) > 0 ? cEmerald700 : cSlate700
-        },
-        { label: 'Acceptance Deadline:', val: deadlineDateStr, isBold: true, color: cRose600 }
+        }
       ];
+
+      if (appointment.variablePay?.isEnabled && Number(appointment.variablePay?.amount || 0) > 0) {
+        const vpFreq = appointment.variablePay.frequency || 'ANNUAL';
+        const vpFreqText = vpFreq === 'ANNUAL' ? 'Annual Bonus' : vpFreq === 'QUARTERLY' ? 'Quarterly Bonus' : vpFreq === 'MONTHLY' ? 'Monthly Incentive' : vpFreq === 'HALF_YEARLY' ? 'Half-Yearly Bonus' : 'Milestone Based';
+        detailsRows.push({
+          label: 'Variable Pay / Incentive:',
+          val: `INR ${Number(appointment.variablePay.amount).toLocaleString('en-IN')} (${vpFreqText})`,
+          isBold: true,
+          color: cBlue700
+        });
+
+        let fixedAnnual = 0;
+        const comp = Number(appointment.compensation || 0);
+        if (appointment.compensationFrequency === 'ANNUAL') {
+          fixedAnnual = comp;
+        } else {
+          fixedAnnual = comp * 12;
+        }
+
+        let variableAnnual = 0;
+        const vpAmount = Number(appointment.variablePay.amount || 0);
+        if (vpFreq === 'MONTHLY') variableAnnual = vpAmount * 12;
+        else if (vpFreq === 'QUARTERLY') variableAnnual = vpAmount * 4;
+        else if (vpFreq === 'HALF_YEARLY') variableAnnual = vpAmount * 2;
+        else variableAnnual = vpAmount;
+
+        const totalAnnualCTC = fixedAnnual + variableAnnual;
+        detailsRows.push({
+          label: 'Total Estimated CTC (Per Annum):',
+          val: `INR ${totalAnnualCTC.toLocaleString('en-IN')} / Year`,
+          isBold: true,
+          color: cEmerald700
+        });
+      }
+
+      detailsRows.push({ label: 'Acceptance Deadline:', val: deadlineDateStr, isBold: true, color: cRose600 });
 
       const rowH = 17;
       const colLabelW = 180;
