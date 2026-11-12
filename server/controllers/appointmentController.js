@@ -17,6 +17,52 @@ const { uploadFile } = require('../services/storageService');
 const path = require('path');
 const fs = require('fs');
 
+const getTrackDisplay = (track) => {
+  if (!track) return 'Trainee';
+  const norm = String(track).toUpperCase().trim().replace(/[\s-]/g, '_');
+  if (norm === 'FULL_TIME') return 'Full-time';
+  if (norm === 'PART_TIME') return 'Part-time';
+  if (norm === 'INTERNSHIP' || norm === 'INTERN') return 'Internship';
+  if (norm === 'TRAINEE') return 'Trainee';
+  if (norm === 'CONTRACT') return 'Contract';
+  if (norm === 'FREELANCE') return 'Freelance';
+  return String(track).replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+};
+
+const getTrackDefaultTerms = (track) => {
+  const norm = String(track || '').toUpperCase().trim().replace(/[\s-]/g, '_');
+  if (norm === 'PART_TIME') {
+    return [
+      'Appointment Status: This appointment is for a Part-Time professional role within the GENFREX ecosystem. The appointee will commit to agreed part-time hours and project deliverables.',
+      'Working Hours & Schedule: The part-time schedule, weekly hours, and delivery milestones shall be aligned directly with the project supervisor and department head.',
+      'Compensation: Pro-rated compensation shall be disbursed on a monthly schedule in accordance with GENFREX payroll policies, subject to statutory deductions.',
+      'Notice Period: Either party may terminate this part-time engagement by providing a written notice of 15 days or compensation in lieu thereof.'
+    ];
+  }
+  if (norm === 'FULL_TIME') {
+    return [
+      'Appointment Status: This appointment is for a Full-Time permanent position within the GENFREX ecosystem, subject to standard probation and performance review.',
+      'Working Hours & Mode: The employee shall adhere to standard full-time working hours (40 hours/week) and the agreed workplace policies specified in the appointment details.',
+      'Compensation & Benefits: Compensation shall be disbursed on a monthly basis in accordance with GENFREX payroll policies, subject to applicable statutory deductions.',
+      'Notice Period: Either party may terminate this full-time employment by providing 30 days written notice or gross salary in lieu thereof following probation.'
+    ];
+  }
+  if (norm === 'INTERNSHIP' || norm === 'INTERN') {
+    return [
+      'Appointment Status: This appointment is for an educational and skill-development Internship at GENFREX. Successful completion will be acknowledged with an official Certificate of Internship.',
+      'Working Hours & Schedule: The intern agrees to commit required hours weekly as specified by the project mentor and academic curriculum guidelines.',
+      'Stipend & Learning: A monthly stipend shall be disbursed to support the internship tenure, contingent on active project participation and milestone completion.',
+      'Notice Period: Either party may terminate this internship by providing a written notice of 7 days.'
+    ];
+  }
+  return [
+    'Appointment Status: This appointment is for training and professional development within the GENFREX ecosystem. Successful completion of the trainee period may lead to performance-based full-time consideration.',
+    'Working Hours & Mode: The appointee shall adhere to the agreed schedule and mode of engagement specified in the appointment details.',
+    'Compensation: A monthly stipend/compensation shall be disbursed in accordance with GENFREX payroll schedules, subject to statutory deductions where applicable.',
+    'Notice Period: Either party may terminate this engagement by providing a written notice of 15 days or compensation in lieu thereof during the term.'
+  ];
+};
+
 /**
  * Get all appointment letters with filtering, search, and pagination
  */
@@ -278,15 +324,32 @@ const createAppointment = async (req, res, next) => {
 
     const initialStatus = submitNow ? 'PENDING_APPROVAL' : 'DRAFT';
 
+    const effectiveTrack = appointmentType || (
+      employmentType?.toUpperCase().includes('PART') ? 'PART_TIME' :
+      employmentType?.toUpperCase().includes('FULL') ? 'FULL_TIME' :
+      employmentType?.toUpperCase().includes('INTERN') ? 'INTERNSHIP' :
+      'TRAINEE'
+    );
+    const normTrackLabel = getTrackDisplay(effectiveTrack);
+    const normTrackTitle = `${effectiveTrack.replace(/_/g, ' ').toUpperCase()} APPOINTMENT LETTER`;
+
     const defaultTitle = isCustomTemplate && customTemplateName
       ? `${customTemplateName.toUpperCase()} APPOINTMENT LETTER`
       : (
-        activeTemplate?.title ||
-        (appointmentType === 'PART_TIME' ? 'PART TIME APPOINTMENT LETTER' :
-         appointmentType === 'FULL_TIME' ? 'FULL TIME APPOINTMENT LETTER' :
-         appointmentType === 'INTERNSHIP' ? 'INTERNSHIP APPOINTMENT LETTER' :
-         `${(appointmentType || 'TRAINEE').replace(/_/g, ' ').toUpperCase()} APPOINTMENT LETTER`)
+        (title && (effectiveTrack === 'TRAINEE' || !title.toUpperCase().includes('TRAINEE APPOINTMENT LETTER')))
+          ? title
+          : (activeTemplate?.appointmentType === effectiveTrack && activeTemplate?.title ? activeTemplate.title : normTrackTitle)
       );
+
+    const finalEmploymentType = (employmentType && employmentType !== 'Trainee')
+      ? employmentType
+      : (effectiveTrack !== 'TRAINEE' ? normTrackLabel : (employmentType || 'Trainee'));
+
+    const finalTerms = (terms && terms.length > 0)
+      ? terms
+      : (activeTemplate?.appointmentType === effectiveTrack && activeTemplate?.termsAndConditions?.length > 0
+          ? activeTemplate.termsAndConditions
+          : getTrackDefaultTerms(effectiveTrack));
 
     const appointment = await AppointmentLetter.create({
       referenceNumber,
@@ -300,14 +363,9 @@ const createAppointment = async (req, res, next) => {
       requirement: requirement || requirementId || candidate.requirement || candidate.requirementId || null,
       EmployeeId: EmployeeId || assignedEmployee || candidate.EmployeeId || candidate.assignedEmployee || null,
       assignedEmployee: assignedEmployee || EmployeeId || candidate.assignedEmployee || candidate.EmployeeId || null,
-      employmentType: employmentType || appointmentType || 'Trainee',
-      appointmentType: appointmentType || (
-        employmentType === 'Full-time' || employmentType === 'FULL_TIME' ? 'FULL_TIME' :
-        employmentType === 'Part-time' || employmentType === 'PART_TIME' ? 'PART_TIME' :
-        employmentType === 'Internship' || employmentType === 'INTERNSHIP' ? 'INTERNSHIP' :
-        employmentType || 'TRAINEE'
-      ),
-      title: title || defaultTitle,
+      employmentType: finalEmploymentType,
+      appointmentType: effectiveTrack,
+      title: title && (effectiveTrack === 'TRAINEE' || !title.toUpperCase().includes('TRAINEE APPOINTMENT LETTER')) ? title : defaultTitle,
       designation,
       department: department || candidate.department || 'Engineering',
       appointmentDate: appointmentDate || new Date(),
@@ -321,7 +379,7 @@ const createAppointment = async (req, res, next) => {
       responsibilities: responsibilities && responsibilities.length > 0
         ? responsibilities
         : (activeTemplate?.roleAndResponsibilities || []),
-      terms: terms && terms.length > 0 ? terms : (activeTemplate?.termsAndConditions || []),
+      terms: finalTerms,
       confidentialityTerms: confidentialityTerms || activeTemplate?.confidentialityClause || '',
       professionalConductTerms: professionalConductTerms || activeTemplate?.professionalConductClause || '',
       acceptanceDeadline,
@@ -475,10 +533,39 @@ const updateAppointment = async (req, res, next) => {
       }
     });
 
-    // Auto-sync title if track changed and title was not provided or blank
-    if (req.body.appointmentType && (!req.body.title || !appointment.title)) {
-      const norm = req.body.appointmentType.replace(/_/g, ' ');
-      appointment.title = `${norm.toUpperCase()} APPOINTMENT LETTER`;
+    // Determine effective track after update
+    const effectiveTrack = appointment.appointmentType || (
+      appointment.employmentType?.toUpperCase().includes('PART') ? 'PART_TIME' :
+      appointment.employmentType?.toUpperCase().includes('FULL') ? 'FULL_TIME' :
+      appointment.employmentType?.toUpperCase().includes('INTERN') ? 'INTERNSHIP' :
+      'TRAINEE'
+    );
+    const normTrackLabel = getTrackDisplay(effectiveTrack);
+    const normTrackTitle = `${effectiveTrack.replace(/_/g, ' ').toUpperCase()} APPOINTMENT LETTER`;
+
+    appointment.appointmentType = effectiveTrack;
+
+    // Ensure employmentType matches effectiveTrack if stuck on Trainee
+    if (effectiveTrack !== 'TRAINEE' && (!appointment.employmentType || appointment.employmentType === 'Trainee' || req.body.employmentType === 'Trainee')) {
+      appointment.employmentType = normTrackLabel;
+    }
+
+    // Auto-sync title if track is not Trainee and title is missing, blank, or still set to Trainee
+    if (
+      !appointment.title ||
+      (effectiveTrack !== 'TRAINEE' && appointment.title.toUpperCase().includes('TRAINEE APPOINTMENT LETTER'))
+    ) {
+      appointment.title = normTrackTitle;
+    }
+
+    // If track changed to non-trainee and terms contain the generic Trainee clause, auto-update terms
+    if (
+      effectiveTrack !== 'TRAINEE' &&
+      (!req.body.terms || req.body.terms.length === 0) &&
+      appointment.terms?.length > 0 &&
+      appointment.terms[0]?.toLowerCase().includes('for training and professional development within the genfrex ecosystem')
+    ) {
+      appointment.terms = getTrackDefaultTerms(effectiveTrack);
     }
 
     // Invalidate stale generated PDF on letter update so fresh PDF is generated

@@ -54,64 +54,70 @@ const STANDARD_TRACKS = [
 const STANDARD_TRACK_VALUES = STANDARD_TRACKS.map((t) => t.value);
 
 const getTrackDisplay = (track) => {
-  const t = (track || '').toUpperCase();
-  if (t === 'FULL_TIME' || t === 'FULL-TIME') return 'Full Time';
-  if (t === 'PART_TIME' || t === 'PART-TIME') return 'Part Time';
-  if (t === 'INTERNSHIP') return 'Internship';
-  if (t === 'TRAINEE') return 'Trainee';
-  return track || 'Trainee';
+  if (!track) return 'Trainee';
+  const norm = String(track).toUpperCase().trim().replace(/[\s-]/g, '_');
+  if (norm === 'FULL_TIME') return 'Full-time';
+  if (norm === 'PART_TIME') return 'Part-time';
+  if (norm === 'INTERNSHIP' || norm === 'INTERN') return 'Internship';
+  if (norm === 'TRAINEE') return 'Trainee';
+  if (norm === 'CONTRACT') return 'Contract';
+  if (norm === 'FREELANCE') return 'Freelance';
+  return String(track).replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 };
 
 const getTrackTitle = (track) => {
-  const t = (track || '').toUpperCase();
-  if (t === 'FULL_TIME' || t === 'FULL-TIME') return 'FULL TIME APPOINTMENT LETTER';
-  if (t === 'PART_TIME' || t === 'PART-TIME') return 'PART TIME APPOINTMENT LETTER';
-  if (t === 'INTERNSHIP') return 'INTERNSHIP APPOINTMENT LETTER';
-  if (t === 'TRAINEE') return 'TRAINEE APPOINTMENT LETTER';
-  if (track && track.trim()) return `${t.replace(/_/g, ' ').trim()} APPOINTMENT LETTER`;
-  return 'APPOINTMENT LETTER';
+  if (!track) return 'APPOINTMENT LETTER';
+  const norm = String(track).toUpperCase().trim().replace(/[\s-]/g, '_');
+  if (norm === 'FULL_TIME') return 'FULL TIME APPOINTMENT LETTER';
+  if (norm === 'PART_TIME') return 'PART TIME APPOINTMENT LETTER';
+  if (norm === 'INTERNSHIP' || norm === 'INTERN') return 'INTERNSHIP APPOINTMENT LETTER';
+  if (norm === 'TRAINEE') return 'TRAINEE APPOINTMENT LETTER';
+  return `${norm.replace(/_/g, ' ').trim()} APPOINTMENT LETTER`;
 };
 
 const getTrackEmploymentType = (track) => {
-  const t = (track || '').toUpperCase();
-  if (t === 'FULL_TIME' || t === 'FULL-TIME') return 'Full-time';
-  if (t === 'PART_TIME' || t === 'PART-TIME') return 'Part-time';
-  if (t === 'INTERNSHIP') return 'Internship';
-  if (t === 'TRAINEE') return 'Trainee';
-  return track || 'Trainee';
+  if (!track) return 'Trainee';
+  const norm = String(track).toUpperCase().trim().replace(/[\s-]/g, '_');
+  if (norm === 'FULL_TIME') return 'Full-time';
+  if (norm === 'PART_TIME') return 'Part-time';
+  if (norm === 'INTERNSHIP' || norm === 'INTERN') return 'Internship';
+  if (norm === 'TRAINEE') return 'Trainee';
+  if (norm === 'CONTRACT') return 'Contract';
+  if (norm === 'FREELANCE') return 'Freelance';
+  return String(track).replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 };
 
 const getTrackDefaultTerms = (track) => {
-  const t = (track || '').toUpperCase();
-  if (t === 'FULL_TIME' || t === 'FULL-TIME') {
+  const norm = String(track || '').toUpperCase().trim().replace(/[\s-]/g, '_');
+  if (norm === 'FULL_TIME') {
     return [
-      'Employment Status: Full-time permanent position subject to a standard 3-month probation period.',
-      'Working Hours & Mode: Professional business engagement adhering to GENFREX operating hours and product engineering schedule.',
-      'Compensation & Benefits: Compensation package disbursed monthly in accordance with GENFREX corporate payroll policies.',
-      'Notice Period: 30 days written notice during probation; 60 days following confirmation of employment.'
+      'Appointment Status: This appointment is for a Full-Time permanent position within the GENFREX ecosystem, subject to standard probation and performance review.',
+      'Working Hours & Mode: The employee shall adhere to standard full-time working hours (40 hours/week) and the agreed workplace policies specified in the appointment details.',
+      'Compensation & Benefits: Compensation shall be disbursed on a monthly basis in accordance with GENFREX payroll policies, subject to applicable statutory deductions.',
+      'Notice Period: Either party may terminate this full-time employment by providing 30 days written notice or gross salary in lieu thereof following probation.'
     ];
   }
-  if (t === 'PART_TIME' || t === 'PART-TIME') {
+  if (norm === 'PART_TIME') {
     return [
-      'Employment Status: Part-time professional engagement with defined weekly deliverables and flexible work hours.',
-      'Working Hours & Mode: Part-time schedule adhering to agreed hours and project sprint delivery milestones.',
-      'Compensation: Compensation disbursed according to part-time payroll schedule upon delivery of assigned work.',
-      'Notice Period: Either party may terminate this part-time engagement by providing a written notice of 15 days.'
+      'Appointment Status: This appointment is for a Part-Time professional role within the GENFREX ecosystem. The appointee will commit to agreed part-time hours and project deliverables.',
+      'Working Hours & Schedule: The part-time schedule, weekly hours, and delivery milestones shall be aligned directly with the project supervisor and department head.',
+      'Compensation: Pro-rated compensation shall be disbursed on a monthly schedule in accordance with GENFREX payroll policies, subject to statutory deductions.',
+      'Notice Period: Either party may terminate this part-time engagement by providing a written notice of 15 days or compensation in lieu thereof.'
     ];
   }
-  if (t === 'INTERNSHIP') {
+  if (norm === 'INTERNSHIP' || norm === 'INTERN') {
     return [
-      'Internship Status: Fixed-term academic and practical internship for students or fresh graduates within the GENFREX ecosystem.',
-      'Working Hours & Mode: Flexible hybrid/remote hours compatible with academic guidelines and sprint deliverables.',
-      'Compensation: Educational monthly stipend disbursed during the tenure of internship.',
-      'Notice Period: Either party may conclude this internship engagement by providing 7 days written notice.'
+      'Appointment Status: This appointment is for an educational and skill-development Internship at GENFREX. Successful completion will be acknowledged with an official Certificate of Internship.',
+      'Working Hours & Schedule: The intern agrees to commit required hours weekly as specified by the project mentor and academic curriculum guidelines.',
+      'Stipend & Learning: A monthly stipend shall be disbursed to support the internship tenure, contingent on active project participation and milestone completion.',
+      'Notice Period: Either party may terminate this internship by providing a written notice of 7 days.'
     ];
   }
   return [
     'Appointment Status: This appointment is for training and professional development within the GENFREX ecosystem. Successful completion of the trainee period may lead to performance-based full-time consideration.',
-    'Working Hours & Mode: The trainee shall adhere to the agreed schedule and mode of engagement specified in the appointment details.',
+    'Working Hours & Mode: The appointee shall adhere to the agreed schedule and mode of engagement specified in the appointment details.',
     'Compensation: A monthly stipend/compensation shall be disbursed in accordance with GENFREX payroll schedules, subject to statutory deductions where applicable.',
-    'Notice Period: Either party may terminate this trainee engagement by providing a written notice of 15 days or compensation in lieu thereof during the trainee period.'
+    'Notice Period: Either party may terminate this engagement by providing a written notice of 15 days or compensation in lieu thereof during the term.'
   ];
 };
 
@@ -196,18 +202,29 @@ const CreateAppointment = () => {
     setSelectedTemplateId(tmpl._id);
     setTemplate(tmpl);
 
-    setFormData((prev) => ({
-      ...prev,
-      templateId: tmpl._id,
-      title: tmpl.title || prev.title,
-      appointmentType: tmpl.appointmentType || prev.appointmentType,
-      department: overrideDetails ? (tmpl.department || prev.department) : (prev.department || tmpl.department),
-      designation: overrideDetails && tmpl.targetRole ? tmpl.targetRole : prev.designation,
-      responsibilities: tmpl.roleAndResponsibilities?.length > 0 ? [...tmpl.roleAndResponsibilities] : prev.responsibilities,
-      terms: tmpl.termsAndConditions?.length > 0 ? [...tmpl.termsAndConditions] : prev.terms,
-      confidentialityTerms: tmpl.confidentialityClause || prev.confidentialityTerms,
-      professionalConductTerms: tmpl.professionalConductClause || prev.professionalConductTerms
-    }));
+    setFormData((prev) => {
+      const currentTrack = prev.appointmentType || 'TRAINEE';
+      const effectiveTrack = (overrideDetails && tmpl.appointmentType && tmpl.appointmentType !== 'TRAINEE')
+        ? tmpl.appointmentType
+        : currentTrack;
+      const effectiveTitle = (prev.title && !prev.title.toUpperCase().includes('TRAINEE APPOINTMENT LETTER') && effectiveTrack !== 'TRAINEE')
+        ? prev.title
+        : (tmpl.title && !tmpl.title.toUpperCase().includes('TRAINEE APPOINTMENT LETTER') && effectiveTrack !== 'TRAINEE' ? tmpl.title : getTrackTitle(effectiveTrack));
+
+      return {
+        ...prev,
+        templateId: tmpl._id,
+        title: effectiveTitle,
+        appointmentType: effectiveTrack,
+        employmentType: getTrackEmploymentType(effectiveTrack),
+        department: overrideDetails ? (tmpl.department || prev.department) : (prev.department || tmpl.department),
+        designation: overrideDetails && tmpl.targetRole ? tmpl.targetRole : prev.designation,
+        responsibilities: tmpl.roleAndResponsibilities?.length > 0 ? [...tmpl.roleAndResponsibilities] : prev.responsibilities,
+        terms: tmpl.termsAndConditions?.length > 0 ? [...tmpl.termsAndConditions] : (prev.terms?.length > 0 ? prev.terms : getTrackDefaultTerms(effectiveTrack)),
+        confidentialityTerms: tmpl.confidentialityClause || prev.confidentialityTerms,
+        professionalConductTerms: tmpl.professionalConductClause || prev.professionalConductTerms
+      };
+    });
   };
 
   const loadInitialData = async () => {
@@ -276,12 +293,17 @@ const CreateAppointment = () => {
           if (cand) {
             setSelectedCandidate(cand);
           }
-          const loadedTrack = app.appointmentType || 'TRAINEE';
-          const expectedTrackTitle = `${loadedTrack.replace(/_/g, ' ')} APPOINTMENT LETTER`.toUpperCase();
-          const effectiveTitle = (app.title && app.title !== 'TRAINEE APPOINTMENT LETTER')
+          const loadedTrack = app.appointmentType || (
+            app.employmentType?.toUpperCase().includes('PART') ? 'PART_TIME' :
+            app.employmentType?.toUpperCase().includes('FULL') ? 'FULL_TIME' :
+            app.employmentType?.toUpperCase().includes('INTERN') ? 'INTERNSHIP' :
+            app.employmentType || 'TRAINEE'
+          );
+          const effectiveEmpType = getTrackEmploymentType(loadedTrack);
+          const expectedTrackTitle = getTrackTitle(loadedTrack);
+          const effectiveTitle = (app.title && (loadedTrack === 'TRAINEE' || !app.title.toUpperCase().includes('TRAINEE APPOINTMENT LETTER')))
             ? app.title
-            : (loadedTrack === 'TRAINEE' ? (app.title || expectedTrackTitle) : expectedTrackTitle);
-          const effectiveEmpType = app.employmentType || getTrackEmploymentType(loadedTrack);
+            : expectedTrackTitle;
           const tId = app.templateId?._id || app.templateId || '';
           if (tId) setSelectedTemplateId(tId);
 
@@ -350,10 +372,10 @@ const CreateAppointment = () => {
 
     // Intelligently find matching role template for this candidate
     const des = (cand.designation || '').toLowerCase();
-    const empNorm = (cand.employmentType || '').toUpperCase().replace('-', '_');
+    const empNorm = (cand.employmentType || '').toUpperCase().trim().replace(/[\s-]/g, '_');
     const track = empNorm === 'FULL_TIME' ? 'FULL_TIME' :
       empNorm === 'PART_TIME' ? 'PART_TIME' :
-        empNorm === 'INTERNSHIP' ? 'INTERNSHIP' :
+        (empNorm === 'INTERNSHIP' || empNorm === 'INTERN') ? 'INTERNSHIP' :
           empNorm === 'TRAINEE' ? 'TRAINEE' :
             (cand.employmentType || 'TRAINEE');
 
@@ -407,7 +429,7 @@ const CreateAppointment = () => {
       title: targetTitle,
       designation: cand.designation || prev.designation,
       department: cand.department || prev.department || matchedTmpl?.department || 'Engineering',
-      employmentType: cand.employmentType || getTrackEmploymentType(track),
+      employmentType: getTrackEmploymentType(track),
       appointmentType: track,
       terms: targetTerms,
       joiningDate: cand.joiningDate ? cand.joiningDate.substring(0, 10) : prev.joiningDate,
@@ -458,7 +480,9 @@ const CreateAppointment = () => {
 
   const handleTrackChange = (newTrack) => {
     const matchedTrackTmpl = (templates || []).find((t) => t.appointmentType === newTrack);
-    const newTitle = matchedTrackTmpl?.title || getTrackTitle(newTrack);
+    const newTitle = (matchedTrackTmpl?.title && !matchedTrackTmpl.title.toUpperCase().includes('TRAINEE APPOINTMENT LETTER'))
+      ? matchedTrackTmpl.title
+      : getTrackTitle(newTrack);
     const newEmpType = getTrackEmploymentType(newTrack);
     const newTerms = matchedTrackTmpl?.termsAndConditions?.length > 0
       ? [...matchedTrackTmpl.termsAndConditions]
@@ -559,8 +583,17 @@ const CreateAppointment = () => {
 
     try {
       setSubmitting(true);
+      const effectiveTrack = formData.appointmentType || 'TRAINEE';
+      const effectiveEmpType = getTrackEmploymentType(effectiveTrack);
+      const effectiveTitle = (formData.title && (effectiveTrack === 'TRAINEE' || !formData.title.toUpperCase().includes('TRAINEE APPOINTMENT LETTER')))
+        ? formData.title
+        : getTrackTitle(effectiveTrack);
+
       const payload = {
         ...formData,
+        appointmentType: effectiveTrack,
+        employmentType: effectiveEmpType,
+        title: effectiveTitle,
         isPaid: isPaidStipend,
         compensation: isPaidStipend ? Number(formData.compensation) : 0,
         compensationFrequency: isPaidStipend
@@ -1695,7 +1728,7 @@ const CreateAppointment = () => {
               </div>
 
               <div className="bg-slate-50 py-2 text-center rounded border border-slate-200 font-bold text-slate-900 uppercase">
-                {formData.title}
+                {formData.title || getTrackTitle(formData.appointmentType)}
               </div>
 
               <div className="flex justify-between text-slate-600 font-semibold text-[11px]">
@@ -1704,16 +1737,16 @@ const CreateAppointment = () => {
               </div>
 
               <div className="p-3 bg-slate-50 rounded border border-slate-200 space-y-0.5">
-                <p className="font-bold text-slate-900">{selectedCandidate?.name}</p>
-                <p className="text-slate-500">{selectedCandidate?.email} • {selectedCandidate?.phone}</p>
-                <p className="text-slate-500">{selectedCandidate?.address}</p>
+                <p className="font-bold text-slate-900">{selectedCandidate?.name || 'Candidate Name'}</p>
+                <p className="text-slate-500">{selectedCandidate?.email || 'N/A'} • {selectedCandidate?.phone || 'N/A'}</p>
+                <p className="text-slate-500">{selectedCandidate?.address || 'Bengaluru, Karnataka, India'}</p>
               </div>
 
-              <p className="font-bold text-slate-900">Dear {selectedCandidate?.name},</p>
+              <p className="font-bold text-slate-900">Dear {selectedCandidate?.name || 'Candidate'},</p>
               <p className="text-justify text-slate-700">
-                On behalf of GENFREX, we are pleased to offer you an appointment as{' '}
+                On behalf of <strong>GENFREX</strong>, we are pleased to issue this {getTrackDisplay(formData.appointmentType)} Appointment Letter appointing you as{' '}
                 <strong>{formData.designation}</strong> ({getTrackDisplay(formData.appointmentType)}) in our{' '}
-                <strong>{formData.department}</strong> department.
+                <strong>{formData.department}</strong> department. We welcome you to our digital services and talent ecosystem and look forward to your valuable contributions.
               </p>
 
               {/* Details Summary */}

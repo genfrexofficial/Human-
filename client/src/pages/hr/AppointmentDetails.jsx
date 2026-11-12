@@ -483,13 +483,17 @@ const AppointmentDetails = () => {
               <div>
                 <span className="text-slate-500 block text-[11px]">Employment Track:</span>
                 <span className="font-semibold text-blue-700">
-                  {appointment.employmentType || (
-                    appointment.appointmentType === 'FULL_TIME' ? 'Full-time' :
-                    appointment.appointmentType === 'PART_TIME' ? 'Part-time' :
-                    appointment.appointmentType === 'INTERNSHIP' ? 'Internship' :
-                    appointment.appointmentType === 'TRAINEE' ? 'Trainee' :
-                    appointment.appointmentType?.replace(/_/g, ' ')
-                  )}
+                  {(() => {
+                    const track = appointment.appointmentType || appointment.employmentType;
+                    const norm = String(track || '').toUpperCase().trim().replace(/[\s-]/g, '_');
+                    if (norm === 'FULL_TIME') return 'Full-time';
+                    if (norm === 'PART_TIME') return 'Part-time';
+                    if (norm === 'INTERNSHIP' || norm === 'INTERN') return 'Internship';
+                    if (norm === 'TRAINEE') return 'Trainee';
+                    if (norm === 'CONTRACT') return 'Contract';
+                    if (norm === 'FREELANCE') return 'Freelance';
+                    return String(track).replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+                  })()}
                 </span>
               </div>
               <div>

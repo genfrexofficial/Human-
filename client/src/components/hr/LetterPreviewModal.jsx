@@ -78,15 +78,39 @@ const LetterPreviewModal = ({ isOpen, onClose, appointment, candidate }) => {
     ];
   };
 
-  const trackLabel = appointment.employmentType || getTrackDisplay(appointment.appointmentType);
+  const effectiveTrack = appointment.appointmentType || (
+    appointment.employmentType?.toUpperCase().includes('PART') ? 'PART_TIME' :
+    appointment.employmentType?.toUpperCase().includes('FULL') ? 'FULL_TIME' :
+    appointment.employmentType?.toUpperCase().includes('INTERN') ? 'INTERNSHIP' :
+    appointment.employmentType || 'TRAINEE'
+  );
+  const trackLabel = getTrackDisplay(effectiveTrack);
+  const rawTitle = (appointment.title || '').trim();
+  const normTrack = String(effectiveTrack).replace(/[\s-]/g, '_').toUpperCase();
+  const defaultLetterTitle = `${normTrack.replace(/_/g, ' ')} APPOINTMENT LETTER`;
   const letterTitle = (
-    appointment.title ||
-    `${(appointment.appointmentType || 'TRAINEE').replace(/_/g, ' ')} APPOINTMENT LETTER`
+    rawTitle && (normTrack === 'TRAINEE' || !rawTitle.toUpperCase().includes('TRAINEE APPOINTMENT LETTER'))
+      ? rawTitle
+      : defaultLetterTitle
   ).toUpperCase();
   const candidateRoleLabel = trackLabel === 'Internship' ? 'Appointed Intern' :
     trackLabel === 'Part-time' ? 'Appointed Part-Time Employee' :
     trackLabel === 'Full-time' ? 'Appointed Full-Time Employee' :
     `Appointed ${trackLabel}`;
+
+  const termsToDisplay = (() => {
+    if (!appointment.terms || appointment.terms.length === 0) {
+      return getTrackDefaultTerms(effectiveTrack);
+    }
+    if (
+      normTrack !== 'TRAINEE' &&
+      appointment.terms.length > 0 &&
+      appointment.terms[0]?.toLowerCase().includes('for training and professional development within the genfrex ecosystem')
+    ) {
+      return getTrackDefaultTerms(effectiveTrack);
+    }
+    return appointment.terms;
+  })();
 
   const handlePrint = () => {
     window.print();
@@ -288,10 +312,7 @@ const LetterPreviewModal = ({ isOpen, onClose, appointment, candidate }) => {
                 4. Terms & Conditions
               </h3>
               <ol className="list-decimal pl-5 space-y-1.5 text-slate-600 text-xs text-justify">
-                {(appointment.terms && appointment.terms.length > 0
-                  ? appointment.terms
-                  : getTrackDefaultTerms(appointment.appointmentType || appointment.employmentType)
-                ).map((t, i) => (
+                {termsToDisplay.map((t, i) => (
                   <li key={i}>{t}</li>
                 ))}
               </ol>

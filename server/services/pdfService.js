@@ -176,11 +176,20 @@ const generateAppointmentPDF = async (appointment, candidate = {}, template = nu
       const bannerH = 26;
       doc.roundedRect(leftMargin, curY, contentWidth, bannerH, 4).fill(cBgCard);
       doc.roundedRect(leftMargin, curY, contentWidth, bannerH, 4).strokeColor(cBorder).lineWidth(0.75).stroke();
-      const normTrack = sanitizeText(appointment.appointmentType || 'TRAINEE').replace(/_/g, ' ').toUpperCase();
-      const trackLabel = sanitizeText(appointment.employmentType || getTrackDisplay(appointment.appointmentType));
-      const letterTitle = sanitizeText(
-        appointment.title ||
-        `${normTrack} APPOINTMENT LETTER`
+      const effectiveTrack = sanitizeText(appointment.appointmentType || (
+        appointment.employmentType?.toUpperCase().includes('PART') ? 'PART_TIME' :
+        appointment.employmentType?.toUpperCase().includes('FULL') ? 'FULL_TIME' :
+        appointment.employmentType?.toUpperCase().includes('INTERN') ? 'INTERNSHIP' :
+        appointment.employmentType || 'TRAINEE'
+      ));
+      const normTrack = effectiveTrack.replace(/[\s-]/g, '_').toUpperCase();
+      const trackLabel = sanitizeText(getTrackDisplay(effectiveTrack));
+      const rawTitle = sanitizeText(appointment.title || '').trim();
+      const defaultLetterTitle = `${normTrack.replace(/_/g, ' ')} APPOINTMENT LETTER`;
+      const letterTitle = (
+        rawTitle && (normTrack === 'TRAINEE' || !rawTitle.toUpperCase().includes('TRAINEE APPOINTMENT LETTER'))
+          ? rawTitle
+          : defaultLetterTitle
       ).toUpperCase();
       const candidateRoleLabel = trackLabel === 'Internship' ? 'Appointed Intern' :
         trackLabel === 'Part-time' ? 'Appointed Part-Time Employee' :
@@ -341,9 +350,19 @@ const generateAppointmentPDF = async (appointment, candidate = {}, template = nu
       doc.fontSize(8.8).font('Helvetica-Bold').fillColor(cBlue700).text('4. TERMS & CONDITIONS', leftMargin, p2Y);
       p2Y = doc.y + 4;
 
-      const rawTerms = (appointment.terms && appointment.terms.length > 0)
-        ? appointment.terms
-        : (template?.termsAndConditions || getTrackDefaultTerms(appointment.appointmentType || appointment.employmentType));
+      const rawTerms = (() => {
+        if (!appointment.terms || appointment.terms.length === 0) {
+          return template?.termsAndConditions || getTrackDefaultTerms(effectiveTrack);
+        }
+        if (
+          normTrack !== 'TRAINEE' &&
+          appointment.terms.length > 0 &&
+          appointment.terms[0]?.toLowerCase().includes('for training and professional development within the genfrex ecosystem')
+        ) {
+          return getTrackDefaultTerms(effectiveTrack);
+        }
+        return appointment.terms;
+      })();
 
       rawTerms.forEach((term, idx) => {
         const cleanTerm = sanitizeText(term);
