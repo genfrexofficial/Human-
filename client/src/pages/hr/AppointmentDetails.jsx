@@ -482,7 +482,15 @@ const AppointmentDetails = () => {
               </div>
               <div>
                 <span className="text-slate-500 block text-[11px]">Employment Track:</span>
-                <span className="font-semibold text-slate-800">{appointment.appointmentType}</span>
+                <span className="font-semibold text-blue-700">
+                  {appointment.employmentType || (
+                    appointment.appointmentType === 'FULL_TIME' ? 'Full-time' :
+                    appointment.appointmentType === 'PART_TIME' ? 'Part-time' :
+                    appointment.appointmentType === 'INTERNSHIP' ? 'Internship' :
+                    appointment.appointmentType === 'TRAINEE' ? 'Trainee' :
+                    appointment.appointmentType?.replace(/_/g, ' ')
+                  )}
+                </span>
               </div>
               <div>
                 <span className="text-slate-500 block text-[11px]">Work Location:</span>

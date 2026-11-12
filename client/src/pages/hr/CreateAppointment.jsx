@@ -276,12 +276,21 @@ const CreateAppointment = () => {
           if (cand) {
             setSelectedCandidate(cand);
           }
+          const loadedTrack = app.appointmentType || 'TRAINEE';
+          const expectedTrackTitle = `${loadedTrack.replace(/_/g, ' ')} APPOINTMENT LETTER`.toUpperCase();
+          const effectiveTitle = (app.title && app.title !== 'TRAINEE APPOINTMENT LETTER')
+            ? app.title
+            : (loadedTrack === 'TRAINEE' ? (app.title || expectedTrackTitle) : expectedTrackTitle);
+          const effectiveEmpType = app.employmentType || getTrackEmploymentType(loadedTrack);
+          const tId = app.templateId?._id || app.templateId || '';
+          if (tId) setSelectedTemplateId(tId);
+
           setFormData({
             candidateId: cand?._id || cand || '',
-            templateId: app.templateId?._id || app.templateId || '',
-            appointmentType: app.appointmentType || 'TRAINEE',
-            employmentType: app.employmentType || 'Trainee',
-            title: app.title || 'TRAINEE APPOINTMENT LETTER',
+            templateId: tId,
+            appointmentType: loadedTrack,
+            employmentType: effectiveEmpType,
+            title: effectiveTitle,
             designation: app.designation || '',
             department: app.department || 'Engineering',
             appointmentDate: app.appointmentDate ? new Date(app.appointmentDate).toISOString().substring(0, 10) : new Date().toISOString().substring(0, 10),
@@ -301,7 +310,7 @@ const CreateAppointment = () => {
               criteria: app.variablePay?.criteria || ''
             },
             responsibilities: app.responsibilities && app.responsibilities.length > 0 ? [...app.responsibilities] : [],
-            terms: app.terms && app.terms.length > 0 ? [...app.terms] : [],
+            terms: app.terms && app.terms.length > 0 ? [...app.terms] : getTrackDefaultTerms(loadedTrack),
             confidentialityTerms: app.confidentialityTerms || '',
             professionalConductTerms: app.professionalConductTerms || '',
             acceptanceDeadline: app.acceptanceDeadline ? new Date(app.acceptanceDeadline).toISOString().substring(0, 10) : '',
@@ -1807,6 +1816,31 @@ const CreateAppointment = () => {
                   <div>
                     <p className="font-bold text-slate-900 text-xs">GENFREX</p>
                     <p className="text-slate-500 text-[10px]">Karur • 639113</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Candidate Acceptance */}
+              <div className="mt-4 border border-slate-200 rounded-lg p-3.5 bg-slate-50/50">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="space-y-0.5">
+                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Candidate Acceptance</p>
+                    <p className="text-xs text-slate-600">
+                      I accept the appointment and agree to abide by the terms and conditions outlined in this letter.
+                    </p>
+                    <p className="text-xs font-bold text-slate-900 mt-1">{selectedCandidate?.name || 'Candidate Name'}</p>
+                    <p className="text-[10px] text-slate-400">
+                      {formData.appointmentType === 'INTERNSHIP' ? 'Appointed Intern' :
+                        formData.appointmentType === 'PART_TIME' ? 'Appointed Part-Time Employee' :
+                        formData.appointmentType === 'FULL_TIME' ? 'Appointed Full-Time Employee' :
+                        `Appointed ${getTrackDisplay(formData.appointmentType)}`}
+                    </p>
+                  </div>
+                  <div className="sm:w-52 text-right sm:text-center shrink-0">
+                    <div className="border-b border-dashed border-slate-400 pb-1 mb-1 mt-3 sm:mt-5">
+                      <span className="text-[10px] text-slate-500 italic">Signature & Date</span>
+                    </div>
+                    <p className="text-[9px] text-slate-400">Authorized Candidate Signature</p>
                   </div>
                 </div>
               </div>

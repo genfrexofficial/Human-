@@ -28,6 +28,52 @@ function formatFrequency(freq) {
   return freq.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+function getTrackDisplay(track) {
+  if (!track) return 'Trainee';
+  const norm = String(track).toUpperCase().trim();
+  if (norm === 'FULL_TIME' || norm === 'FULL TIME' || norm === 'FULL-TIME') return 'Full-time';
+  if (norm === 'PART_TIME' || norm === 'PART TIME' || norm === 'PART-TIME') return 'Part-time';
+  if (norm === 'INTERNSHIP' || norm === 'INTERN') return 'Internship';
+  if (norm === 'TRAINEE') return 'Trainee';
+  if (norm === 'CONTRACT') return 'Contract';
+  if (norm === 'FREELANCE') return 'Freelance';
+  return String(track).replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function getTrackDefaultTerms(track) {
+  const norm = String(track || '').toUpperCase().trim();
+  if (norm === 'PART_TIME' || norm === 'PART TIME' || norm === 'PART-TIME') {
+    return [
+      'Appointment Status: This appointment is for a Part-Time professional role within the GENFREX ecosystem. The appointee will commit to agreed part-time hours and project deliverables.',
+      'Working Hours & Schedule: The part-time schedule, weekly hours, and delivery milestones shall be aligned directly with the project supervisor and department head.',
+      'Compensation: Pro-rated compensation shall be disbursed on a monthly schedule in accordance with GENFREX payroll policies, subject to statutory deductions.',
+      'Notice Period: Either party may terminate this part-time engagement by providing a written notice of 15 days or compensation in lieu thereof.'
+    ];
+  }
+  if (norm === 'FULL_TIME' || norm === 'FULL TIME' || norm === 'FULL-TIME') {
+    return [
+      'Appointment Status: This appointment is for a Full-Time permanent position within the GENFREX ecosystem, subject to standard probation and performance review.',
+      'Working Hours & Mode: The employee shall adhere to standard full-time working hours (40 hours/week) and the agreed workplace policies specified in the appointment details.',
+      'Compensation & Benefits: Compensation shall be disbursed on a monthly basis in accordance with GENFREX payroll policies, subject to applicable statutory deductions.',
+      'Notice Period: Either party may terminate this full-time employment by providing 30 days written notice or gross salary in lieu thereof following probation.'
+    ];
+  }
+  if (norm === 'INTERNSHIP' || norm === 'INTERN') {
+    return [
+      'Appointment Status: This appointment is for an educational and skill-development Internship at GENFREX. Successful completion will be acknowledged with an official Certificate of Internship.',
+      'Working Hours & Schedule: The intern agrees to commit required hours weekly as specified by the project mentor and academic curriculum guidelines.',
+      'Stipend & Learning: A monthly stipend shall be disbursed to support the internship tenure, contingent on active project participation and milestone completion.',
+      'Notice Period: Either party may terminate this internship by providing a written notice of 7 days.'
+    ];
+  }
+  return [
+    'Appointment Status: This appointment is for training and professional development within the GENFREX ecosystem. Successful completion of the trainee period may lead to performance-based full-time consideration.',
+    'Working Hours & Mode: The appointee shall adhere to the agreed schedule and mode of engagement specified in the appointment details.',
+    'Compensation: A monthly stipend/compensation shall be disbursed in accordance with GENFREX payroll schedules, subject to statutory deductions where applicable.',
+    'Notice Period: Either party may terminate this engagement by providing a written notice of 15 days or compensation in lieu thereof during the term.'
+  ];
+}
+
 /**
  * Generates an executive 2-page Appointment Letter PDF that exactly matches
  * the layout, typography, color palette, and structure of the client-side
@@ -130,7 +176,17 @@ const generateAppointmentPDF = async (appointment, candidate = {}, template = nu
       const bannerH = 26;
       doc.roundedRect(leftMargin, curY, contentWidth, bannerH, 4).fill(cBgCard);
       doc.roundedRect(leftMargin, curY, contentWidth, bannerH, 4).strokeColor(cBorder).lineWidth(0.75).stroke();
-      const letterTitle = sanitizeText(appointment.title || 'TRAINEE APPOINTMENT LETTER').toUpperCase();
+      const normTrack = sanitizeText(appointment.appointmentType || 'TRAINEE').replace(/_/g, ' ').toUpperCase();
+      const trackLabel = sanitizeText(appointment.employmentType || getTrackDisplay(appointment.appointmentType));
+      const letterTitle = sanitizeText(
+        appointment.title ||
+        `${normTrack} APPOINTMENT LETTER`
+      ).toUpperCase();
+      const candidateRoleLabel = trackLabel === 'Internship' ? 'Appointed Intern' :
+        trackLabel === 'Part-time' ? 'Appointed Part-Time Employee' :
+        trackLabel === 'Full-time' ? 'Appointed Full-Time Employee' :
+        `Appointed ${trackLabel}`;
+
       doc.fontSize(10).font('Helvetica-Bold').fillColor(cSlate900)
         .text(letterTitle, leftMargin, curY + 7.5, { width: contentWidth, align: 'center', characterSpacing: 0.5 });
       curY += bannerH + 11;
@@ -160,7 +216,7 @@ const generateAppointmentPDF = async (appointment, candidate = {}, template = nu
       curY += 12;
       doc.fontSize(8.2).font('Helvetica').fillColor(cSlate700).lineGap(2.5)
         .text(
-          `On behalf of GENFREX, we are pleased to issue this Trainee Appointment Letter appointing you as ${designation} in our ${department} department. We welcome you to our digital services and talent ecosystem and look forward to your valuable contributions.`,
+          `On behalf of GENFREX, we are pleased to issue this ${trackLabel} Appointment Letter appointing you as ${designation} (${trackLabel}) in our ${department} department. We welcome you to our digital services and talent ecosystem and look forward to your valuable contributions.`,
           leftMargin,
           curY,
           { width: contentWidth, align: 'justify' }
@@ -182,7 +238,7 @@ const generateAppointmentPDF = async (appointment, candidate = {}, template = nu
       const detailsRows = [
         { label: 'Designation / Role:', val: designation, isBold: true, color: cSlate900 },
         { label: 'Department:', val: department, isBold: false, color: cSlate900 },
-        { label: 'Employment Type:', val: sanitizeText(appointment.appointmentType || 'TRAINEE'), isBold: false, color: cSlate900 },
+        { label: 'Employment Track:', val: trackLabel, isBold: true, color: cBlue700 },
         { label: 'Date of Joining:', val: joinDateStr, isBold: true, color: cBlue700 },
         { label: 'Work Location / Mode:', val: sanitizeText(appointment.workLocation || 'Remote / Hybrid'), isBold: false, color: cSlate900 },
         { label: 'Reporting Manager:', val: sanitizeText(appointment.reportingManager || 'Engineering Lead'), isBold: false, color: cSlate900 },
@@ -287,12 +343,7 @@ const generateAppointmentPDF = async (appointment, candidate = {}, template = nu
 
       const rawTerms = (appointment.terms && appointment.terms.length > 0)
         ? appointment.terms
-        : (template?.termsAndConditions || [
-          'Appointment Status: This appointment is for training and professional development within the GENFREX ecosystem. Successful completion of the trainee period may lead to performance-based full-time consideration.',
-          'Working Hours & Mode: The trainee shall adhere to the agreed schedule and mode of engagement specified in the appointment details.',
-          'Compensation: A monthly stipend/compensation shall be disbursed in accordance with GENFREX payroll schedules, subject to statutory deductions where applicable.',
-          'Notice Period: Either party may terminate this trainee engagement by providing a written notice of 15 days or compensation in lieu thereof during the trainee period.'
-        ]);
+        : (template?.termsAndConditions || getTrackDefaultTerms(appointment.appointmentType || appointment.employmentType));
 
       rawTerms.forEach((term, idx) => {
         const cleanTerm = sanitizeText(term);
@@ -309,7 +360,7 @@ const generateAppointmentPDF = async (appointment, candidate = {}, template = nu
       doc.fontSize(8.8).font('Helvetica-Bold').fillColor(cBlue700).text('5. CONFIDENTIALITY & DATA PROTECTION', leftMargin, p2Y);
       p2Y = doc.y + 3;
       const confDesc = sanitizeText(appointment.confidentialityTerms || template?.confidentialityClause ||
-        'The Trainee acknowledges that during the tenure of this appointment, they may have access to confidential, proprietary, trade secret, client data, and intellectual property belonging to GENFREX or its affiliated clients. The Trainee agrees to hold all such information in strict confidence and shall not disclose, replicate, reverse-engineer, or misuse any proprietary data without prior written authorization from GENFREX. This obligation survives the termination or expiration of this appointment.'
+        `The ${trackLabel} appointee acknowledges that during the tenure of this appointment, they may have access to confidential, proprietary, trade secret, client data, and intellectual property belonging to GENFREX or its affiliated clients. The appointee agrees to hold all such information in strict confidence and shall not disclose, replicate, reverse-engineer, or misuse any proprietary data without prior written authorization from GENFREX. This obligation survives the termination or expiration of this appointment.`
       );
       doc.fontSize(8.2).font('Helvetica').fillColor(cSlate600).lineGap(2.5)
         .text(confDesc, leftMargin, p2Y, { width: contentWidth, align: 'justify' });
@@ -319,7 +370,7 @@ const generateAppointmentPDF = async (appointment, candidate = {}, template = nu
       doc.fontSize(8.8).font('Helvetica-Bold').fillColor(cBlue700).text('6. PROFESSIONAL CONDUCT & COMPLIANCE', leftMargin, p2Y);
       p2Y = doc.y + 3;
       const conductDesc = sanitizeText(appointment.professionalConductTerms || template?.professionalConductClause ||
-        'The Trainee agrees to maintain the highest standards of professional integrity, diligence, and ethical conduct. Non-compliance with company policies, willful misconduct, breach of client trust, or unauthorized external representation of GENFREX may result in immediate revocation of this appointment.'
+        `The ${trackLabel} appointee agrees to maintain the highest standards of professional integrity, diligence, and ethical conduct. Non-compliance with company policies, willful misconduct, breach of client trust, or unauthorized external representation of GENFREX may result in immediate revocation of this appointment.`
       );
       doc.fontSize(8.2).font('Helvetica').fillColor(cSlate600).lineGap(2.5)
         .text(conductDesc, leftMargin, p2Y, { width: contentWidth, align: 'justify' });
@@ -328,7 +379,7 @@ const generateAppointmentPDF = async (appointment, candidate = {}, template = nu
       // 7. Acceptance & Acknowledgement
       doc.fontSize(8.8).font('Helvetica-Bold').fillColor(cBlue700).text('7. ACCEPTANCE & ACKNOWLEDGEMENT', leftMargin, p2Y);
       p2Y = doc.y + 3;
-      const acceptDesc = `Please signify your acceptance of this Trainee Appointment Letter and its incorporated terms by signing and returning the duplicate copy on or before ${deadlineDateStr}.`;
+      const acceptDesc = `Please signify your acceptance of this ${trackLabel} Appointment Letter and its incorporated terms by signing and returning the duplicate copy on or before ${deadlineDateStr}.`;
       doc.fontSize(8.2).font('Helvetica').fillColor(cSlate600).lineGap(2.5)
         .text(acceptDesc, leftMargin, p2Y, { width: contentWidth, align: 'justify' });
       p2Y = doc.y + 10;
@@ -401,7 +452,7 @@ const generateAppointmentPDF = async (appointment, candidate = {}, template = nu
       doc.fontSize(7.5).font('Helvetica-Bold').fillColor(cSlate400).text('CANDIDATE ACCEPTANCE', leftMargin + 12, candCardY + 10);
       doc.fontSize(7.5).font('Helvetica').fillColor(cSlate600).text('I accept the appointment and agree to abide by the terms and conditions outlined in this letter.', leftMargin + 12, candCardY + 22, { width: contentWidth - 190 });
       doc.fontSize(9.5).font('Helvetica-Bold').fillColor(cSlate900).text(candidateName, leftMargin + 12, candCardY + 40);
-      doc.fontSize(7.2).font('Helvetica').fillColor(cSlate400).text('Appointed Trainee', leftMargin + 12, candCardY + 52);
+      doc.fontSize(7.2).font('Helvetica').fillColor(cSlate400).text(candidateRoleLabel, leftMargin + 12, candCardY + 52);
 
       // Right column: Signature dashed line & label
       const sigLineW = 150;

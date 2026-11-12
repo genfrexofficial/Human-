@@ -475,13 +475,34 @@ const updateAppointment = async (req, res, next) => {
       }
     });
 
-    if (req.body.customTemplateName !== undefined) {
-      if (!appointment.letterContentSnapshot) {
-        appointment.letterContentSnapshot = {};
-      }
-      appointment.letterContentSnapshot.customTemplateName = req.body.customTemplateName;
-      appointment.markModified('letterContentSnapshot');
+    // Auto-sync title if track changed and title was not provided or blank
+    if (req.body.appointmentType && (!req.body.title || !appointment.title)) {
+      const norm = req.body.appointmentType.replace(/_/g, ' ');
+      appointment.title = `${norm.toUpperCase()} APPOINTMENT LETTER`;
     }
+
+    // Invalidate stale generated PDF on letter update so fresh PDF is generated
+    appointment.pdfUrl = null;
+    appointment.pdfFileId = null;
+    appointment.pdfGeneratedAt = null;
+
+    // Keep snapshot in sync with updated fields
+    if (!appointment.letterContentSnapshot) {
+      appointment.letterContentSnapshot = {};
+    }
+    if (appointment.title) {
+      appointment.letterContentSnapshot.title = appointment.title;
+    }
+    if (appointment.terms && appointment.terms.length > 0) {
+      appointment.letterContentSnapshot.termsAndConditions = appointment.terms;
+    }
+    if (appointment.responsibilities && appointment.responsibilities.length > 0) {
+      appointment.letterContentSnapshot.responsibilities = appointment.responsibilities;
+    }
+    if (req.body.customTemplateName !== undefined) {
+      appointment.letterContentSnapshot.customTemplateName = req.body.customTemplateName;
+    }
+    appointment.markModified('letterContentSnapshot');
 
     if (req.body.submitNow) {
       appointment.status = 'PENDING_APPROVAL';

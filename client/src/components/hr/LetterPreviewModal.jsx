@@ -32,6 +32,62 @@ const LetterPreviewModal = ({ isOpen, onClose, appointment, candidate }) => {
     return freq.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
   };
 
+  const getTrackDisplay = (track) => {
+    if (!track) return 'Trainee';
+    const norm = String(track).toUpperCase().trim();
+    if (norm === 'FULL_TIME' || norm === 'FULL TIME' || norm === 'FULL-TIME') return 'Full-time';
+    if (norm === 'PART_TIME' || norm === 'PART TIME' || norm === 'PART-TIME') return 'Part-time';
+    if (norm === 'INTERNSHIP' || norm === 'INTERN') return 'Internship';
+    if (norm === 'TRAINEE') return 'Trainee';
+    if (norm === 'CONTRACT') return 'Contract';
+    if (norm === 'FREELANCE') return 'Freelance';
+    return String(track).replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+  };
+
+  const getTrackDefaultTerms = (track) => {
+    const norm = String(track || '').toUpperCase().trim();
+    if (norm === 'PART_TIME' || norm === 'PART TIME' || norm === 'PART-TIME') {
+      return [
+        'Appointment Status: This appointment is for a Part-Time professional role within the GENFREX ecosystem. The appointee will commit to agreed part-time hours and project deliverables.',
+        'Working Hours & Schedule: The part-time schedule, weekly hours, and delivery milestones shall be aligned directly with the project supervisor and department head.',
+        'Compensation: Pro-rated compensation shall be disbursed on a monthly schedule in accordance with GENFREX payroll policies, subject to statutory deductions.',
+        'Notice Period: Either party may terminate this part-time engagement by providing a written notice of 15 days or compensation in lieu thereof.'
+      ];
+    }
+    if (norm === 'FULL_TIME' || norm === 'FULL TIME' || norm === 'FULL-TIME') {
+      return [
+        'Appointment Status: This appointment is for a Full-Time permanent position within the GENFREX ecosystem, subject to standard probation and performance review.',
+        'Working Hours & Mode: The employee shall adhere to standard full-time working hours (40 hours/week) and the agreed workplace policies specified in the appointment details.',
+        'Compensation & Benefits: Compensation shall be disbursed on a monthly basis in accordance with GENFREX payroll policies, subject to applicable statutory deductions.',
+        'Notice Period: Either party may terminate this full-time employment by providing 30 days written notice or gross salary in lieu thereof following probation.'
+      ];
+    }
+    if (norm === 'INTERNSHIP' || norm === 'INTERN') {
+      return [
+        'Appointment Status: This appointment is for an educational and skill-development Internship at GENFREX. Successful completion will be acknowledged with an official Certificate of Internship.',
+        'Working Hours & Schedule: The intern agrees to commit required hours weekly as specified by the project mentor and academic curriculum guidelines.',
+        'Stipend & Learning: A monthly stipend shall be disbursed to support the internship tenure, contingent on active project participation and milestone completion.',
+        'Notice Period: Either party may terminate this internship by providing a written notice of 7 days.'
+      ];
+    }
+    return [
+      'Appointment Status: This appointment is for training and professional development within the GENFREX ecosystem. Successful completion of the trainee period may lead to performance-based full-time consideration.',
+      'Working Hours & Mode: The appointee shall adhere to the agreed schedule and mode of engagement specified in the appointment details.',
+      'Compensation: A monthly stipend/compensation shall be disbursed in accordance with GENFREX payroll schedules, subject to statutory deductions where applicable.',
+      'Notice Period: Either party may terminate this engagement by providing a written notice of 15 days or compensation in lieu thereof during the term.'
+    ];
+  };
+
+  const trackLabel = appointment.employmentType || getTrackDisplay(appointment.appointmentType);
+  const letterTitle = (
+    appointment.title ||
+    `${(appointment.appointmentType || 'TRAINEE').replace(/_/g, ' ')} APPOINTMENT LETTER`
+  ).toUpperCase();
+  const candidateRoleLabel = trackLabel === 'Internship' ? 'Appointed Intern' :
+    trackLabel === 'Part-time' ? 'Appointed Part-Time Employee' :
+    trackLabel === 'Full-time' ? 'Appointed Full-Time Employee' :
+    `Appointed ${trackLabel}`;
+
   const handlePrint = () => {
     window.print();
   };
@@ -112,7 +168,7 @@ const LetterPreviewModal = ({ isOpen, onClose, appointment, candidate }) => {
             {/* Title Banner */}
             <div className="bg-slate-50 border border-slate-200 rounded-md py-2.5 text-center mb-6">
               <h2 className="text-sm font-black text-slate-900 tracking-wider uppercase">
-                {appointment.title || 'TRAINEE APPOINTMENT LETTER'}
+                {letterTitle}
               </h2>
             </div>
 
@@ -138,8 +194,8 @@ const LetterPreviewModal = ({ isOpen, onClose, appointment, candidate }) => {
             <div className="mb-6 space-y-2">
               <p className="font-bold text-slate-900">Dear {cand.name || 'Candidate'},</p>
               <p className="text-justify text-slate-700">
-                On behalf of <strong>GENFREX</strong>, we are pleased to issue this Trainee Appointment Letter appointing you as{' '}
-                <strong>{appointment.designation}</strong> in our <strong>{appointment.department}</strong> department. We welcome you to our digital services and talent ecosystem and look forward to your valuable contributions.
+                On behalf of <strong>GENFREX</strong>, we are pleased to issue this {trackLabel} Appointment Letter appointing you as{' '}
+                <strong>{appointment.designation}</strong> ({trackLabel}) in our <strong>{appointment.department}</strong> department. We welcome you to our digital services and talent ecosystem and look forward to your valuable contributions.
               </p>
             </div>
 
@@ -168,8 +224,8 @@ const LetterPreviewModal = ({ isOpen, onClose, appointment, candidate }) => {
                   <span className="text-slate-900">{appointment.department}</span>
                 </div>
                 <div className="grid grid-cols-2 bg-slate-50 border-b border-slate-200 p-2">
-                  <span className="font-semibold text-slate-600">Employment Type:</span>
-                  <span className="text-slate-900">{appointment.appointmentType || 'Trainee'}</span>
+                  <span className="font-semibold text-slate-600">Employment Track:</span>
+                  <span className="font-bold text-blue-700">{trackLabel}</span>
                 </div>
                 <div className="grid grid-cols-2 p-2 border-b border-slate-200">
                   <span className="font-semibold text-slate-600">Date of Joining:</span>
@@ -232,12 +288,10 @@ const LetterPreviewModal = ({ isOpen, onClose, appointment, candidate }) => {
                 4. Terms & Conditions
               </h3>
               <ol className="list-decimal pl-5 space-y-1.5 text-slate-600 text-xs text-justify">
-                {(appointment.terms && appointment.terms.length > 0 ? appointment.terms : [
-                  'Appointment Status: This appointment is for training and professional development within the GENFREX ecosystem. Successful completion of the trainee period may lead to performance-based full-time consideration.',
-                  'Working Hours & Mode: The trainee shall adhere to the agreed schedule and mode of engagement specified in the appointment details.',
-                  'Compensation: A monthly stipend/compensation shall be disbursed in accordance with GENFREX payroll schedules, subject to statutory deductions where applicable.',
-                  'Notice Period: Either party may terminate this trainee engagement by providing a written notice of 15 days or compensation in lieu thereof during the trainee period.'
-                ]).map((t, i) => (
+                {(appointment.terms && appointment.terms.length > 0
+                  ? appointment.terms
+                  : getTrackDefaultTerms(appointment.appointmentType || appointment.employmentType)
+                ).map((t, i) => (
                   <li key={i}>{t}</li>
                 ))}
               </ol>
@@ -250,7 +304,7 @@ const LetterPreviewModal = ({ isOpen, onClose, appointment, candidate }) => {
               </h3>
               <p className="text-justify text-slate-600 text-xs">
                 {appointment.confidentialityTerms ||
-                  'The Trainee acknowledges that during the tenure of this appointment, they may have access to confidential, proprietary, trade secret, client data, and intellectual property belonging to GENFREX or its affiliated clients. The Trainee agrees to hold all such information in strict confidence and shall not disclose, replicate, reverse-engineer, or misuse any proprietary data without prior written authorization from GENFREX. This obligation survives the termination or expiration of this appointment.'}
+                  `The ${trackLabel} appointee acknowledges that during the tenure of this appointment, they may have access to confidential, proprietary, trade secret, client data, and intellectual property belonging to GENFREX or its affiliated clients. The appointee agrees to hold all such information in strict confidence and shall not disclose, replicate, reverse-engineer, or misuse any proprietary data without prior written authorization from GENFREX. This obligation survives the termination or expiration of this appointment.`}
               </p>
             </div>
 
@@ -261,7 +315,7 @@ const LetterPreviewModal = ({ isOpen, onClose, appointment, candidate }) => {
               </h3>
               <p className="text-justify text-slate-600 text-xs">
                 {appointment.professionalConductTerms ||
-                  'The Trainee agrees to maintain the highest standards of professional integrity, diligence, and ethical conduct. Non-compliance with company policies, willful misconduct, breach of client trust, or unauthorized external representation of GENFREX may result in immediate revocation of this appointment.'}
+                  `The ${trackLabel} appointee agrees to maintain the highest standards of professional integrity, diligence, and ethical conduct. Non-compliance with company policies, willful misconduct, breach of client trust, or unauthorized external representation of GENFREX may result in immediate revocation of this appointment.`}
               </p>
             </div>
 
@@ -271,7 +325,7 @@ const LetterPreviewModal = ({ isOpen, onClose, appointment, candidate }) => {
                 7. Acceptance & Acknowledgement
               </h3>
               <p className="text-justify text-slate-600 text-xs">
-                Please signify your acceptance of this Trainee Appointment Letter and its incorporated terms by signing and returning the duplicate copy on or before <strong>{formattedDeadline}</strong>.
+                Please signify your acceptance of this {trackLabel} Appointment Letter and its incorporated terms by signing and returning the duplicate copy on or before <strong>{formattedDeadline}</strong>.
               </p>
             </div>
 
@@ -320,7 +374,7 @@ const LetterPreviewModal = ({ isOpen, onClose, appointment, candidate }) => {
                     I accept the appointment and agree to abide by the terms and conditions outlined in this letter.
                   </p>
                   <p className="text-xs font-bold text-slate-900 mt-2">{cand.name || 'Candidate Name'}</p>
-                  <p className="text-[10px] text-slate-400">Appointed Trainee</p>
+                  <p className="text-[10px] text-slate-400">{candidateRoleLabel}</p>
                 </div>
                 <div className="sm:w-56 text-right sm:text-center shrink-0">
                   <div className="border-b border-dashed border-slate-400 pb-1 mb-1 mt-4 sm:mt-6">
