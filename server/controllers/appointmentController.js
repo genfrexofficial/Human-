@@ -280,7 +280,13 @@ const createAppointment = async (req, res, next) => {
 
     const defaultTitle = isCustomTemplate && customTemplateName
       ? `${customTemplateName.toUpperCase()} APPOINTMENT LETTER`
-      : (activeTemplate?.title || 'TRAINEE APPOINTMENT LETTER');
+      : (
+        activeTemplate?.title ||
+        (appointmentType === 'PART_TIME' ? 'PART TIME APPOINTMENT LETTER' :
+         appointmentType === 'FULL_TIME' ? 'FULL TIME APPOINTMENT LETTER' :
+         appointmentType === 'INTERNSHIP' ? 'INTERNSHIP APPOINTMENT LETTER' :
+         `${(appointmentType || 'TRAINEE').replace(/_/g, ' ').toUpperCase()} APPOINTMENT LETTER`)
+      );
 
     const appointment = await AppointmentLetter.create({
       referenceNumber,

@@ -53,6 +53,68 @@ const STANDARD_TRACKS = [
 
 const STANDARD_TRACK_VALUES = STANDARD_TRACKS.map((t) => t.value);
 
+const getTrackDisplay = (track) => {
+  const t = (track || '').toUpperCase();
+  if (t === 'FULL_TIME' || t === 'FULL-TIME') return 'Full Time';
+  if (t === 'PART_TIME' || t === 'PART-TIME') return 'Part Time';
+  if (t === 'INTERNSHIP') return 'Internship';
+  if (t === 'TRAINEE') return 'Trainee';
+  return track || 'Trainee';
+};
+
+const getTrackTitle = (track) => {
+  const t = (track || '').toUpperCase();
+  if (t === 'FULL_TIME' || t === 'FULL-TIME') return 'FULL TIME APPOINTMENT LETTER';
+  if (t === 'PART_TIME' || t === 'PART-TIME') return 'PART TIME APPOINTMENT LETTER';
+  if (t === 'INTERNSHIP') return 'INTERNSHIP APPOINTMENT LETTER';
+  if (t === 'TRAINEE') return 'TRAINEE APPOINTMENT LETTER';
+  if (track && track.trim()) return `${t.replace(/_/g, ' ').trim()} APPOINTMENT LETTER`;
+  return 'APPOINTMENT LETTER';
+};
+
+const getTrackEmploymentType = (track) => {
+  const t = (track || '').toUpperCase();
+  if (t === 'FULL_TIME' || t === 'FULL-TIME') return 'Full-time';
+  if (t === 'PART_TIME' || t === 'PART-TIME') return 'Part-time';
+  if (t === 'INTERNSHIP') return 'Internship';
+  if (t === 'TRAINEE') return 'Trainee';
+  return track || 'Trainee';
+};
+
+const getTrackDefaultTerms = (track) => {
+  const t = (track || '').toUpperCase();
+  if (t === 'FULL_TIME' || t === 'FULL-TIME') {
+    return [
+      'Employment Status: Full-time permanent position subject to a standard 3-month probation period.',
+      'Working Hours & Mode: Professional business engagement adhering to GENFREX operating hours and product engineering schedule.',
+      'Compensation & Benefits: Compensation package disbursed monthly in accordance with GENFREX corporate payroll policies.',
+      'Notice Period: 30 days written notice during probation; 60 days following confirmation of employment.'
+    ];
+  }
+  if (t === 'PART_TIME' || t === 'PART-TIME') {
+    return [
+      'Employment Status: Part-time professional engagement with defined weekly deliverables and flexible work hours.',
+      'Working Hours & Mode: Part-time schedule adhering to agreed hours and project sprint delivery milestones.',
+      'Compensation: Compensation disbursed according to part-time payroll schedule upon delivery of assigned work.',
+      'Notice Period: Either party may terminate this part-time engagement by providing a written notice of 15 days.'
+    ];
+  }
+  if (t === 'INTERNSHIP') {
+    return [
+      'Internship Status: Fixed-term academic and practical internship for students or fresh graduates within the GENFREX ecosystem.',
+      'Working Hours & Mode: Flexible hybrid/remote hours compatible with academic guidelines and sprint deliverables.',
+      'Compensation: Educational monthly stipend disbursed during the tenure of internship.',
+      'Notice Period: Either party may conclude this internship engagement by providing 7 days written notice.'
+    ];
+  }
+  return [
+    'Appointment Status: This appointment is for training and professional development within the GENFREX ecosystem. Successful completion of the trainee period may lead to performance-based full-time consideration.',
+    'Working Hours & Mode: The trainee shall adhere to the agreed schedule and mode of engagement specified in the appointment details.',
+    'Compensation: A monthly stipend/compensation shall be disbursed in accordance with GENFREX payroll schedules, subject to statutory deductions where applicable.',
+    'Notice Period: Either party may terminate this trainee engagement by providing a written notice of 15 days or compensation in lieu thereof during the trainee period.'
+  ];
+};
+
 const CreateAppointment = () => {
   const [searchParams] = useSearchParams();
   const { id: routeEditId } = useParams();
@@ -327,13 +389,18 @@ const CreateAppointment = () => {
       setIsPaidStipend(true);
     }
 
+    const targetTitle = (matchedTmpl && matchedTmpl.appointmentType === track) ? matchedTmpl.title : getTrackTitle(track);
+    const targetTerms = (matchedTmpl?.termsAndConditions?.length > 0) ? [...matchedTmpl.termsAndConditions] : getTrackDefaultTerms(track);
+
     setFormData((prev) => ({
       ...prev,
       candidateId: cand._id,
+      title: targetTitle,
       designation: cand.designation || prev.designation,
       department: cand.department || prev.department || matchedTmpl?.department || 'Engineering',
-      employmentType: cand.employmentType || 'Trainee',
+      employmentType: cand.employmentType || getTrackEmploymentType(track),
       appointmentType: track,
+      terms: targetTerms,
       joiningDate: cand.joiningDate ? cand.joiningDate.substring(0, 10) : prev.joiningDate,
       workLocation: cand.workLocation || prev.workLocation,
       reportingManager: cand.reportingManager || prev.reportingManager,
@@ -377,6 +444,24 @@ const CreateAppointment = () => {
         ...(prev.variablePay || { isEnabled: false, amount: '', frequency: 'ANNUAL', criteria: '' }),
         [field]: value
       }
+    }));
+  };
+
+  const handleTrackChange = (newTrack) => {
+    const matchedTrackTmpl = (templates || []).find((t) => t.appointmentType === newTrack);
+    const newTitle = matchedTrackTmpl?.title || getTrackTitle(newTrack);
+    const newEmpType = getTrackEmploymentType(newTrack);
+    const newTerms = matchedTrackTmpl?.termsAndConditions?.length > 0
+      ? [...matchedTrackTmpl.termsAndConditions]
+      : getTrackDefaultTerms(newTrack);
+
+    setFormData((prev) => ({
+      ...prev,
+      appointmentType: newTrack,
+      employmentType: newEmpType,
+      title: newTitle,
+      terms: newTerms,
+      templateId: matchedTrackTmpl?._id || prev.templateId
     }));
   };
 
@@ -917,7 +1002,7 @@ const CreateAppointment = () => {
                     const next = !isCustomTrack;
                     setIsCustomTrack(next);
                     if (!next && !STANDARD_TRACK_VALUES.includes(formData.appointmentType)) {
-                      setFormData((prev) => ({ ...prev, appointmentType: 'TRAINEE' }));
+                      handleTrackChange('TRAINEE');
                     }
                   }}
                   className="text-xs text-blue-600 hover:text-blue-800 font-medium hover:underline cursor-pointer"
@@ -933,7 +1018,7 @@ const CreateAppointment = () => {
                     name="appointmentType"
                     required
                     value={formData.appointmentType}
-                    onChange={handleInputChange}
+                    onChange={(e) => handleTrackChange(e.target.value)}
                     placeholder="Type track name (e.g. PART TIME, CONTRACT, CONSULTANT, etc.)"
                     className="w-full p-2 rounded-lg border border-blue-400 text-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-blue-50/20 font-medium uppercase"
                     autoFocus
@@ -948,10 +1033,10 @@ const CreateAppointment = () => {
                     if (e.target.value === '__CUSTOM__') {
                       setIsCustomTrack(true);
                     } else {
-                      handleInputChange(e);
+                      handleTrackChange(e.target.value);
                     }
                   }}
-                  className="w-full p-2 rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:border-blue-500"
+                  className="w-full p-2 rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:border-blue-500 font-medium"
                 >
                   {STANDARD_TRACKS.map((t) => (
                     <option key={t.value} value={t.value}>
@@ -1618,20 +1703,33 @@ const CreateAppointment = () => {
               <p className="font-bold text-slate-900">Dear {selectedCandidate?.name},</p>
               <p className="text-justify text-slate-700">
                 On behalf of GENFREX, we are pleased to offer you an appointment as{' '}
-                <strong>{formData.designation}</strong> in our <strong>{formData.department}</strong> department.
+                <strong>{formData.designation}</strong> ({getTrackDisplay(formData.appointmentType)}) in our{' '}
+                <strong>{formData.department}</strong> department.
               </p>
 
               {/* Details Summary */}
               <div className="border border-slate-200 rounded overflow-hidden">
                 <div className="grid grid-cols-2 p-2 bg-slate-50 border-b border-slate-200">
-                  <span className="font-semibold text-slate-600">Designation:</span>
+                  <span className="font-semibold text-slate-600">Designation / Role:</span>
                   <span className="font-bold text-slate-900">{formData.designation}</span>
+                </div>
+                <div className="grid grid-cols-2 p-2 border-b border-slate-200">
+                  <span className="font-semibold text-slate-600">Department:</span>
+                  <span className="font-bold text-slate-900">{formData.department}</span>
+                </div>
+                <div className="grid grid-cols-2 p-2 bg-slate-50 border-b border-slate-200">
+                  <span className="font-semibold text-slate-600">Employment Track:</span>
+                  <span className="font-bold text-blue-700">{getTrackDisplay(formData.appointmentType)}</span>
                 </div>
                 <div className="grid grid-cols-2 p-2 border-b border-slate-200">
                   <span className="font-semibold text-slate-600">Joining Date:</span>
                   <span className="font-bold text-blue-700">{formData.joiningDate}</span>
                 </div>
                 <div className="grid grid-cols-2 p-2 bg-slate-50 border-b border-slate-200">
+                  <span className="font-semibold text-slate-600">Work Location:</span>
+                  <span className="text-slate-800">{formData.workLocation || 'Remote / Hybrid'}</span>
+                </div>
+                <div className="grid grid-cols-2 p-2 border-b border-slate-200">
                   <span className="font-semibold text-slate-600">Fixed Compensation / Stipend:</span>
                   {isPaidStipend && Number(formData.compensation) > 0 ? (
                     <span className="font-bold text-emerald-700">
@@ -1665,6 +1763,18 @@ const CreateAppointment = () => {
                       <li key={i}>{r}</li>
                     ))}
                   </ul>
+                </div>
+              )}
+
+              {/* Terms & Conditions preview */}
+              {formData.terms.length > 0 && (
+                <div className="pt-2">
+                  <p className="font-bold text-slate-900 mb-1">Terms & Conditions:</p>
+                  <ol className="list-decimal pl-5 space-y-1 text-slate-700">
+                    {formData.terms.map((t, i) => (
+                      <li key={i}>{t}</li>
+                    ))}
+                  </ol>
                 </div>
               )}
 
@@ -1734,8 +1844,10 @@ const CreateAppointment = () => {
                 <span className="font-bold text-slate-900">{selectedCandidate?.name}</span>
               </div>
               <div>
-                <span className="text-[10px] text-slate-400 font-bold uppercase block">Position</span>
-                <span className="font-bold text-slate-900">{formData.designation}</span>
+                <span className="text-[10px] text-slate-400 font-bold uppercase block">Position & Track</span>
+                <span className="font-bold text-slate-900">
+                  {formData.designation} ({getTrackDisplay(formData.appointmentType)})
+                </span>
               </div>
               <div>
                 <span className="text-[10px] text-slate-400 font-bold uppercase block">Joining Date</span>
