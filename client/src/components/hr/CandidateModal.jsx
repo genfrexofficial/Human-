@@ -549,7 +549,7 @@ const CandidateModal = ({ isOpen, onClose, candidate, onSave, loading }) => {
                     </select>
                   </div>
 
-                  {/* Variable Pay Toggle & Input */}
+                  {/* Performance-based Pay Toggle & Input */}
                   <div className="col-span-1 sm:col-span-2 pt-2 border-t border-slate-200/60 space-y-2">
                     <label className="text-xs font-bold text-slate-800 flex items-center gap-2 cursor-pointer select-none">
                       <input
@@ -558,7 +558,7 @@ const CandidateModal = ({ isOpen, onClose, candidate, onSave, loading }) => {
                         onChange={(e) => handleVariablePayChange('isEnabled', e.target.checked)}
                         className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300 cursor-pointer"
                       />
-                      <span>Include Variable Pay / Performance Bonus</span>
+                      <span>Include Performance-based Pay</span>
                     </label>
 
                     {formData.variablePay?.isEnabled && (
@@ -566,7 +566,7 @@ const CandidateModal = ({ isOpen, onClose, candidate, onSave, loading }) => {
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           <div>
                             <label className="block text-[11px] font-semibold text-slate-700 mb-1">
-                              Variable Amount (₹)
+                              Performance-based Pay Amount (₹)
                             </label>
                             <input
                               type="number"

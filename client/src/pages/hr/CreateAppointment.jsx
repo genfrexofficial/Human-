@@ -53,28 +53,6 @@ const STANDARD_TRACKS = [
 
 const STANDARD_TRACK_VALUES = STANDARD_TRACKS.map((t) => t.value);
 
-const calculateTotalAnnualCTC = (compensation, compensationFrequency, variablePay) => {
-  let fixedAnnual = 0;
-  const comp = Number(compensation || 0);
-  if (compensationFrequency === 'ANNUAL') {
-    fixedAnnual = comp;
-  } else {
-    fixedAnnual = comp * 12;
-  }
-
-  let variableAnnual = 0;
-  if (variablePay?.isEnabled && Number(variablePay?.amount || 0) > 0) {
-    const vpAmount = Number(variablePay.amount);
-    const vpFreq = variablePay.frequency || 'ANNUAL';
-    if (vpFreq === 'MONTHLY') variableAnnual = vpAmount * 12;
-    else if (vpFreq === 'QUARTERLY') variableAnnual = vpAmount * 4;
-    else if (vpFreq === 'HALF_YEARLY') variableAnnual = vpAmount * 2;
-    else variableAnnual = vpAmount;
-  }
-
-  return fixedAnnual + variableAnnual;
-};
-
 const CreateAppointment = () => {
   const [searchParams] = useSearchParams();
   const { id: routeEditId } = useParams();
@@ -1111,8 +1089,8 @@ const CreateAppointment = () => {
                       }));
                     }}
                     className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${isPaidStipend
-                        ? 'bg-emerald-600 text-white shadow-sm'
-                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                      ? 'bg-emerald-600 text-white shadow-sm'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                       }`}
                   >
                     <span>Paid</span>
@@ -1130,8 +1108,8 @@ const CreateAppointment = () => {
                       }));
                     }}
                     className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${!isPaidStipend
-                        ? 'bg-amber-600 text-white shadow-sm'
-                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                      ? 'bg-amber-600 text-white shadow-sm'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                       }`}
                   >
                     <span>Unpaid</span>
@@ -1142,152 +1120,144 @@ const CreateAppointment = () => {
               {isPaidStipend ? (
                 <>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 border-t border-slate-200/60">
-                  <div>
-                    <label className="block font-semibold text-slate-700 mb-1">
-                      Stipend / Compensation Amount (₹) <span className="text-rose-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-2 text-slate-400 font-bold text-xs">₹</span>
-                      <input
-                        type="number"
-                        name="compensation"
-                        min="1"
-                        required
-                        value={formData.compensation || ''}
-                        onChange={handleInputChange}
-                        placeholder="Enter amount manually (e.g. 15000)"
-                        className="w-full pl-7 pr-3 py-2 rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:border-blue-500 font-semibold"
-                        autoFocus
-                      />
-                    </div>
-                    <p className="text-[10px] text-slate-400 mt-1">Enter stipend or compensation amount manually.</p>
-                  </div>
-
-                  <div>
-                    <label className="block font-semibold text-slate-700 mb-1">
-                      Compensation Frequency
-                    </label>
-                    <select
-                      name="compensationFrequency"
-                      value={formData.compensationFrequency === 'UNPAID' ? 'STIPEND_MONTHLY' : formData.compensationFrequency}
-                      onChange={handleInputChange}
-                      className="w-full p-2 rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:border-blue-500 bg-white"
-                    >
-                      <option value="STIPEND_MONTHLY">Monthly Stipend</option>
-                      <option value="MONTHLY">Monthly Salary</option>
-                      <option value="ANNUAL">Annual CTC</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* Variable Pay / Incentive Section */}
-                <div className="pt-3 border-t border-slate-200/60 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-slate-800 flex items-center gap-2 cursor-pointer select-none">
-                      <input
-                        type="checkbox"
-                        checked={Boolean(formData.variablePay?.isEnabled)}
-                        onChange={(e) => {
-                          const checked = e.target.checked;
-                          handleVariablePayChange('isEnabled', checked);
-                        }}
-                        className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300 cursor-pointer"
-                      />
-                      <span>Include Variable Pay / Performance Bonus</span>
-                    </label>
-                    {formData.variablePay?.isEnabled && (
-                      <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-blue-100 text-blue-700">
-                        Variable Active
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-[11px] text-slate-500 pl-6">
-                    Add performance-linked bonus, quarterly incentive, or project delivery milestone pay
-                  </p>
-
-                  {formData.variablePay?.isEnabled && (
-                    <div className="p-3.5 bg-blue-50/50 border border-blue-200/70 rounded-xl space-y-3 mt-2">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
-                          <label className="block font-semibold text-slate-700 mb-1">
-                            Variable Pay Amount (₹) <span className="text-rose-500">*</span>
-                          </label>
-                          <div className="relative">
-                            <span className="absolute left-3 top-2 text-slate-400 font-bold text-xs">₹</span>
-                            <input
-                              type="number"
-                              min="0"
-                              value={formData.variablePay?.amount || ''}
-                              onChange={(e) => handleVariablePayChange('amount', e.target.value)}
-                              placeholder="e.g. 50000"
-                              className="w-full pl-7 pr-3 py-2 rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:border-blue-500 font-semibold bg-white"
-                            />
-                          </div>
-                          <p className="text-[10px] text-slate-400 mt-1">Amount allocated for variable pay.</p>
-                        </div>
-
-                        <div>
-                          <label className="block font-semibold text-slate-700 mb-1">
-                            Payout Frequency / Cycle
-                          </label>
-                          <select
-                            value={formData.variablePay?.frequency || 'ANNUAL'}
-                            onChange={(e) => handleVariablePayChange('frequency', e.target.value)}
-                            className="w-full p-2 rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:border-blue-500 bg-white"
-                          >
-                            <option value="ANNUAL">Annual Performance Bonus (Yearly)</option>
-                            <option value="QUARTERLY">Quarterly Appraisal Bonus</option>
-                            <option value="HALF_YEARLY">Half-Yearly Bonus</option>
-                            <option value="MONTHLY">Monthly Incentive / Performance Pay</option>
-                            <option value="MILESTONE">Project Milestone / Delivery Based</option>
-                          </select>
-                          <p className="text-[10px] text-slate-400 mt-1">Disbursement evaluation cycle.</p>
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block font-semibold text-slate-700 mb-1">
-                          Payout Criteria / Notes (Optional)
-                        </label>
+                    <div>
+                      <label className="block font-semibold text-slate-700 mb-1">
+                        Stipend / Compensation Amount (₹) <span className="text-rose-500">*</span>
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-2 text-slate-400 font-bold text-xs">₹</span>
                         <input
-                          type="text"
-                          value={formData.variablePay?.criteria || ''}
-                          onChange={(e) => handleVariablePayChange('criteria', e.target.value)}
-                          placeholder="e.g. Subject to individual KPI performance >= 80% & active employment at disbursement"
-                          className="w-full p-2 rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:border-blue-500 bg-white text-xs"
+                          type="number"
+                          name="compensation"
+                          min="1"
+                          required
+                          value={formData.compensation || ''}
+                          onChange={handleInputChange}
+                          placeholder="Enter amount manually (e.g. 15000)"
+                          className="w-full pl-7 pr-3 py-2 rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:border-blue-500 font-semibold"
+                          autoFocus
                         />
                       </div>
+                      <p className="text-[10px] text-slate-400 mt-1">Enter stipend or compensation amount manually.</p>
+                    </div>
 
-                      {/* Real-time CTC Breakdown Box */}
-                      {Number(formData.compensation || 0) > 0 && (
-                        <div className="p-3 bg-white border border-blue-200 rounded-lg text-xs space-y-1.5 shadow-xs">
-                          <div className="flex items-center justify-between text-slate-600 font-medium">
-                            <span>Fixed Compensation ({formData.compensationFrequency}):</span>
-                            <span className="font-semibold text-slate-800">
-                              ₹ {Number(formData.compensation).toLocaleString('en-IN')}
-                            </span>
+                    <div>
+                      <label className="block font-semibold text-slate-700 mb-1">
+                        Compensation Frequency
+                      </label>
+                      <select
+                        name="compensationFrequency"
+                        value={formData.compensationFrequency === 'UNPAID' ? 'STIPEND_MONTHLY' : formData.compensationFrequency}
+                        onChange={handleInputChange}
+                        className="w-full p-2 rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:border-blue-500 bg-white"
+                      >
+                        <option value="STIPEND_MONTHLY">Monthly Stipend</option>
+                        <option value="MONTHLY">Monthly Salary</option>
+                        <option value="ANNUAL">Annual CTC</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Performance-based Pay Section */}
+                  <div className="pt-3 border-t border-slate-200/60 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-slate-800 flex items-center gap-2 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(formData.variablePay?.isEnabled)}
+                          onChange={(e) => {
+                            const checked = e.target.checked;
+                            handleVariablePayChange('isEnabled', checked);
+                          }}
+                          className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300 cursor-pointer"
+                        />
+                        <span>Include Performance-based Pay</span>
+                      </label>
+                      {formData.variablePay?.isEnabled && (
+                        <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-blue-100 text-blue-700">
+                          Performance Pay Active
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-slate-500 pl-6">
+                      Add performance-linked incentive, appraisal bonus, or milestone pay
+                    </p>
+
+                    {formData.variablePay?.isEnabled && (
+                      <div className="p-3.5 bg-blue-50/50 border border-blue-200/70 rounded-xl space-y-3 mt-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="block font-semibold text-slate-700 mb-1">
+                              Performance-based Pay Amount (₹) <span className="text-rose-500">*</span>
+                            </label>
+                            <div className="relative">
+                              <span className="absolute left-3 top-2 text-slate-400 font-bold text-xs">₹</span>
+                              <input
+                                type="number"
+                                min="0"
+                                value={formData.variablePay?.amount || ''}
+                                onChange={(e) => handleVariablePayChange('amount', e.target.value)}
+                                placeholder="e.g. 50000"
+                                className="w-full pl-7 pr-3 py-2 rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:border-blue-500 font-semibold bg-white"
+                              />
+                            </div>
+                            <p className="text-[10px] text-slate-400 mt-1">Amount allocated for performance-based incentive.</p>
                           </div>
-                          {Number(formData.variablePay?.amount || 0) > 0 && (
+
+                          <div>
+                            <label className="block font-semibold text-slate-700 mb-1">
+                              Payout Frequency / Cycle
+                            </label>
+                            <select
+                              value={formData.variablePay?.frequency || 'ANNUAL'}
+                              onChange={(e) => handleVariablePayChange('frequency', e.target.value)}
+                              className="w-full p-2 rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:border-blue-500 bg-white"
+                            >
+                              <option value="ANNUAL">Annual Performance Bonus (Yearly)</option>
+                              <option value="QUARTERLY">Quarterly Appraisal Bonus</option>
+                              <option value="HALF_YEARLY">Half-Yearly Bonus</option>
+                              <option value="MONTHLY">Monthly Performance Pay</option>
+                              <option value="MILESTONE">Project Milestone / Delivery Based</option>
+                            </select>
+                            <p className="text-[10px] text-slate-400 mt-1">Disbursement evaluation cycle.</p>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block font-semibold text-slate-700 mb-1">
+                            Payout Criteria / Notes (Optional)
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.variablePay?.criteria || ''}
+                            onChange={(e) => handleVariablePayChange('criteria', e.target.value)}
+                            placeholder="e.g. Subject to individual KPI performance >= 80% & active employment at disbursement"
+                            className="w-full p-2 rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:border-blue-500 bg-white text-xs"
+                          />
+                        </div>
+
+                        {/* Performance-based Pay Summary Box */}
+                        {Number(formData.compensation || 0) > 0 && Number(formData.variablePay?.amount || 0) > 0 && (
+                          <div className="p-3 bg-white border border-blue-200 rounded-lg text-xs space-y-1.5 shadow-xs">
+                            <div className="flex items-center justify-between text-slate-600 font-medium">
+                              <span>Fixed Compensation ({formData.compensationFrequency}):</span>
+                              <span className="font-semibold text-slate-800">
+                                ₹ {Number(formData.compensation).toLocaleString('en-IN')}
+                              </span>
+                            </div>
                             <div className="flex items-center justify-between text-blue-700 font-medium">
-                              <span>Variable Component ({formData.variablePay.frequency}):</span>
+                              <span>Performance-based Pay ({formData.variablePay.frequency}):</span>
                               <span className="font-semibold text-blue-800">
                                 ₹ {Number(formData.variablePay.amount).toLocaleString('en-IN')}
                               </span>
                             </div>
-                          )}
-                          <div className="pt-2 border-t border-slate-200 flex items-center justify-between font-bold text-slate-900">
-                            <span>Total Estimated Annual CTC:</span>
-                            <span className="text-emerald-600 text-sm">
-                              ₹ {calculateTotalAnnualCTC(formData.compensation, formData.compensationFrequency, formData.variablePay).toLocaleString('en-IN')} / Year
-                            </span>
                           </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </>
-            ) : (
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : (
                 <div className="p-3 bg-amber-50/70 border border-amber-200 rounded-lg flex items-center justify-between text-xs">
                   <div className="space-y-0.5">
                     <p className="font-bold text-amber-900 flex items-center gap-1.5">
@@ -1625,7 +1595,7 @@ const CreateAppointment = () => {
                   </p>
                 </div>
                 <div className="text-right text-[10px] text-slate-500">
-                  <p className="font-semibold text-slate-700">hr@genfrex.com</p>
+                  <p className="font-semibold text-slate-700">Email : hr@genfrex.com</p>
                   <p className="text-blue-600">Build. Grow. Connect.</p>
                 </div>
               </div>
@@ -1672,21 +1642,13 @@ const CreateAppointment = () => {
                   )}
                 </div>
                 {isPaidStipend && formData.variablePay?.isEnabled && Number(formData.variablePay?.amount || 0) > 0 && (
-                  <>
-                    <div className="grid grid-cols-2 p-2 border-b border-slate-200">
-                      <span className="font-semibold text-slate-600">Variable Pay / Incentive:</span>
-                      <span className="font-bold text-blue-700">
-                        ₹ {Number(formData.variablePay.amount).toLocaleString('en-IN')} ({formData.variablePay.frequency})
-                        {formData.variablePay.criteria ? ` • ${formData.variablePay.criteria}` : ''}
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-2 p-2 bg-slate-50 border-b border-slate-200">
-                      <span className="font-semibold text-slate-600">Estimated Total Annual CTC:</span>
-                      <span className="font-bold text-emerald-700">
-                        ₹ {calculateTotalAnnualCTC(formData.compensation, formData.compensationFrequency, formData.variablePay).toLocaleString('en-IN')} / Year
-                      </span>
-                    </div>
-                  </>
+                  <div className="grid grid-cols-2 p-2 bg-slate-50 border-b border-slate-200">
+                    <span className="font-semibold text-slate-600">Performance-based Pay:</span>
+                    <span className="font-bold text-blue-700">
+                      ₹ {Number(formData.variablePay.amount).toLocaleString('en-IN')} ({formData.variablePay.frequency})
+                      {formData.variablePay.criteria ? ` • ${formData.variablePay.criteria}` : ''}
+                    </span>
+                  </div>
                 )}
                 <div className="grid grid-cols-2 p-2">
                   <span className="font-semibold text-slate-600">Acceptance Deadline:</span>
@@ -1780,7 +1742,7 @@ const CreateAppointment = () => {
                 <span className="font-bold text-blue-600">{formData.joiningDate}</span>
               </div>
               <div>
-                <span className="text-[10px] text-slate-400 font-bold uppercase block">Compensation / CTC</span>
+                <span className="text-[10px] text-slate-400 font-bold uppercase block">Compensation</span>
                 {isPaidStipend && Number(formData.compensation) > 0 ? (
                   <div>
                     <span className="font-bold text-emerald-700">
@@ -1788,11 +1750,7 @@ const CreateAppointment = () => {
                     </span>
                     {formData.variablePay?.isEnabled && Number(formData.variablePay?.amount || 0) > 0 ? (
                       <p className="text-[10px] text-blue-600 font-medium mt-0.5 leading-tight">
-                        + ₹{Number(formData.variablePay.amount).toLocaleString('en-IN')} ({formData.variablePay.frequency})
-                        <br />
-                        <span className="text-emerald-700 font-bold">
-                          CTC: ₹{calculateTotalAnnualCTC(formData.compensation, formData.compensationFrequency, formData.variablePay).toLocaleString('en-IN')}/yr
-                        </span>
+                        + ₹{Number(formData.variablePay.amount).toLocaleString('en-IN')} Performance Pay ({formData.variablePay.frequency})
                       </p>
                     ) : null}
                   </div>

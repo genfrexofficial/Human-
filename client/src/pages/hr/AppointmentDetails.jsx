@@ -521,34 +521,15 @@ const AppointmentDetails = () => {
                 )}
               </div>
               {appointment.variablePay?.isEnabled && Number(appointment.variablePay?.amount || 0) > 0 && (
-                <>
-                  <div>
-                    <span className="text-slate-500 block text-[11px]">Variable Pay / Incentive:</span>
-                    <span className="font-bold text-blue-700 text-sm">
-                      ₹ {Number(appointment.variablePay.amount).toLocaleString('en-IN')} ({appointment.variablePay.frequency})
-                    </span>
-                    {appointment.variablePay.criteria && (
-                      <p className="text-[10px] text-slate-500 mt-0.5">{appointment.variablePay.criteria}</p>
-                    )}
-                  </div>
-                  <div>
-                    <span className="text-slate-500 block text-[11px]">Total Estimated CTC (Per Annum):</span>
-                    <span className="font-bold text-emerald-600 text-sm">
-                      ₹ {(
-                        (appointment.compensationFrequency === 'ANNUAL'
-                          ? Number(appointment.compensation || 0)
-                          : Number(appointment.compensation || 0) * 12) +
-                        (appointment.variablePay.frequency === 'MONTHLY'
-                          ? Number(appointment.variablePay.amount || 0) * 12
-                          : appointment.variablePay.frequency === 'QUARTERLY'
-                          ? Number(appointment.variablePay.amount || 0) * 4
-                          : appointment.variablePay.frequency === 'HALF_YEARLY'
-                          ? Number(appointment.variablePay.amount || 0) * 2
-                          : Number(appointment.variablePay.amount || 0))
-                      ).toLocaleString('en-IN')} / Year
-                    </span>
-                  </div>
-                </>
+                <div>
+                  <span className="text-slate-500 block text-[11px]">Performance-based Pay:</span>
+                  <span className="font-bold text-blue-700 text-sm">
+                    ₹ {Number(appointment.variablePay.amount).toLocaleString('en-IN')} ({appointment.variablePay.frequency})
+                  </span>
+                  {appointment.variablePay.criteria && (
+                    <p className="text-[10px] text-slate-500 mt-0.5">{appointment.variablePay.criteria}</p>
+                  )}
+                </div>
               )}
               <div>
                 <span className="text-slate-500 block text-[11px]">Reporting Manager:</span>

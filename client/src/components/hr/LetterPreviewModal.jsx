@@ -194,32 +194,13 @@ const LetterPreviewModal = ({ isOpen, onClose, appointment, candidate }) => {
                   )}
                 </div>
                 {appointment.variablePay?.isEnabled && Number(appointment.variablePay?.amount || 0) > 0 && (
-                  <>
-                    <div className="grid grid-cols-2 p-2 border-b border-slate-200">
-                      <span className="font-semibold text-slate-600">Variable Pay / Incentive:</span>
-                      <span className="font-bold text-blue-700">
-                        ₹ {Number(appointment.variablePay.amount).toLocaleString('en-IN')} / {appointment.variablePay.frequency || 'ANNUAL'}
-                        {appointment.variablePay.criteria ? ` (${appointment.variablePay.criteria})` : ''}
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-2 bg-slate-50 border-b border-slate-200 p-2">
-                      <span className="font-semibold text-slate-600">Total Estimated CTC (Annual):</span>
-                      <span className="font-bold text-emerald-700">
-                        ₹ {(
-                          (appointment.compensationFrequency === 'ANNUAL'
-                            ? Number(appointment.compensation || 0)
-                            : Number(appointment.compensation || 0) * 12) +
-                          (appointment.variablePay.frequency === 'MONTHLY'
-                            ? Number(appointment.variablePay.amount || 0) * 12
-                            : appointment.variablePay.frequency === 'QUARTERLY'
-                            ? Number(appointment.variablePay.amount || 0) * 4
-                            : appointment.variablePay.frequency === 'HALF_YEARLY'
-                            ? Number(appointment.variablePay.amount || 0) * 2
-                            : Number(appointment.variablePay.amount || 0))
-                        ).toLocaleString('en-IN')} / Year
-                      </span>
-                    </div>
-                  </>
+                  <div className="grid grid-cols-2 p-2 border-b border-slate-200">
+                    <span className="font-semibold text-slate-600">Performance-based Pay:</span>
+                    <span className="font-bold text-blue-700">
+                      ₹ {Number(appointment.variablePay.amount).toLocaleString('en-IN')} / {appointment.variablePay.frequency || 'ANNUAL'}
+                      {appointment.variablePay.criteria ? ` (${appointment.variablePay.criteria})` : ''}
+                    </span>
+                  </div>
                 )}
                 <div className="grid grid-cols-2 p-2">
                   <span className="font-semibold text-slate-600">Acceptance Deadline:</span>
