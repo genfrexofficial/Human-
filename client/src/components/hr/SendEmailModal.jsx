@@ -28,7 +28,7 @@ const SendEmailModal = ({ isOpen, onClose, appointment, onSend, loading }) => {
                 {isAlreadySent ? 'Resend Appointment Letter' : 'Send Appointment Letter'}
               </h3>
               <p className="text-[11px] text-slate-500">
-                Official communication via genfrexofficial@gmail.com
+                Official communication via info@genfrex.com
               </p>
             </div>
           </div>
@@ -68,7 +68,7 @@ const SendEmailModal = ({ isOpen, onClose, appointment, onSend, loading }) => {
           <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2.5">
             <div className="flex justify-between items-center pb-2 border-b border-slate-200">
               <span className="text-slate-500">Official Sender:</span>
-              <span className="font-bold text-slate-900">genfrexofficial@gmail.com</span>
+              <span className="font-bold text-slate-900">hr@genfrex.com</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-slate-500">Recipient Candidate:</span>

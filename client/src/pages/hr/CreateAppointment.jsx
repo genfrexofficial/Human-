@@ -44,6 +44,15 @@ const STANDARD_DEPARTMENTS = [
   'IT & Security'
 ];
 
+const STANDARD_TRACKS = [
+  { value: 'TRAINEE', label: 'TRAINEE (GENFREX Trainee Program)' },
+  { value: 'INTERNSHIP', label: 'INTERNSHIP' },
+  { value: 'FULL_TIME', label: 'FULL TIME' },
+  { value: 'PART_TIME', label: 'PART TIME' }
+];
+
+const STANDARD_TRACK_VALUES = STANDARD_TRACKS.map((t) => t.value);
+
 const CreateAppointment = () => {
   const [searchParams] = useSearchParams();
   const { id: routeEditId } = useParams();
@@ -63,6 +72,7 @@ const CreateAppointment = () => {
   const [step, setStep] = useState(1);
   const [editingAppointment, setEditingAppointment] = useState(null);
   const [isCustomDept, setIsCustomDept] = useState(false);
+  const [isCustomTrack, setIsCustomTrack] = useState(false);
   const [isCustomTemplate, setIsCustomTemplate] = useState(false);
   const [customTemplateName, setCustomTemplateName] = useState('');
   const [savingTemplate, setSavingTemplate] = useState(false);
@@ -229,6 +239,9 @@ const CreateAppointment = () => {
           if (app.department && !STANDARD_DEPARTMENTS.includes(app.department)) {
             setIsCustomDept(true);
           }
+          if (app.appointmentType && !STANDARD_TRACK_VALUES.includes(app.appointmentType)) {
+            setIsCustomTrack(true);
+          }
           if (app.letterContentSnapshot?.customTemplateName) {
             setIsCustomTemplate(true);
             setCustomTemplateName(app.letterContentSnapshot.customTemplateName);
@@ -254,8 +267,12 @@ const CreateAppointment = () => {
 
     // Intelligently find matching role template for this candidate
     const des = (cand.designation || '').toLowerCase();
-    const track = cand.employmentType?.toUpperCase() === 'FULL-TIME' ? 'FULL_TIME' :
-      cand.employmentType?.toUpperCase() === 'INTERNSHIP' ? 'INTERNSHIP' : 'TRAINEE';
+    const empNorm = (cand.employmentType || '').toUpperCase().replace('-', '_');
+    const track = empNorm === 'FULL_TIME' ? 'FULL_TIME' :
+      empNorm === 'PART_TIME' ? 'PART_TIME' :
+      empNorm === 'INTERNSHIP' ? 'INTERNSHIP' :
+      empNorm === 'TRAINEE' ? 'TRAINEE' :
+      (cand.employmentType || 'TRAINEE');
 
     let matchedTmpl = (templateList || []).find((t) => {
       if (des.includes('devops') || des.includes('cloud') || des.includes('infra')) return t.roleCategory === 'DEVOPS';
@@ -283,6 +300,12 @@ const CreateAppointment = () => {
       setIsCustomDept(true);
     } else {
       setIsCustomDept(false);
+    }
+
+    if (track && !STANDARD_TRACK_VALUES.includes(track)) {
+      setIsCustomTrack(true);
+    } else {
+      setIsCustomTrack(false);
     }
 
     const isCandUnpaid = cand.compensation === 0 || cand.compensationFrequency === 'UNPAID';
@@ -850,19 +873,60 @@ const CreateAppointment = () => {
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">
-                Employment Track <span className="text-rose-500">*</span>
-              </label>
-              <select
-                name="appointmentType"
-                value={formData.appointmentType}
-                onChange={handleInputChange}
-                className="w-full p-2 rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:border-blue-500"
-              >
-                <option value="TRAINEE">TRAINEE (GENFREX Trainee Program)</option>
-                <option value="INTERNSHIP">INTERNSHIP</option>
-                <option value="FULL_TIME">FULL TIME</option>
-              </select>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block font-semibold text-slate-700">
+                  Employment Track <span className="text-rose-500">*</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = !isCustomTrack;
+                    setIsCustomTrack(next);
+                    if (!next && !STANDARD_TRACK_VALUES.includes(formData.appointmentType)) {
+                      setFormData((prev) => ({ ...prev, appointmentType: 'TRAINEE' }));
+                    }
+                  }}
+                  className="text-xs text-blue-600 hover:text-blue-800 font-medium hover:underline cursor-pointer"
+                >
+                  {isCustomTrack ? '← Select from list' : '+ Add custom / manual'}
+                </button>
+              </div>
+
+              {isCustomTrack ? (
+                <div>
+                  <input
+                    type="text"
+                    name="appointmentType"
+                    required
+                    value={formData.appointmentType}
+                    onChange={handleInputChange}
+                    placeholder="Type track name (e.g. PART TIME, CONTRACT, CONSULTANT, etc.)"
+                    className="w-full p-2 rounded-lg border border-blue-400 text-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-blue-50/20 font-medium uppercase"
+                    autoFocus
+                  />
+                  <p className="text-[10px] text-slate-400 mt-1">Manual employment track entry enabled.</p>
+                </div>
+              ) : (
+                <select
+                  name="appointmentType"
+                  value={STANDARD_TRACK_VALUES.includes(formData.appointmentType) ? formData.appointmentType : '__CUSTOM__'}
+                  onChange={(e) => {
+                    if (e.target.value === '__CUSTOM__') {
+                      setIsCustomTrack(true);
+                    } else {
+                      handleInputChange(e);
+                    }
+                  }}
+                  className="w-full p-2 rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:border-blue-500"
+                >
+                  {STANDARD_TRACKS.map((t) => (
+                    <option key={t.value} value={t.value}>
+                      {t.label}
+                    </option>
+                  ))}
+                  <option value="__CUSTOM__">+ Add Custom / Manual Track...</option>
+                </select>
+              )}
             </div>
 
             <div>

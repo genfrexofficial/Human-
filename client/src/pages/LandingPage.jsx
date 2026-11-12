@@ -252,7 +252,7 @@ const LandingPage = () => {
       {/* Footer */}
       <footer className="mt-auto py-6 border-t border-white/10 text-center text-xs text-slate-500">
         <p>&copy; {new Date().getFullYear()} GENFREX Unified Business Management Platform. All rights reserved.</p>
-        <p className="text-[10px] text-slate-600 mt-1">Official Communications: genfrexofficial@gmail.com</p>
+        <p className="text-[10px] text-slate-600 mt-1">Official Communications: info@genfrex.com</p>
       </footer>
     </div>
   );

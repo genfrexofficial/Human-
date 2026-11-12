@@ -39,9 +39,9 @@ const candidateSchema = new mongoose.Schema(
     },
     employmentType: {
       type: String,
-      enum: ['Full-time', 'Internship', 'Trainee', 'FULL_TIME', 'INTERNSHIP', 'TRAINEE'],
       default: 'Trainee',
-      required: true
+      required: true,
+      trim: true
     },
     candidateStatus: {
       type: String,

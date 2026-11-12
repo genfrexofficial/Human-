@@ -339,6 +339,7 @@ const HRSettings = () => {
                   <option value="TRAINEE">TRAINEE</option>
                   <option value="INTERNSHIP">INTERNSHIP</option>
                   <option value="FULL_TIME">FULL TIME</option>
+                  <option value="PART_TIME">PART TIME</option>
                 </select>
               </div>
 
@@ -602,6 +603,7 @@ const HRSettings = () => {
                     <option value="TRAINEE">TRAINEE</option>
                     <option value="INTERNSHIP">INTERNSHIP</option>
                     <option value="FULL_TIME">FULL TIME</option>
+                    <option value="PART_TIME">PART TIME</option>
                   </select>
                 </div>
               </div>

@@ -197,9 +197,9 @@ const AppointmentDetails = () => {
             <div className="flex items-center gap-2">
               <span className="font-bold text-sm text-slate-900">{appointment.referenceNumber}</span>
               <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${isApproved ? 'bg-emerald-100 text-emerald-800' :
-                  isPending ? 'bg-amber-100 text-amber-800' :
-                    isSent ? 'bg-blue-100 text-blue-800' :
-                      isRejected ? 'bg-rose-100 text-rose-800' : 'bg-slate-100 text-slate-700'
+                isPending ? 'bg-amber-100 text-amber-800' :
+                  isSent ? 'bg-blue-100 text-blue-800' :
+                    isRejected ? 'bg-rose-100 text-rose-800' : 'bg-slate-100 text-slate-700'
                 }`}>
                 {appointment.status?.replace('_', ' ')}
               </span>
@@ -372,12 +372,12 @@ const AppointmentDetails = () => {
             <div className="text-xs text-blue-900">
               <p className="font-bold">Letter Sent to Candidate ({candidate.email})</p>
               <p className="text-blue-700 mt-0.5">
-                Dispatched on {new Date(appointment.sentAt).toLocaleString()} via genfrexofficial@gmail.com.
+                Dispatched on {new Date(appointment.sentAt).toLocaleString()} via hr@genfrex.com.
               </p>
               <div className="flex items-center gap-2 mt-2">
                 <span className="font-semibold text-slate-700">Acceptance Status:</span>
                 <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${appointment.acceptanceStatus === 'ACCEPTED' ? 'bg-emerald-100 text-emerald-800' :
-                    appointment.acceptanceStatus === 'DECLINED' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'
+                  appointment.acceptanceStatus === 'DECLINED' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'
                   }`}>
                   {appointment.acceptanceStatus}
                 </span>
@@ -623,7 +623,7 @@ const AppointmentDetails = () => {
                 approvals.map((appr, idx) => (
                   <div key={idx} className="relative pl-6 pb-2 border-l border-slate-200 last:border-l-0">
                     <span className={`absolute -left-1.5 top-0.5 w-3 h-3 rounded-full border-2 border-white ${appr.action === 'APPROVE' ? 'bg-emerald-600' :
-                        appr.action === 'REJECT' ? 'bg-rose-600' : 'bg-blue-600'
+                      appr.action === 'REJECT' ? 'bg-rose-600' : 'bg-blue-600'
                       }`} />
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-slate-900">{appr.action}</span>

@@ -103,7 +103,7 @@ const LetterPreviewModal = ({ isOpen, onClose, appointment, candidate }) => {
                 </p>
               </div>
               <div className="text-right text-[10px] text-slate-500 space-y-0.5">
-                <p className="font-semibold text-slate-700">Official Sender: genfrexofficial@gmail.com</p>
+                <p className="font-semibold text-slate-700">Official Sender: hr@genfrex.com</p>
                 <p>Web: www.genfrex.com</p>
                 <p className="text-blue-600 font-medium">Build. Grow. Connect.</p>
               </div>

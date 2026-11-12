@@ -287,7 +287,12 @@ const createAppointment = async (req, res, next) => {
       EmployeeId: EmployeeId || assignedEmployee || candidate.EmployeeId || candidate.assignedEmployee || null,
       assignedEmployee: assignedEmployee || EmployeeId || candidate.assignedEmployee || candidate.EmployeeId || null,
       employmentType: employmentType || appointmentType || 'Trainee',
-      appointmentType: appointmentType || (employmentType === 'Full-time' ? 'FULL_TIME' : employmentType === 'Internship' ? 'INTERNSHIP' : 'TRAINEE'),
+      appointmentType: appointmentType || (
+        employmentType === 'Full-time' || employmentType === 'FULL_TIME' ? 'FULL_TIME' :
+        employmentType === 'Part-time' || employmentType === 'PART_TIME' ? 'PART_TIME' :
+        employmentType === 'Internship' || employmentType === 'INTERNSHIP' ? 'INTERNSHIP' :
+        employmentType || 'TRAINEE'
+      ),
       title: title || defaultTitle,
       designation,
       department: department || candidate.department || 'Engineering',

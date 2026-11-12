@@ -353,6 +353,7 @@ const CandidateModal = ({ isOpen, onClose, candidate, onSave, loading }) => {
                 <option value="Trainee">Trainee</option>
                 <option value="Internship">Internship</option>
                 <option value="Full-time">Full-time</option>
+                <option value="Part-time">Part-time</option>
               </select>
             </div>
 

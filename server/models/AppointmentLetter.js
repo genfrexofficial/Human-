@@ -55,9 +55,9 @@ const appointmentLetterSchema = new mongoose.Schema(
     },
     appointmentType: {
       type: String,
-      enum: ['TRAINEE', 'INTERNSHIP', 'FULL_TIME'],
       default: 'TRAINEE',
-      required: true
+      required: true,
+      trim: true
     },
     title: {
       type: String,

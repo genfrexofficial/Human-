@@ -22,8 +22,8 @@ const letterTemplateSchema = new mongoose.Schema(
     },
     appointmentType: {
       type: String,
-      enum: ['TRAINEE', 'INTERNSHIP', 'FULL_TIME', 'CONTRACT'],
-      default: 'TRAINEE'
+      default: 'TRAINEE',
+      trim: true
     },
     isDefault: {
       type: Boolean,
