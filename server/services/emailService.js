@@ -30,7 +30,13 @@ const sendAppointmentEmail = async ({
   };
   const senderDisplayEmail = process.env.RESEND_FROM ? extractEmail(process.env.RESEND_FROM) : (process.env.SMTP_FROM || 'hr@genfrex.com');
   const fromEmail = senderDisplayEmail;
-  const replyToEmail = process.env.REPLY_TO_EMAIL || process.env.OFFICIAL_EMAIL || 'hr@genfrex.com';
+  const rawReplyTo = process.env.REPLY_TO_EMAIL || process.env.OFFICIAL_EMAIL || 'hr@genfrex.com,genfrexofficial@gmail.com';
+  const replyToRecipients = rawReplyTo
+    .split(',')
+    .map((e) => e.trim())
+    .filter(Boolean);
+  const replyToString = replyToRecipients.join(', ');
+  const replyToEmail = replyToRecipients.length === 1 ? replyToRecipients[0] : replyToRecipients;
   const rawBcc = process.env.BCC_EMAIL !== undefined
     ? process.env.BCC_EMAIL
     : 'hr@genfrex.com,genfrexofficial@gmail.com';
@@ -86,7 +92,7 @@ const sendAppointmentEmail = async ({
           <p>Please find attached your official appointment letter containing details of your role, responsibilities, compensation/stipend, and terms of engagement.</p>
           <p>Kindly review the attached document carefully and return a signed copy acknowledging your acceptance on or before the acceptance deadline.</p>
 
-          <p style="margin-top: 24px;">If you have any questions or require clarification, please do not hesitate to contact our HR operations team directly at <a href="mailto:${senderDisplayEmail}" style="color: #60A5FA;">${senderDisplayEmail}</a> or simply reply to this email.</p>
+          <p style="margin-top: 24px;">If you have any questions or require clarification, please do not hesitate to contact our HR operations team directly at <a href="mailto:hr@genfrex.com" style="color: #60A5FA;">hr@genfrex.com</a> / <a href="mailto:genfrexofficial@gmail.com" style="color: #60A5FA;">genfrexofficial@gmail.com</a> or simply reply to this email.</p>
 
           <p style="margin-top: 32px; color: #94A3B8; font-size: 13px;">Warm regards,<br><strong style="color: #F8FAFC;">GENFREX Talent & People Operations</strong><br>Build. Grow. Connect.</p>
         </div>
@@ -193,7 +199,7 @@ const sendAppointmentEmail = async ({
       const mailOptions = {
         from: `"GENFREX People Operations" <${fromEmail}>`,
         to: toCandidateEmail,
-        replyTo: replyToEmail,
+        replyTo: replyToString,
         subject,
         html: htmlBody,
         attachments
